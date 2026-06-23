@@ -29,10 +29,9 @@ class AuthServiceProvider extends ServiceProvider
             if ($user->hasRole('superadmin')) {
                 return true;
             }
-        });
-
-        Gate::define('*', function (User $user, string $ability) {
-            return $user->hasPermission($ability);
+            if ($user->hasPermission($ability)) {
+                return true;
+            }
         });
     }
 }
