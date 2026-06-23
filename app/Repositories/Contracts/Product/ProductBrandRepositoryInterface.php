@@ -18,5 +18,7 @@ interface ProductBrandRepositoryInterface
 
     public function delete(ProductBrand $brand): void;
 
+    public function listAll(): Collection;
+
     public function listActive(): Collection;
 }

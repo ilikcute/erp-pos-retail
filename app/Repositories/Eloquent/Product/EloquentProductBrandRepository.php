@@ -44,6 +44,11 @@ class EloquentProductBrandRepository implements ProductBrandRepositoryInterface
         $brand->delete();
     }
 
+    public function listAll(): Collection
+    {
+        return ProductBrand::latest()->get();
+    }
+
     public function listActive(): Collection
     {
         return ProductBrand::active()->orderBy('brand_name')->get();

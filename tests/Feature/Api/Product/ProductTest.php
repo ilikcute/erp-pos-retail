@@ -16,11 +16,13 @@ class ProductTest extends ApiTestCase
     {
         parent::setUp();
 
-        $this->unit = Unit::create([
-            'unit_code' => 'PCS',
-            'unit_name' => 'Pieces',
-            'is_active' => true,
-        ]);
+        $this->unit = Unit::firstOrCreate(
+            ['unit_code' => 'PCS'],
+            [
+                'unit_name' => 'Pieces',
+                'is_active' => true,
+            ]
+        );
     }
 
     public function test_unauthorized_user_cannot_view_products()

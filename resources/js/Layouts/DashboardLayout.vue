@@ -9,6 +9,7 @@ const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: "🏠" },
     { name: "Roles", href: "/system/roles", icon: "🔐" },
     { name: "Users", href: "/system/users", icon: "👥" },
+    { name: "Brands", href: "/product/brands", icon: "🏷️" },
 ];
 
 const isSidebarOpen = ref(true);

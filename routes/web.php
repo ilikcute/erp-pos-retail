@@ -2,10 +2,10 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\System\RoleController;
+use App\Http\Controllers\Product\ProductBrandController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
 
 Route::get('/', function () {
     return redirect('/dashboard');
@@ -35,6 +35,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users', [\App\Http\Controllers\System\UserController::class, 'store'])->name('users.store');
         Route::put('/users/{id}', [\App\Http\Controllers\System\UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{id}', [\App\Http\Controllers\System\UserController::class, 'destroy'])->name('users.destroy');
+    });
+    Route::prefix('product')->name('product.')->group(function () {
+        Route::get('/brands', [ProductBrandController::class, 'index'])->name('brands.index');
+        Route::post('/brands', [ProductBrandController::class, 'store'])->name('brands.store');
+        Route::put('/brands/{id}', [ProductBrandController::class, 'update'])->name('brands.update');
+        Route::delete('/brands/{id}', [ProductBrandController::class, 'destroy'])->name('brands.destroy');
     });
 });
 

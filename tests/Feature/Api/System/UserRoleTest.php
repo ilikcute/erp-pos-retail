@@ -112,13 +112,15 @@ class UserRoleTest extends ApiTestCase
             ->assertJsonPath('data.display_name', 'Updated Role Display');
 
         // Sync permission
-        $permission = Permission::firstOrCreate([
-            'name' => 'system.user.view',
-            'module' => 'system',
-            'resource' => 'user',
-            'action' => 'view',
-            'display_name' => 'View User'
-        ]);
+        $permission = Permission::firstOrCreate(
+            ['name' => 'system.user.view'],
+            [
+                'module' => 'system',
+                'resource' => 'user',
+                'action' => 'view',
+                'display_name' => 'View User'
+            ]
+        );
 
         $response = $this->postJson("/api/v1/system/roles/{$roleId}/permissions", [
             'permission_ids' => [$permission->id],

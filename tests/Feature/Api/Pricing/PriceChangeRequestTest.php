@@ -36,12 +36,13 @@ class PriceChangeRequestTest extends ApiTestCase
             ]
         );
 
-        // 2. Seed basic unit
-        $this->unit = Unit::create([
-            'unit_code' => 'PCS',
-            'unit_name' => 'Pieces',
-            'is_active' => true,
-        ]);
+        $this->unit = Unit::firstOrCreate(
+            ['unit_code' => 'PCS'],
+            [
+                'unit_name' => 'Pieces',
+                'is_active' => true,
+            ]
+        );
 
         // 3. Seed product and variant
         $product = Product::create([

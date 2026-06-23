@@ -22,11 +22,13 @@ class PriceListTest extends ApiTestCase
     {
         parent::setUp();
 
-        $this->unit = Unit::create([
-            'unit_code' => 'PCS',
-            'unit_name' => 'Pieces',
-            'is_active' => true,
-        ]);
+        $this->unit = Unit::firstOrCreate(
+            ['unit_code' => 'PCS'],
+            [
+                'unit_name' => 'Pieces',
+                'is_active' => true,
+            ]
+        );
 
         $product = Product::create([
             'product_code' => 'PROD-X',
@@ -165,14 +167,21 @@ class PriceListTest extends ApiTestCase
     {
         $this->actingAsUser('kasir');
 
-        // 1. Create Default Retail Price List (Price: 5000)
-        $defaultList = PriceList::create([
-            'price_list_code' => 'DEF-RET',
-            'price_list_name' => 'Default Retail',
-            'price_list_type' => 'RETAIL',
-            'is_default' => true,
-            'is_active' => true,
-        ]);
+        // 1. Fetch or Create Default Retail Price List (Price: 5000)
+        $defaultList = PriceList::where('is_default', true)
+            ->where('price_list_type', \App\Enums\PriceListType::RETAIL->value)
+            ->active()
+            ->first();
+
+        if (! $defaultList) {
+            $defaultList = PriceList::create([
+                'price_list_code' => 'DEF-RET',
+                'price_list_name' => 'Default Retail',
+                'price_list_type' => 'RETAIL',
+                'is_default' => true,
+                'is_active' => true,
+            ]);
+        }
 
         PriceListItem::create([
             'price_list_id' => $defaultList->id,
