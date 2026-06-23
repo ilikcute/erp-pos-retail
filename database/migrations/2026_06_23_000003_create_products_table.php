@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -33,10 +34,11 @@ return new class extends Migration
             $table->foreign('brand_id')->references('id')->on('product_brands')->onDelete('set null');
             $table->foreign('category_id')->references('id')->on('product_categories')->onDelete('set null');
             $table->foreign('base_unit_id')->references('id')->on('units');
-            
+
             $table->index('is_active');
             $table->index('is_sellable');
             $table->index('is_purchasable');
+            $table->index('product_name');
         });
     }
 

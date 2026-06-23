@@ -25,9 +25,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // ── Auth ──────────────────────────────────────────────────────
+        $this->app->bind(UserAuthRepositoryInterface::class, EloquentUserAuthRepository::class);
+
+        // ── System ────────────────────────────────────────────────────
+        $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
+
+        // ── MasterData ────────────────────────────────────────────────
+        $this->app->bind(SupplierRepositoryInterface::class, EloquentSupplierRepository::class);
+
         // ── Support (Singletons) ──────────────────────────────────────
         $this->app->singleton(AuditService::class);
         $this->app->singleton(DocumentNumberService::class);
+
+        // ── Pricing (Singletons) ──────────────────────────────────────
+        // PriceResolverService dipakai di POS setiap transaksi — singleton agar tidak re-instantiate
+        $this->app->singleton(\App\Services\Pricing\PriceResolverService::class);
     }
 
     /**

@@ -13,9 +13,19 @@ use App\Http\Controllers\Api\MasterData\CustomerCategoryController;
 use App\Http\Controllers\Api\MasterData\UnitController;
 use App\Http\Controllers\Api\MasterData\TaxController;
 
+
+// Phase 2 — Product & Pricing
+use App\Http\Controllers\Api\Product\ProductBrandController;
+use App\Http\Controllers\Api\Product\ProductCategoryController;
+use App\Http\Controllers\Api\Product\ProductController;
+use App\Http\Controllers\Api\Pricing\PriceListController;
+use App\Http\Controllers\Api\Pricing\PriceChangeRequestController;
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes — Phase 1: Auth, System, MasterData
+|           — Phase 2: Product & Pricing
 |--------------------------------------------------------------------------
 |
 | Prefix  : /api/v1

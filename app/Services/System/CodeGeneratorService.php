@@ -6,11 +6,6 @@ use Illuminate\Support\Facades\DB;
 
 class CodeGeneratorService
 {
-    /**
-     * Generate code otomatis dengan format Prefix + Padding
-     * Contoh: U00001, R00002
-     * Menggunakan lockForUpdate untuk mencegah race condition (double code)
-     */
     public function generate(string $table, string $column, string $prefix, int $padding = 5): string
     {
         return DB::transaction(function () use ($table, $column, $prefix, $padding) {

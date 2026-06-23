@@ -9,6 +9,9 @@ use Database\Seeders\System\SystemSettingSeeder;
 use Database\Seeders\System\DocumentTypeSeeder;
 use Database\Seeders\MasterData\TaxSeeder;
 use Database\Seeders\MasterData\UnitSeeder;
+use Database\Seeders\Product\ProductPermissionSeeder;
+use Database\Seeders\Product\DefaultPriceListSeeder;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -32,6 +35,9 @@ class DatabaseSeeder extends Seeder
             // MasterData
             TaxSeeder::class,
             UnitSeeder::class,
+            // Product & Pricing (Phase 2)
+            ProductPermissionSeeder::class,
+            DefaultPriceListSeeder::class,
         ]);
 
         $this->command->info('');
