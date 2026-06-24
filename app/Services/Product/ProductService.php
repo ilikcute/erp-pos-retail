@@ -41,9 +41,10 @@ class ProductService
     {
         $variantData  = $data['default_variant'] ?? [];
         $attributeData = $data['attributes'] ?? [];
-        unset($data['default_variant'], $data['attributes']);
+        $variantsInput = $data['variants'] ?? [];
+        unset($data['default_variant'], $data['attributes'], $data['variants']);
 
-        return DB::transaction(function () use ($data, $variantData, $attributeData) {
+        return DB::transaction(function () use ($data, $variantData, $attributeData, $variantsInput) {
             $product = $this->productRepository->create($data);
 
             // Buat default variant untuk produk SIMPLE
@@ -66,6 +67,67 @@ class ProductService
                         'created_by'   => $data['created_by'] ?? auth()->id(),
                         'updated_by'   => $data['updated_by'] ?? auth()->id(),
                     ]);
+                }
+            } else {
+                // Tipe VARIANT: Buat attributes, values, dan variants
+                $attributeMap = [];
+                $valueMap = [];
+
+                // 1. Simpan Product Attributes dan Values
+                foreach ($attributeData as $index => $attr) {
+                    $attribute = $product->attributes()->create([
+                        'attribute_name' => $attr['attribute_name'],
+                        'sort_order'     => $index,
+                        'created_by'     => auth()->id(),
+                        'updated_by'     => auth()->id(),
+                    ]);
+
+                    $attributeMap[$attr['attribute_name']] = $attribute->id;
+
+                    foreach ($attr['values'] as $valIndex => $valString) {
+                        $value = $attribute->values()->create([
+                            'value'      => $valString,
+                            'sort_order' => $valIndex,
+                        ]);
+                        $valueMap[$attr['attribute_name']][$valString] = $value->id;
+                    }
+                }
+
+                // 2. Simpan Variants
+                foreach ($variantsInput as $vInput) {
+                    $barcodeData = $vInput['barcode'] ?? null;
+                    $attrValues = $vInput['attribute_values'] ?? [];
+                    unset($vInput['barcode'], $vInput['attribute_values']);
+
+                    $variant = $product->variants()->create(array_merge($vInput, [
+                        'is_default' => false,
+                        'is_active'  => $vInput['is_active'] ?? true,
+                        'created_by' => auth()->id(),
+                        'updated_by' => auth()->id(),
+                    ]));
+
+                    if ($barcodeData) {
+                        $variant->barcodes()->create([
+                            'barcode'      => $barcodeData,
+                            'barcode_type' => $vInput['barcode_type'] ?? 'EAN13',
+                            'is_primary'   => true,
+                            'created_by'   => auth()->id(),
+                            'updated_by'   => auth()->id(),
+                        ]);
+                    }
+
+                    // Hubungkan dengan attribute values
+                    foreach ($attrValues as $av) {
+                        $attrName = $av['attribute_name'] ?? null;
+                        $valString = $av['value'] ?? null;
+
+                        if ($attrName && $valString && isset($valueMap[$attrName][$valString])) {
+                            $variant->variantAttributes()->create([
+                                'attribute_id'       => $attributeMap[$attrName],
+                                'attribute_value_id' => $valueMap[$attrName][$valString],
+                            ]);
+                        }
+                    }
                 }
             }
 
@@ -154,5 +216,44 @@ class ProductService
 
             return $variant->load('barcodes', 'variantAttributes');
         });
+    }
+
+    public function updateVariant(ProductVariant $variant, array $data): ProductVariant
+    {
+        return DB::transaction(function () use ($variant, $data) {
+            $barcodeData = $data['barcode'] ?? null;
+            unset($data['barcode']);
+
+            $variant = $this->productVariantRepository->update($variant, $data);
+
+            if ($barcodeData !== null) {
+                $variant->barcodes()->updateOrCreate(
+                    ['is_primary' => true],
+                    [
+                        'barcode' => $barcodeData,
+                        'barcode_type' => $data['barcode_type'] ?? 'EAN13',
+                        'updated_by' => auth()->id(),
+                        'created_by' => auth()->id(),
+                    ]
+                );
+            }
+
+            $this->auditService->log('Product', 'UPDATE_VARIANT', 'product_variants', $variant->id);
+
+            return $variant->load('barcodes', 'variantAttributes');
+        });
+    }
+
+    public function deleteVariant(ProductVariant $variant): void
+    {
+        abort_if(
+            $variant->priceListItems()->exists(),
+            422,
+            'Varian ini masih memiliki harga aktif di price list.'
+        );
+
+        $this->auditService->log('Product', 'DELETE_VARIANT', 'product_variants', $variant->id);
+
+        $this->productVariantRepository->delete($variant);
     }
 }

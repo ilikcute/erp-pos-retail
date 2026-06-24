@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductCategory extends Model
 {
-    use HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'category_code',
@@ -38,6 +39,16 @@ class ProductCategory extends Model
             ->orderBy('sort_order');
     }
 
+    public function childrenRecursive(): HasMany
+    {
+        return $this->children()->with('childrenRecursive');
+    }
+
+    public function allDescendants(): HasMany
+    {
+        return $this->children()->with('allDescendants');
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_id');
@@ -46,6 +57,21 @@ class ProductCategory extends Model
     public function isRoot(): bool
     {
         return is_null($this->parent_id);
+    }
+
+    protected $appends = [
+        'code',
+        'name',
+    ];
+
+    public function getCodeAttribute(): string
+    {
+        return $this->category_code ?? '';
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->category_name ?? '';
     }
 
     public function scopeActive($query)

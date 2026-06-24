@@ -19,3 +19,4 @@ Route::prefix('system')->group(function () {
     Route::put('/users/{id}', [UserController::class, 'update'])->middleware('permission:system.user.manage');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->middleware('permission:system.user.manage');
 });
+

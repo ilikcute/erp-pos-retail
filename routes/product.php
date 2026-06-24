@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Product\ProductController;
+use App\Http\Controllers\Api\Product\ProductBrandController;
+use App\Http\Controllers\Api\Product\ProductCategoryController;
 
 Route::prefix('product')->group(function () {
 

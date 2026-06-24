@@ -63,4 +63,16 @@ class EloquentProductRepository implements ProductRepositoryInterface
     {
         $product->delete();
     }
+
+    public function getAll(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Product::all();
+    }
+
+    public function findByBarcode(string $barcode): ?Product
+    {
+        return Product::whereHas('variants.barcodes', function ($query) use ($barcode) {
+            $query->where('barcode', $barcode);
+        })->first();
+    }
 }

@@ -18,6 +18,7 @@ const columns = [
     { key: "name", label: "Name" },
     { key: "description", label: "Description" },
     { key: "is_active", label: "Status" },
+    { key: "actions", label: "Actions" },
 ];
 
 // Modal State

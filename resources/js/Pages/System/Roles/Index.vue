@@ -3,6 +3,10 @@ import { ref, computed } from "vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
 import DashboardLayout from "@/Layouts/DashboardLayout.vue";
 import BaseModal from "@/Components/Modal/BaseModal.vue";
+import BaseButton from "@/Components/Base/BaseButton.vue";
+import FormInput from "@/Components/Form/FormInput.vue";
+import FormTextarea from "@/Components/Form/FormTextarea.vue";
+import DataTable from "@/Components/Table/DataTable.vue";
 import { Head } from "@inertiajs/vue3";
 
 const props = defineProps({
@@ -19,6 +23,15 @@ const props = defineProps({
 const page = usePage();
 // Cek permission user (sesuaikan dengan struktur data user Anda)
 const canManage = true; // Untuk sementara kita set true agar tombol muncul
+
+const columns = [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" },
+    { key: "is_active", label: "Status" },
+    { key: "permissions", label: "Permissions" },
+    { key: "actions", label: "Actions" },
+];
 
 // Modal State
 const showModal = ref(false);
@@ -137,9 +150,8 @@ const permissionsByModule = computed(() => {
                 </p>
             </div>
 
-            <button
+            <BaseButton
                 @click="openCreateModal"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
                 <svg
                     class="w-5 h-5 mr-2"
@@ -155,117 +167,51 @@ const permissionsByModule = computed(() => {
                     />
                 </svg>
                 Create Role
-            </button>
+            </BaseButton>
         </div>
 
         <!-- Data Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            ID
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Name
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Code
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Status
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Permissions
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr
-                        v-for="role in roles"
-                        :key="role.id"
-                        class="hover:bg-gray-50"
-                    >
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        >
-                            {{ role.id }}
-                        </td>
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                        >
-                            {{ role.name }}
-                        </td>
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        >
-                            <span
-                                class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-mono"
-                                >{{ role.code }}</span
-                            >
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                                :class="
-                                    role.is_active
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-red-100 text-red-800'
-                                "
-                                class="px-2 py-1 rounded-full text-xs font-semibold"
-                            >
-                                {{ role.is_active ? "Active" : "Inactive" }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
-                            <span class="font-semibold text-blue-600">{{
-                                role.permissions?.length || 0
-                            }}</span>
-                            Permissions
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                                @click="openEditModal(role)"
-                                class="text-blue-600 hover:text-blue-800 mr-3 font-medium"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                v-if="!role.is_system"
-                                @click="deleteRole(role)"
-                                class="text-red-600 hover:text-red-800 font-medium"
-                            >
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-
-                    <!-- Empty State -->
-                    <tr v-if="roles.length === 0">
-                        <td
-                            colspan="6"
-                            class="px-6 py-12 text-center text-gray-500"
-                        >
-                            <p class="text-lg">Belum ada data role.</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <DataTable :columns="columns" :rows="roles">
+            <template #cell-code="{ value }">
+                <span
+                    class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-mono"
+                    >{{ value }}</span
+                >
+            </template>
+            <template #cell-is_active="{ value }">
+                <span
+                    :class="
+                        value
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                    "
+                    class="px-2 py-1 rounded-full text-xs font-semibold"
+                >
+                    {{ value ? "Active" : "Inactive" }}
+                </span>
+            </template>
+            <template #cell-permissions="{ row }">
+                <span class="font-semibold text-blue-600">{{
+                    row.permissions?.length || 0
+                }}</span>
+                Permissions
+            </template>
+            <template #cell-actions="{ row }">
+                <button
+                    @click="openEditModal(row)"
+                    class="text-blue-600 hover:text-blue-800 mr-3 font-medium cursor-pointer"
+                >
+                    Edit
+                </button>
+                <button
+                    v-if="!row.is_system"
+                    @click="deleteRole(row)"
+                    class="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                >
+                    Delete
+                </button>
+            </template>
+        </DataTable>
 
         <!-- Modal Form Create/Edit -->
         <BaseModal
@@ -277,39 +223,22 @@ const permissionsByModule = computed(() => {
             <form @submit.prevent="submit">
                 <div class="space-y-4">
                     <!-- Name -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Name *</label
-                        >
-                        <input
-                            v-model="form.name"
-                            type="text"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :class="{ 'border-red-500': form.errors.name }"
-                            placeholder="e.g. Manager Toko"
-                        />
-                        <p
-                            v-if="form.errors.name"
-                            class="mt-1 text-sm text-red-600"
-                        >
-                            {{ form.errors.name }}
-                        </p>
-                    </div>
+                    <FormInput
+                        v-model="form.name"
+                        label="Name"
+                        :error="form.errors.name"
+                        required
+                        placeholder="e.g. Manager Toko"
+                    />
 
                     <!-- Description -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Description</label
-                        >
-                        <textarea
-                            v-model="form.description"
-                            rows="2"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Deskripsi role..."
-                        ></textarea>
-                    </div>
+                    <FormTextarea
+                        v-model="form.description"
+                        label="Description"
+                        :error="form.errors.description"
+                        :rows="2"
+                        placeholder="Deskripsi role..."
+                    />
 
                     <!-- Is Active -->
                     <div class="flex items-center">
@@ -383,47 +312,18 @@ const permissionsByModule = computed(() => {
 
                 <!-- Footer Buttons -->
                 <div class="mt-6 flex justify-end space-x-3">
-                    <button
-                        type="button"
+                    <BaseButton
+                        variant="secondary"
                         @click="closeModal"
-                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </BaseButton>
+                    <BaseButton
                         type="submit"
-                        :disabled="form.processing"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                        :loading="form.processing"
                     >
-                        <svg
-                            v-if="form.processing"
-                            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                            ></circle>
-                            <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                        </svg>
-                        {{
-                            form.processing
-                                ? "Saving..."
-                                : editingRole
-                                  ? "Update Role"
-                                  : "Create Role"
-                        }}
-                    </button>
+                        {{ editingRole ? "Update Role" : "Create Role" }}
+                    </BaseButton>
                 </div>
             </form>
         </BaseModal>

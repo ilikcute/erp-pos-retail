@@ -103,5 +103,11 @@ Route::prefix('v1')->group(function () {
         // ── Phase 2: Product & Pricing ───────────────────────────────
         require __DIR__.'/product.php';
         require __DIR__.'/pricing.php';
+
+        // ── Phase 3: POS ────────────────────────────────────────────
+        require __DIR__.'/pos.php';
+
+        // ── Reporting ───────────────────────────────────────────────
+        require __DIR__.'/reporting.php';
     }); // end auth:sanctum
 }); // end v1

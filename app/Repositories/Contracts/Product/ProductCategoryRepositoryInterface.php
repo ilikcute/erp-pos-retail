@@ -19,4 +19,8 @@ interface ProductCategoryRepositoryInterface
     public function delete(ProductCategory $category): void;
 
     public function listActive(): Collection;
+
+    public function getTree(): Collection;
+
+    public function getFlatList(): Collection;
 }

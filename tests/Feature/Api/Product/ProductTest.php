@@ -90,6 +90,83 @@ class ProductTest extends ApiTestCase
         ]);
     }
 
+    public function test_user_can_create_variant_product_with_attributes()
+    {
+        $this->actingAsUser('admin', ['product.product.create']);
+
+        $response = $this->postJson('/api/v1/product/products', [
+            'product_code' => 'PROD-V',
+            'product_name' => 'Product Variant Test',
+            'product_type' => 'VARIANT',
+            'base_unit_id' => $this->unit->id,
+            'is_active' => true,
+            'is_sellable' => true,
+            'is_purchasable' => true,
+            'track_stock' => true,
+            'attributes' => [
+                [
+                    'attribute_name' => 'Warna',
+                    'values' => ['Merah', 'Biru'],
+                ]
+            ],
+            'variants' => [
+                [
+                    'sku' => 'SKU-PROD-V-MERAH',
+                    'variant_name' => 'Product Variant Test - Merah',
+                    'barcode' => '1234567890123',
+                    'barcode_type' => 'EAN13',
+                    'weight' => 0.2,
+                    'purchase_price' => 20000,
+                    'attribute_values' => [
+                        [
+                            'attribute_name' => 'Warna',
+                            'value' => 'Merah'
+                        ]
+                    ]
+                ],
+                [
+                    'sku' => 'SKU-PROD-V-BIRU',
+                    'variant_name' => 'Product Variant Test - Biru',
+                    'barcode' => '1234567890124',
+                    'barcode_type' => 'EAN13',
+                    'weight' => 0.2,
+                    'purchase_price' => 20000,
+                    'attribute_values' => [
+                        [
+                            'attribute_name' => 'Warna',
+                            'value' => 'Biru'
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $response->assertStatus(201);
+        
+        $this->assertDatabaseHas('products', [
+            'product_code' => 'PROD-V',
+            'product_type' => 'VARIANT'
+        ]);
+
+        $this->assertDatabaseHas('product_attributes', [
+            'attribute_name' => 'Warna'
+        ]);
+
+        $this->assertDatabaseHas('product_attribute_values', [
+            'value' => 'Merah'
+        ]);
+
+        $this->assertDatabaseHas('product_variants', [
+            'sku' => 'SKU-PROD-V-MERAH',
+            'variant_name' => 'Product Variant Test - Merah'
+        ]);
+
+        $this->assertDatabaseHas('product_variants', [
+            'sku' => 'SKU-PROD-V-BIRU',
+            'variant_name' => 'Product Variant Test - Biru'
+        ]);
+    }
+
     public function test_user_can_update_product()
     {
         $this->actingAsUser('admin', ['product.product.update']);

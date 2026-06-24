@@ -2,7 +2,7 @@
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
+import BaseButton from '@/Components/Base/BaseButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
@@ -35,10 +35,14 @@ const submit = () => {
     <GuestLayout>
         <Head title="Reset Password" />
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-ink-primary">Atur Ulang Password</h2>
+            <p class="text-sm text-ink-secondary mt-1">Masukkan email dan password baru Anda</p>
+        </div>
 
+        <form @submit.prevent="submit" class="space-y-base">
+            <div>
+                <InputLabel for="email" value="Email Address" />
                 <TextInput
                     id="email"
                     type="email"
@@ -47,14 +51,13 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="nama@perusahaan.com"
                 />
-
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
+            <div>
+                <InputLabel for="password" value="New Password" />
                 <TextInput
                     id="password"
                     type="password"
@@ -62,17 +65,13 @@ const submit = () => {
                     v-model="form.password"
                     required
                     autocomplete="new-password"
+                    placeholder="Minimal 8 karakter"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
-
+            <div>
+                <InputLabel for="password_confirmation" value="Confirm New Password" />
                 <TextInput
                     id="password_confirmation"
                     type="password"
@@ -80,21 +79,20 @@ const submit = () => {
                     v-model="form.password_confirmation"
                     required
                     autocomplete="new-password"
+                    placeholder="Ulangi password baru"
                 />
-
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
+                <InputError class="mt-2" :message="form.errors.password_confirmation" />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
+            <div class="pt-md">
+                <BaseButton
+                    variant="primary"
+                    :loading="form.processing"
                     :disabled="form.processing"
+                    class="w-full justify-center py-md text-sm font-bold shadow-soft"
                 >
                     Reset Password
-                </PrimaryButton>
+                </BaseButton>
             </div>
         </form>
     </GuestLayout>

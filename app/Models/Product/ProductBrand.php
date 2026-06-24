@@ -24,6 +24,21 @@ class ProductBrand extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = [
+        'code',
+        'name',
+    ];
+
+    public function getCodeAttribute(): string
+    {
+        return $this->brand_code;
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->brand_name;
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'brand_id');

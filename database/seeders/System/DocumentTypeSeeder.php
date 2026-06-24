@@ -11,13 +11,17 @@ class DocumentTypeSeeder extends Seeder
     {
         $types = [
             // POS
+            ['code' => 'SALES_SESSION',     'name' => 'Sales Session',            'prefix' => 'SS',   'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             ['code' => 'SALES_TRANSACTION', 'name' => 'Sales Transaction',        'prefix' => 'POS',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
+            ['code' => 'SALES_PAYMENT',     'name' => 'Sales Payment',            'prefix' => 'PAY',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
+            ['code' => 'SALES_HOLD',        'name' => 'Sales Hold Bill',          'prefix' => 'HLD',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             ['code' => 'SALES_RETURN',      'name' => 'Sales Return',             'prefix' => 'RTN',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             // Inventory
             ['code' => 'STOCK_ADJUSTMENT',  'name' => 'Stock Adjustment',         'prefix' => 'ADJ',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             ['code' => 'STOCK_OPNAME',      'name' => 'Stock Opname',             'prefix' => 'OPN',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             ['code' => 'STOCK_TRANSFER',    'name' => 'Stock Transfer',           'prefix' => 'TRF',  'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             // Purchasing
+            ['code' => 'PURCHASE_REQUEST',  'name' => 'Purchase Request',          'prefix' => 'PRQ',  'date_format' => 'Ym',  'padding' => 4, 'separator' => '-'],
             ['code' => 'PURCHASE_ORDER',    'name' => 'Purchase Order',           'prefix' => 'PO',   'date_format' => 'Ym',  'padding' => 4, 'separator' => '-'],
             ['code' => 'GOODS_RECEIPT',     'name' => 'Goods Receipt',            'prefix' => 'GR',   'date_format' => 'Ymd', 'padding' => 4, 'separator' => '-'],
             ['code' => 'PURCHASE_INVOICE',  'name' => 'Purchase Invoice',         'prefix' => 'PI',   'date_format' => 'Ym',  'padding' => 4, 'separator' => '-'],

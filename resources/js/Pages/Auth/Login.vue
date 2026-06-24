@@ -3,7 +3,7 @@ import Checkbox from '@/Components/Checkbox.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
+import BaseButton from '@/Components/Base/BaseButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
@@ -31,16 +31,20 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Log in" />
+        <Head title="Log In" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-ink-primary">Selamat Datang</h2>
+            <p class="text-sm text-ink-secondary mt-1">Masuk ke akun ERP POS Anda</p>
+        </div>
+
+        <div v-if="status" class="mb-4 text-sm font-semibold text-semantic-success bg-semantic-success-soft border border-semantic-success/15 p-md rounded-xl">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form @submit.prevent="submit" class="space-y-base">
             <div>
-                <InputLabel for="email" value="Email" />
-
+                <InputLabel for="email" value="Email Address" />
                 <TextInput
                     id="email"
                     type="email"
@@ -49,14 +53,13 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="nama@perusahaan.com"
                 />
-
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
+            <div>
                 <InputLabel for="password" value="Password" />
-
                 <TextInput
                     id="password"
                     type="password"
@@ -64,36 +67,45 @@ const submit = () => {
                     v-model="form.password"
                     required
                     autocomplete="current-password"
+                    placeholder="••••••••"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
+            <div class="flex items-center justify-between">
+                <label class="flex items-center cursor-pointer select-none">
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
+                    <span class="ms-2 text-sm text-ink-secondary hover:text-ink-primary transition-colors">Remember me</span>
                 </label>
-            </div>
 
-            <div class="mt-4 flex items-center justify-end">
                 <Link
                     v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    class="text-sm text-ink-secondary hover:text-brand transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand rounded-md px-1"
                 >
-                    Forgot your password?
+                    Forgot password?
                 </Link>
+            </div>
 
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
+            <div class="pt-md">
+                <BaseButton
+                    class="w-full justify-center py-md text-sm font-bold shadow-soft hover:shadow-medium"
+                    variant="primary"
+                    :loading="form.processing"
                     :disabled="form.processing"
                 >
-                    Log in
-                </PrimaryButton>
+                    Log In
+                </BaseButton>
+            </div>
+            
+            <div class="text-center pt-md border-t border-border-soft">
+                <span class="text-sm text-ink-secondary">Belum memiliki akun? </span>
+                <Link
+                    :href="route('register')"
+                    class="text-sm font-bold text-brand hover:underline focus:outline-none focus:ring-2 focus:ring-brand rounded-md px-1"
+                >
+                    Daftar Sekarang
+                </Link>
             </div>
         </form>
     </GuestLayout>

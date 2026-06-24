@@ -38,6 +38,55 @@ class RolePermissionSeeder extends Seeder
             // MasterData - Tax
             ['module' => 'master-data', 'resource' => 'tax', 'action' => 'view',   'display_name' => 'Lihat Pajak'],
             ['module' => 'master-data', 'resource' => 'tax', 'action' => 'manage', 'display_name' => 'Kelola Pajak'],
+
+            // ── Phase 2: Product & Pricing ──────────────────────────────
+            // Product - Brand
+            ['module' => 'product', 'resource' => 'brand', 'action' => 'view',   'display_name' => 'Lihat Brand'],
+            ['module' => 'product', 'resource' => 'brand', 'action' => 'create', 'display_name' => 'Tambah Brand'],
+            ['module' => 'product', 'resource' => 'brand', 'action' => 'update', 'display_name' => 'Ubah Brand'],
+            ['module' => 'product', 'resource' => 'brand', 'action' => 'delete', 'display_name' => 'Hapus Brand'],
+            // Product - Category
+            ['module' => 'product', 'resource' => 'category', 'action' => 'view',   'display_name' => 'Lihat Kategori'],
+            ['module' => 'product', 'resource' => 'category', 'action' => 'create', 'display_name' => 'Tambah Kategori'],
+            ['module' => 'product', 'resource' => 'category', 'action' => 'update', 'display_name' => 'Ubah Kategori'],
+            ['module' => 'product', 'resource' => 'category', 'action' => 'delete', 'display_name' => 'Hapus Kategori'],
+            // Product - Product
+            ['module' => 'product', 'resource' => 'product', 'action' => 'view',   'display_name' => 'Lihat Produk'],
+            ['module' => 'product', 'resource' => 'product', 'action' => 'create', 'display_name' => 'Tambah Produk'],
+            ['module' => 'product', 'resource' => 'product', 'action' => 'update', 'display_name' => 'Ubah Produk'],
+            ['module' => 'product', 'resource' => 'product', 'action' => 'delete', 'display_name' => 'Hapus Produk'],
+            // Pricing - Price List
+            ['module' => 'pricing', 'resource' => 'price-list', 'action' => 'view',   'display_name' => 'Lihat Daftar Harga'],
+            ['module' => 'pricing', 'resource' => 'price-list', 'action' => 'create', 'display_name' => 'Tambah Daftar Harga'],
+            ['module' => 'pricing', 'resource' => 'price-list', 'action' => 'update', 'display_name' => 'Ubah Daftar Harga'],
+            ['module' => 'pricing', 'resource' => 'price-list', 'action' => 'delete', 'display_name' => 'Hapus Daftar Harga'],
+            // Pricing - Price Change Request
+            ['module' => 'pricing', 'resource' => 'price-change-request', 'action' => 'view',   'display_name' => 'Lihat Request Harga'],
+            ['module' => 'pricing', 'resource' => 'price-change-request', 'action' => 'create', 'display_name' => 'Buat Request Harga'],
+            ['module' => 'pricing', 'resource' => 'price-change-request', 'action' => 'approve', 'display_name' => 'Approve Request Harga'],
+
+            // ── Phase 3: POS ───────────────────────────────────────────
+            // POS - Shift
+            ['module' => 'pos', 'resource' => 'shift', 'action' => 'view',   'display_name' => 'Lihat Shift'],
+            ['module' => 'pos', 'resource' => 'shift', 'action' => 'create', 'display_name' => 'Tambah Shift'],
+            ['module' => 'pos', 'resource' => 'shift', 'action' => 'update', 'display_name' => 'Ubah Shift'],
+            ['module' => 'pos', 'resource' => 'shift', 'action' => 'delete', 'display_name' => 'Hapus Shift'],
+            // POS - Session
+            ['module' => 'pos', 'resource' => 'session', 'action' => 'view',   'display_name' => 'Lihat Sesi Kasir'],
+            ['module' => 'pos', 'resource' => 'session', 'action' => 'open',   'display_name' => 'Buka Sesi Kasir'],
+            ['module' => 'pos', 'resource' => 'session', 'action' => 'close',  'display_name' => 'Tutup Sesi Kasir'],
+            // POS - Transaction
+            ['module' => 'pos', 'resource' => 'transaction', 'action' => 'view',   'display_name' => 'Lihat Transaksi'],
+            ['module' => 'pos', 'resource' => 'transaction', 'action' => 'create', 'display_name' => 'Buat Transaksi'],
+            ['module' => 'pos', 'resource' => 'transaction', 'action' => 'void',   'display_name' => 'Void Transaksi'],
+            // POS - Hold Bill
+            ['module' => 'pos', 'resource' => 'hold', 'action' => 'view',   'display_name' => 'Lihat Hold Bill'],
+            ['module' => 'pos', 'resource' => 'hold', 'action' => 'create', 'display_name' => 'Buat Hold Bill'],
+            ['module' => 'pos', 'resource' => 'hold', 'action' => 'resume', 'display_name' => 'Resume Hold Bill'],
+            ['module' => 'pos', 'resource' => 'hold', 'action' => 'cancel', 'display_name' => 'Cancel Hold Bill'],
+            // POS - Return
+            ['module' => 'pos', 'resource' => 'return', 'action' => 'view',   'display_name' => 'Lihat Retur'],
+            ['module' => 'pos', 'resource' => 'return', 'action' => 'create', 'display_name' => 'Buat Retur'],
         ];
 
         foreach ($permissions as &$p) {

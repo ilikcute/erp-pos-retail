@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts\Product;
 
 use App\Models\Product\Product;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface ProductRepositoryInterface
@@ -16,4 +17,6 @@ interface ProductRepositoryInterface
     public function update(Product $product, array $data): Product;
 
     public function delete(Product $product): void;
+    public function getAll(): Collection;
+    public function findByBarcode(string $barcode): ?Product;
 }

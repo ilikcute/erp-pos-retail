@@ -47,6 +47,20 @@ use App\Repositories\Eloquent\Pricing\EloquentPriceChangeRequestRepository;
 use App\Repositories\Contracts\Pricing\PriceHistoryRepositoryInterface;
 use App\Repositories\Eloquent\Pricing\EloquentPriceHistoryRepository;
 
+// ── Inventory ─────────────────────────────────────────────────
+use App\Repositories\Contracts\Inventory\InventoryLedgerRepositoryInterface;
+use App\Repositories\Eloquent\Inventory\EloquentInventoryLedgerRepository;
+
+// ── POS ───────────────────────────────────────────────────────
+use App\Repositories\Contracts\POS\ShiftRepositoryInterface;
+use App\Repositories\Eloquent\POS\EloquentShiftRepository;
+use App\Repositories\Contracts\POS\SalesSessionRepositoryInterface;
+use App\Repositories\Eloquent\POS\EloquentSalesSessionRepository;
+use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
+use App\Repositories\Eloquent\POS\EloquentSalesTransactionRepository;
+use App\Repositories\Contracts\POS\SalesHoldRepositoryInterface;
+use App\Repositories\Eloquent\POS\EloquentSalesHoldRepository;
+
 class RepositoryServiceProvider extends ServiceProvider
 {
     protected array $repositories = [
@@ -74,6 +88,15 @@ class RepositoryServiceProvider extends ServiceProvider
         PriceListItemRepositoryInterface::class => EloquentPriceListItemRepository::class,
         PriceChangeRequestRepositoryInterface::class => EloquentPriceChangeRequestRepository::class,
         PriceHistoryRepositoryInterface::class => EloquentPriceHistoryRepository::class,
+
+        // Inventory
+        InventoryLedgerRepositoryInterface::class => EloquentInventoryLedgerRepository::class,
+
+        // POS
+        ShiftRepositoryInterface::class => EloquentShiftRepository::class,
+        SalesSessionRepositoryInterface::class => EloquentSalesSessionRepository::class,
+        SalesTransactionRepositoryInterface::class => EloquentSalesTransactionRepository::class,
+        SalesHoldRepositoryInterface::class => EloquentSalesHoldRepository::class,
     ];
 
     public function register(): void

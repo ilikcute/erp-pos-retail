@@ -49,4 +49,23 @@ class EloquentProductCategoryRepository implements ProductCategoryRepositoryInte
     {
         return ProductCategory::active()->orderBy('sort_order')->get();
     }
+    public function getTree(): Collection
+    {
+        // Ambil semua kategori dengan children-nya (recursive via with)
+        return ProductCategory::query()
+            ->whereNull('parent_id')
+            ->with('childrenRecursive')
+            ->orderBy('sort_order')
+            ->orderBy('category_name')
+            ->get();
+    }
+
+    public function getFlatList(): Collection
+    {
+        // Flat list untuk dropdown (dengan breadcrumb nama)
+        return ProductCategory::query()
+            ->orderBy('sort_order')
+            ->orderBy('category_name')
+            ->get();
+    }
 }

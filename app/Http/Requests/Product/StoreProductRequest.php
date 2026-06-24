@@ -29,12 +29,32 @@ class StoreProductRequest extends FormRequest
             'min_stock'       => ['nullable', 'numeric', 'min:0'],
             'max_stock'       => ['nullable', 'numeric', 'min:0'],
             'reorder_point'   => ['nullable', 'numeric', 'min:0'],
+            
             // Default variant (untuk SIMPLE)
+            'default_variant'              => ['required_if:product_type,SIMPLE', 'array'],
             'default_variant.sku'          => ['nullable', 'string', 'max:100', 'unique:product_variants,sku'],
             'default_variant.barcode'      => ['nullable', 'string', 'max:100', 'unique:product_barcodes,barcode'],
             'default_variant.barcode_type' => ['nullable', 'in:EAN13,EAN8,QR,CODE128,CUSTOM'],
             'default_variant.weight'       => ['nullable', 'numeric', 'min:0'],
             'default_variant.purchase_price' => ['nullable', 'numeric', 'min:0'],
+
+            // Attributes (untuk VARIANT)
+            'attributes'                     => ['required_if:product_type,VARIANT', 'array'],
+            'attributes.*.attribute_name'    => ['required', 'string', 'max:100'],
+            'attributes.*.values'            => ['required', 'array', 'min:1'],
+            'attributes.*.values.*'          => ['required', 'string', 'max:100'],
+
+            // Variants (untuk VARIANT)
+            'variants'                       => ['required_if:product_type,VARIANT', 'array', 'min:1'],
+            'variants.*.sku'                 => ['required', 'string', 'max:100', 'unique:product_variants,sku'],
+            'variants.*.variant_name'        => ['required', 'string', 'max:200'],
+            'variants.*.barcode'             => ['nullable', 'string', 'max:100', 'unique:product_barcodes,barcode'],
+            'variants.*.barcode_type'        => ['nullable', 'in:EAN13,EAN8,QR,CODE128,CUSTOM'],
+            'variants.*.weight'              => ['nullable', 'numeric', 'min:0'],
+            'variants.*.purchase_price'      => ['nullable', 'numeric', 'min:0'],
+            'variants.*.attribute_values'    => ['required', 'array'],
+            'variants.*.attribute_values.*.attribute_name' => ['required', 'string'],
+            'variants.*.attribute_values.*.value'          => ['required', 'string'],
         ];
     }
 }

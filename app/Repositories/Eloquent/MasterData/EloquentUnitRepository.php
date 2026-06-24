@@ -45,4 +45,14 @@ class EloquentUnitRepository implements UnitRepositoryInterface
     {
         $unit->delete();
     }
+
+    public function listAll(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Unit::query()->orderBy('unit_name')->get();
+    }
+
+    public function listActive(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Unit::query()->where('is_active', true)->orderBy('unit_name')->get();
+    }
 }

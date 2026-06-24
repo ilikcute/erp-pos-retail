@@ -2,7 +2,11 @@
 import { ref, computed } from "vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
 import DashboardLayout from "@/Layouts/DashboardLayout.vue";
-import BaseModal from "@/Components/Modal/BaseModal.vue";
+import BaseModal from "@/Components/Modal/BaseModal.vue";   
+import BaseButton from "@/Components/Base/BaseButton.vue";
+import FormInput from "@/Components/Form/FormInput.vue";
+import FormTextarea from "@/Components/Form/FormTextarea.vue";
+import DataTable from "@/Components/Table/DataTable.vue";
 import { Head } from "@inertiajs/vue3";
 
 const props = defineProps({
@@ -18,6 +22,15 @@ const props = defineProps({
 
 const page = usePage();
 const canManage = true; // Untuk sementara kita set true
+
+const columns = [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    { key: "roles", label: "Roles" },
+    { key: "is_active", label: "Status" },
+    { key: "actions", label: "Actions" },
+];
 
 // Modal State
 const showModal = ref(false);
@@ -113,10 +126,9 @@ function toggleRole(roleId) {
                 </p>
             </div>
 
-            <button
+            <BaseButton
                 v-if="canManage"
                 @click="openCreateModal"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
                 <svg
                     class="w-5 h-5 mr-2"
@@ -132,130 +144,57 @@ function toggleRole(roleId) {
                     />
                 </svg>
                 Create User
-            </button>
+            </BaseButton>
         </div>
 
         <!-- Data Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            ID
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Name
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Email
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Roles
-                        </th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Status
-                        </th>
-                        <th
-                            v-if="canManage"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr
-                        v-for="user in users"
-                        :key="user.id"
-                        class="hover:bg-gray-50"
+        <DataTable :columns="columns" :rows="users">
+            <template #cell-roles="{ row }">
+                <div class="flex flex-wrap gap-1">
+                    <span
+                        v-for="role in row.roles"
+                        :key="role.id"
+                        class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
                     >
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        >
-                            {{ user.id }}
-                        </td>
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                        >
-                            {{ user.name }}
-                        </td>
-                        <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        >
-                            {{ user.email }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
-                            <div class="flex flex-wrap gap-1">
-                                <span
-                                    v-for="role in user.roles"
-                                    :key="role.id"
-                                    class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-                                >
-                                    {{ role.name }}
-                                </span>
-                                <span
-                                    v-if="
-                                        !user.roles || user.roles.length === 0
-                                    "
-                                    class="text-gray-400"
-                                >
-                                    No roles
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                                :class="
-                                    user.is_active
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-red-100 text-red-800'
-                                "
-                                class="px-2 py-1 rounded-full text-xs font-semibold"
-                            >
-                                {{ user.is_active ? "Active" : "Inactive" }}
-                            </span>
-                        </td>
-                        <td
-                            v-if="canManage"
-                            class="px-6 py-4 whitespace-nowrap text-sm"
-                        >
-                            <button
-                                @click="openEditModal(user)"
-                                class="text-blue-600 hover:text-blue-800 mr-3 font-medium"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                @click="deleteUser(user)"
-                                class="text-red-600 hover:text-red-800 font-medium"
-                            >
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-
-                    <!-- Empty State -->
-                    <tr v-if="users.length === 0">
-                        <td
-                            :colspan="canManage ? 6 : 5"
-                            class="px-6 py-12 text-center text-gray-500"
-                        >
-                            <p class="text-lg">Belum ada data user.</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                        {{ role.name }}
+                    </span>
+                    <span
+                        v-if="!row.roles || row.roles.length === 0"
+                        class="text-gray-400"
+                    >
+                        No roles
+                    </span>
+                </div>
+            </template>
+            <template #cell-is_active="{ value }">
+                <span
+                    :class="
+                        value
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                    "
+                    class="px-2 py-1 rounded-full text-xs font-semibold"
+                >
+                    {{ value ? "Active" : "Inactive" }}
+                </span>
+            </template>
+            <template #cell-actions="{ row }">
+                <button
+                    v-if="canManage"
+                    @click="openEditModal(row)"
+                    class="text-blue-600 hover:text-blue-800 mr-3 font-medium cursor-pointer"
+                >
+                    Edit
+                </button>
+                <button
+                    v-if="canManage"
+                    @click="deleteUser(row)"
+                    class="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                >
+                    Delete
+                </button>
+            </template>
+        </DataTable>
 
         <!-- Modal Form Create/Edit -->
         <BaseModal
@@ -267,112 +206,49 @@ function toggleRole(roleId) {
             <form @submit.prevent="submit">
                 <div class="space-y-4">
                     <!-- Name -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Name *</label
-                        >
-                        <input
-                            v-model="form.name"
-                            type="text"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :class="{ 'border-red-500': form.errors.name }"
-                            placeholder="e.g. John Doe"
-                        />
-                        <p
-                            v-if="form.errors.name"
-                            class="mt-1 text-sm text-red-600"
-                        >
-                            {{ form.errors.name }}
-                        </p>
-                    </div>
+                    <FormInput
+                        v-model="form.name"
+                        label="Name"
+                        :error="form.errors.name"
+                        required
+                        placeholder="e.g. John Doe"
+                    />
 
                     <!-- Email -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Email *</label
-                        >
-                        <input
-                            v-model="form.email"
-                            type="email"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :class="{ 'border-red-500': form.errors.email }"
-                            placeholder="e.g. john@example.com"
-                        />
-                        <p
-                            v-if="form.errors.email"
-                            class="mt-1 text-sm text-red-600"
-                        >
-                            {{ form.errors.email }}
-                        </p>
-                    </div>
+                    <FormInput
+                        v-model="form.email"
+                        label="Email"
+                        :error="form.errors.email"
+                        type="email"
+                        required
+                        placeholder="e.g. john@example.com"
+                    />
 
                     <!-- Password -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            Password
-                            {{
-                                editingUser
-                                    ? "(Leave blank to keep current)"
-                                    : "*"
-                            }}
-                        </label>
-                        <input
-                            v-model="form.password"
-                            type="password"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :class="{ 'border-red-500': form.errors.password }"
-                            :placeholder="
-                                editingUser
-                                    ? '••••••••'
-                                    : 'Minimum 8 characters'
-                            "
-                        />
-                        <p
-                            v-if="form.errors.password"
-                            class="mt-1 text-sm text-red-600"
-                        >
-                            {{ form.errors.password }}
-                        </p>
-                    </div>
+                    <FormInput
+                        v-model="form.password"
+                        :label="editingUser ? 'Password (Leave blank to keep current)' : 'Password'"
+                        :error="form.errors.password"
+                        type="password"
+                        :required="!editingUser"
+                        :placeholder="editingUser ? '••••••••' : 'Minimum 8 characters'"
+                    />
 
                     <!-- Password Confirmation -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Confirm Password</label
-                        >
-                        <input
-                            v-model="form.password_confirmation"
-                            type="password"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Repeat password"
-                        />
-                    </div>
+                    <FormInput
+                        v-model="form.password_confirmation"
+                        label="Confirm Password"
+                        type="password"
+                        placeholder="Repeat password"
+                    />
 
                     <!-- Phone -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-gray-700 mb-1"
-                            >Phone</label
-                        >
-                        <input
-                            v-model="form.phone"
-                            type="text"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :class="{ 'border-red-500': form.errors.phone }"
-                            placeholder="e.g. 081234567890"
-                        />
-                        <p
-                            v-if="form.errors.phone"
-                            class="mt-1 text-sm text-red-600"
-                        >
-                            {{ form.errors.phone }}
-                        </p>
-                    </div>
+                    <FormInput
+                        v-model="form.phone"
+                        label="Phone"
+                        :error="form.errors.phone"
+                        placeholder="e.g. 081234567890"
+                    />
 
                     <!-- Is Active -->
                     <div class="flex items-center">
@@ -433,47 +309,18 @@ function toggleRole(roleId) {
 
                 <!-- Footer Buttons -->
                 <div class="mt-6 flex justify-end space-x-3">
-                    <button
-                        type="button"
+                    <BaseButton
+                        variant="secondary"
                         @click="closeModal"
-                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </BaseButton>
+                    <BaseButton
                         type="submit"
-                        :disabled="form.processing"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                        :loading="form.processing"
                     >
-                        <svg
-                            v-if="form.processing"
-                            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                            ></circle>
-                            <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                        </svg>
-                        {{
-                            form.processing
-                                ? "Saving..."
-                                : editingUser
-                                  ? "Update User"
-                                  : "Create User"
-                        }}
-                    </button>
+                        {{ editingUser ? "Update User" : "Create User" }}
+                    </BaseButton>
                 </div>
             </form>
         </BaseModal>

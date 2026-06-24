@@ -16,4 +16,8 @@ interface UnitRepositoryInterface
     public function update(Unit $unit, array $data): Unit;
 
     public function delete(Unit $unit): void;
+
+    public function listAll(): \Illuminate\Database\Eloquent\Collection;
+
+    public function listActive(): \Illuminate\Database\Eloquent\Collection;
 }
