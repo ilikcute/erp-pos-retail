@@ -13,9 +13,43 @@ const dateFrom = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1
 const dateTo = ref(new Date().toISOString().split('T')[0]);
 
 // Report state data
-const salesReport = ref(null);
-const inventoryReport = ref(null);
-const financialReport = ref(null);
+
+// --- Data contoh (fallback bila API belum tersedia) ---
+const MOCK_SALES = {
+    total_sales: 18450000, total_transactions: 312, average_sale: 59134, total_items_sold: 874,
+    payment_summary: { Tunai: 9200000, QRIS: 5100000, Kartu: 3150000, Transfer: 1000000 },
+    transactions: [
+        { no: 1, transaction_no: 'TRX-1001', cashier: 'Kasir 01', customer: 'Umum',      grand_total: 'Rp 125.000', transaction_date: '2026-06-25 09:12' },
+        { no: 2, transaction_no: 'TRX-1002', cashier: 'Kasir 01', customer: 'Budi S.',    grand_total: 'Rp 78.000',  transaction_date: '2026-06-25 09:31' },
+        { no: 3, transaction_no: 'TRX-1003', cashier: 'Kasir 02', customer: 'Umum',      grand_total: 'Rp 240.000', transaction_date: '2026-06-25 10:05' },
+        { no: 4, transaction_no: 'TRX-1004', cashier: 'Kasir 02', customer: 'Sari D.',    grand_total: 'Rp 56.000',  transaction_date: '2026-06-25 10:48' },
+    ],
+};
+const MOCK_INVENTORY = {
+    total_items: 1245, total_value: 312500000,
+    low_stock_items: [
+        { no: 1, product: 'Kopi Susu Gula Aren', location: 'Gudang A', quantity_on_hand: 5,  reorder_level: 20, balance_value: 'Rp 110.000' },
+        { no: 2, product: 'Air Mineral 600ml',   location: 'Gudang A', quantity_on_hand: 8,  reorder_level: 50, balance_value: 'Rp 48.000' },
+        { no: 3, product: 'Donat Gula',          location: 'Gudang B', quantity_on_hand: 3,  reorder_level: 15, balance_value: 'Rp 36.000' },
+    ],
+};
+const MOCK_FINANCIAL = {
+    summary: { total_assets: 312500000, total_revenue: 184500000, net_income: 42300000 },
+    income_statement: {
+        revenue:  [{ account_code: '4-100', account_name: 'Pendapatan Penjualan', balance: 184500000 }],
+        expenses: [{ account_code: '5-100', account_name: 'Harga Pokok Penjualan', balance: 106000000 }, { account_code: '6-100', account_name: 'Beban Operasional', balance: 36200000 }],
+        total_revenue: 184500000, total_expenses: 142200000, net_income: 42300000,
+    },
+    balance_sheet: {
+        assets:      [{ account_code: '1-100', account_name: 'Kas & Bank', balance: 95000000 }, { account_code: '1-200', account_name: 'Persediaan', balance: 217500000 }],
+        liabilities: [{ account_code: '2-100', account_name: 'Hutang Usaha', balance: 78000000 }],
+        equity:      [{ account_code: '3-100', account_name: 'Modal Pemilik', balance: 234500000 }],
+        total_assets: 312500000, total_liabilities: 78000000, total_equity: 234500000,
+    },
+};
+const salesReport = ref(MOCK_SALES);
+const inventoryReport = ref(MOCK_INVENTORY);
+const financialReport = ref(MOCK_FINANCIAL);
 
 const loadingSales = ref(false);
 const loadingInventory = ref(false);
@@ -134,324 +168,98 @@ const lowStockColumns = [
 
 <template>
     <Head title="Reporting & Analytics" />
-
     <DashboardLayout>
-        <div class="mb-6 flex justify-between items-center">
+        <!-- Header banner -->
+        <div class="rounded-card bg-grape-gradient text-white p-xl mb-xl shadow-card flex items-center justify-between flex-wrap gap-base">
             <div>
-                <h1 class="text-2xl font-bold text-ink-primary">
-                    Reporting & Analytics
-                </h1>
-                <p class="text-ink-secondary">
-                    Laporan analisa penjualan, persediaan stok barang, serta laporan keuangan (GL & Balance Sheet)
-                </p>
+                <h1 class="text-page-title font-extrabold">Laporan & Analitik 📊</h1>
+                <p class="text-white/80 mt-xs text-base">Pantau penjualan, persediaan, dan keuangan toko Anda.</p>
             </div>
-        </div>
-
-        <!-- Filters Section -->
-        <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card mb-6">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-ink-secondary mb-3">Filter Jangkauan Laporan</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink-secondary mb-1.5 uppercase">Dari Tanggal</label>
-                    <input
-                        v-model="dateFrom"
-                        type="date"
-                        class="w-full px-base py-md rounded-md border border-border-strong bg-white text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent text-sm"
-                    />
+            <div class="flex items-center gap-sm flex-wrap">
+                <div class="flex items-center gap-xs bg-white/15 rounded-pill px-md py-xs backdrop-blur">
+                    <input v-model="dateFrom" type="date" class="bg-transparent text-sm text-white placeholder-white/70 border-0 focus:ring-0 outline-none" />
+                    <span class="text-white/70">—</span>
+                    <input v-model="dateTo" type="date" class="bg-transparent text-sm text-white border-0 focus:ring-0 outline-none" />
                 </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink-secondary mb-1.5 uppercase">Sampai Tanggal</label>
-                    <input
-                        v-model="dateTo"
-                        type="date"
-                        class="w-full px-base py-md rounded-md border border-border-strong bg-white text-ink-primary focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent text-sm"
-                    />
-                </div>
-                <div>
-                    <BaseButton
-                        @click="activeTab === 'sales' ? fetchSalesReport() : activeTab === 'inventory' ? fetchInventoryReport() : fetchFinancialReport()"
-                        class="w-full"
-                    >
-                        Filter Data
-                    </BaseButton>
-                </div>
-                <div>
-                    <BaseButton
-                        @click="handleExport(activeTab)"
-                        variant="secondary"
-                        class="w-full border border-border-soft bg-surface-main hover:bg-border-soft text-ink-primary"
-                    >
-                        Export Excel
-                    </BaseButton>
-                </div>
+                <button @click="handleExport(activeTab)" class="btn-pill bg-white text-accent-grape px-lg py-sm text-sm font-bold hover:opacity-95">⬇️ Export</button>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="flex space-x-4 mb-6 border-b border-border-soft">
-            <button
-                @click="activeTab = 'sales'"
-                :class="activeTab === 'sales' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
-                class="py-2 px-4 font-medium transition-colors cursor-pointer"
-            >
-                Sales Report
-            </button>
-            <button
-                @click="activeTab = 'inventory'"
-                :class="activeTab === 'inventory' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
-                class="py-2 px-4 font-medium transition-colors cursor-pointer"
-            >
-                Inventory Valuation
-            </button>
-            <button
-                @click="activeTab = 'financial'"
-                :class="activeTab === 'financial' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
-                class="py-2 px-4 font-medium transition-colors cursor-pointer"
-            >
-                Financial Report
-            </button>
+        <div class="flex gap-sm mb-xl overflow-x-auto scroll-soft pb-xs">
+            <button @click="activeTab = 'sales'; fetchSalesReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='sales' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🛒 Penjualan</button>
+            <button @click="activeTab = 'inventory'; fetchInventoryReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='inventory' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📦 Persediaan</button>
+            <button @click="activeTab = 'financial'; fetchFinancialReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='financial' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">💰 Keuangan</button>
         </div>
 
-        <!-- ═════════════════ TAB 1: SALES REPORT ═════════════════ -->
-        <div v-if="activeTab === 'sales'" class="space-y-6">
-            <!-- Loading Indicator -->
-            <div v-if="loadingSales" class="py-10 text-center text-ink-secondary">
-                Memproses Laporan Penjualan...
+        <!-- ===== SALES ===== -->
+        <template v-if="activeTab === 'sales' && salesReport">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">💰</div><p class="text-sm text-ink-secondary mt-base">Total Penjualan</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(salesReport.total_sales) }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">🧾</div><p class="text-sm text-ink-secondary mt-base">Transaksi</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ salesReport.total_transactions }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-sunset-gradient flex items-center justify-center text-2xl text-white">📈</div><p class="text-sm text-ink-secondary mt-base">Rata-rata / Transaksi</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(salesReport.average_sale) }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-grape-gradient flex items-center justify-center text-2xl text-white">📦</div><p class="text-sm text-ink-secondary mt-base">Item Terjual</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ salesReport.total_items_sold }}</p></div>
             </div>
-
-            <template v-else-if="salesReport">
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Total Omset Penjualan</p>
-                        <p class="text-2xl font-bold font-mono text-brand mt-1">{{ formatCurrency(salesReport.total_sales) }}</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Total Transaksi</p>
-                        <p class="text-2xl font-bold font-mono text-ink-primary mt-1">{{ salesReport.total_transactions }}</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Rata-rata per Struk</p>
-                        <p class="text-2xl font-bold font-mono text-ink-primary mt-1">{{ formatCurrency(salesReport.average_sale) }}</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Item Terjual</p>
-                        <p class="text-2xl font-bold font-mono text-ink-primary mt-1">{{ salesReport.total_items_sold || 0 }} pcs</p>
+            <div class="card-friendly p-lg mb-xl">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Metode Pembayaran 💳</h2>
+                <div class="flex flex-wrap gap-sm">
+                    <div v-for="(amount, method) in salesReport.payment_summary" :key="method" class="chip bg-accent-sky-soft text-accent-sky px-lg py-sm">
+                        <span class="font-semibold">{{ method }}</span><span class="ml-sm font-bold">{{ formatCurrency(amount) }}</span>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Transactions List Table -->
-                    <div class="lg:col-span-2 bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <h3 class="text-sm font-bold text-ink-primary mb-4">Rincian Nota Penjualan</h3>
-                        <DataTable :columns="txColumns" :rows="salesReport.transactions">
-                            <template #cell-transaction_no="{ value }">
-                                <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
-                            </template>
-                            <template #cell-cashier="{ row }">
-                                <span>{{ row.cashier?.name || '-' }}</span>
-                            </template>
-                            <template #cell-customer="{ row }">
-                                <span>{{ row.customer?.name || 'Walk-in Customer' }}</span>
-                            </template>
-                            <template #cell-grand_total="{ value }">
-                                <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
-                            </template>
-                            <template #cell-transaction_date="{ value }">
-                                <span>{{ formatDate(value) }}</span>
-                            </template>
-                        </DataTable>
-                    </div>
-
-                    <!-- Payment Summary Box -->
-                    <div class="lg:col-span-1 bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <h3 class="text-sm font-bold text-ink-primary mb-4">Ringkasan Metode Pembayaran</h3>
-                        <div class="divide-y divide-border-soft">
-                            <div v-for="(amount, method) in salesReport.payment_summary" :key="method" class="py-3 flex justify-between items-center">
-                                <span class="text-sm text-ink-secondary font-medium">{{ method }}</span>
-                                <span class="font-mono font-bold text-ink-primary">{{ formatCurrency(amount) }}</span>
-                            </div>
-                            <div v-if="!salesReport.payment_summary || Object.keys(salesReport.payment_summary).length === 0" class="py-4 text-center text-ink-secondary">
-                                Tidak ada data pembayaran.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </div>
-
-        <!-- ═════════════════ TAB 2: INVENTORY REPORT ═════════════════ -->
-        <div v-if="activeTab === 'inventory'" class="space-y-6">
-            <div v-if="loadingInventory" class="py-10 text-center text-ink-secondary">
-                Memuat Laporan Inventaris...
             </div>
-
-            <template v-else-if="inventoryReport">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Total Ragam Produk</p>
-                        <p class="text-2xl font-bold font-mono text-brand mt-1">{{ inventoryReport.total_items }} SKU</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Total Nilai Persediaan Stok</p>
-                        <p class="text-2xl font-bold font-mono text-brand mt-1">{{ formatCurrency(inventoryReport.total_value) }}</p>
-                    </div>
-                </div>
-
-                <!-- Low Stock Items Table -->
-                <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                    <h3 class="text-sm font-bold text-semantic-danger mb-4 flex items-center gap-xs">
-                        ⚠️ Produk Dengan Stok Kritis (Mendekati Batas Reorder)
-                    </h3>
-                    <DataTable :columns="lowStockColumns" :rows="inventoryReport.low_stock_items">
-                        <template #cell-product="{ row }">
-                            <span class="font-medium text-ink-primary">{{ row.product?.name || '-' }}</span>
-                        </template>
-                        <template #cell-location="{ row }">
-                            <span>{{ row.location?.name || '-' }}</span>
-                        </template>
-                        <template #cell-quantity_on_hand="{ value }">
-                            <span class="font-mono text-semantic-danger font-bold">{{ value }}</span>
-                        </template>
-                        <template #cell-reorder_level="{ value }">
-                            <span class="font-mono text-ink-secondary">{{ value }}</span>
-                        </template>
-                        <template #cell-balance_value="{ value }">
-                            <span class="font-mono text-ink-primary">{{ formatCurrency(value) }}</span>
-                        </template>
-                    </DataTable>
-                </div>
-            </template>
-        </div>
-
-        <!-- ═════════════════ TAB 3: FINANCIAL REPORT ═════════════════ -->
-        <div v-if="activeTab === 'financial'" class="space-y-6">
-            <div v-if="loadingFinancial" class="py-10 text-center text-ink-secondary">
-                Memuat Laporan Keuangan...
+            <div class="card-friendly p-lg">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Daftar Transaksi 🧾</h2>
+                <DataTable :columns="txColumns" :data="salesReport.transactions" :loading="loadingSales" />
             </div>
+        </template>
 
-            <template v-else-if="financialReport">
-                <!-- Summary Card -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Total Nilai Aset</p>
-                        <p class="text-2xl font-bold font-mono text-brand mt-1">{{ formatCurrency(financialReport.summary.total_assets) }}</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Pendapatan Bersih</p>
-                        <p class="text-2xl font-bold font-mono text-brand mt-1">{{ formatCurrency(financialReport.summary.total_revenue) }}</p>
-                    </div>
-                    <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card">
-                        <p class="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Laba Bersih (Net Income)</p>
-                        <p :class="financialReport.summary.net_income >= 0 ? 'text-semantic-success' : 'text-semantic-danger'" class="text-2xl font-bold font-mono mt-1">
-                            {{ formatCurrency(financialReport.summary.net_income) }}
-                        </p>
-                    </div>
+        <!-- ===== INVENTORY ===== -->
+        <template v-if="activeTab === 'inventory' && inventoryReport">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">📦</div><p class="text-sm text-ink-secondary mt-base">Total Item</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ inventoryReport.total_items }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">💎</div><p class="text-sm text-ink-secondary mt-base">Total Nilai Aset</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(inventoryReport.total_value) }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-sunset-gradient flex items-center justify-center text-2xl text-white">⚠️</div><p class="text-sm text-ink-secondary mt-base">Stok Menipis</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ inventoryReport.low_stock_items.length }}</p></div>
+            </div>
+            <div class="card-friendly p-lg">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Produk Perlu Reorder 🔻</h2>
+                <DataTable :columns="lowStockColumns" :data="inventoryReport.low_stock_items" :loading="loadingInventory" />
+            </div>
+        </template>
+
+        <!-- ===== FINANCIAL ===== -->
+        <template v-if="activeTab === 'financial' && financialReport">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">🏦</div><p class="text-sm text-ink-secondary mt-base">Total Aset</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(financialReport.summary.total_assets) }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">💵</div><p class="text-sm text-ink-secondary mt-base">Pendapatan</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(financialReport.summary.total_revenue) }}</p></div>
+                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-grape-gradient flex items-center justify-center text-2xl text-white">✨</div><p class="text-sm text-ink-secondary mt-base">Laba Bersih</p><p class="text-page-title-sm font-extrabold text-accent-mint mt-xs">{{ formatCurrency(financialReport.summary.net_income) }}</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-base">
+                <!-- Income statement -->
+                <div class="card-friendly p-lg">
+                    <h2 class="text-section-title font-bold text-ink-primary mb-base">Laporan Laba Rugi 📑</h2>
+                    <p class="text-xs font-bold text-accent-mint uppercase tracking-wide mb-sm">Pendapatan</p>
+                    <div v-for="r in financialReport.income_statement.revenue" :key="r.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ r.account_name }}</span><span class="font-medium">{{ formatCurrency(r.balance) }}</span></div>
+                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Pendapatan</span><span>{{ formatCurrency(financialReport.income_statement.total_revenue) }}</span></div>
+                    <p class="text-xs font-bold text-semantic-danger uppercase tracking-wide mb-sm mt-base">Beban</p>
+                    <div v-for="e in financialReport.income_statement.expenses" :key="e.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ e.account_name }}</span><span class="font-medium">{{ formatCurrency(e.balance) }}</span></div>
+                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Beban</span><span>{{ formatCurrency(financialReport.income_statement.total_expenses) }}</span></div>
+                    <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-accent-mint-soft px-md text-accent-mint"><span>Laba Bersih</span><span>{{ formatCurrency(financialReport.income_statement.net_income) }}</span></div>
                 </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Balance Sheet Card -->
-                    <div class="bg-surface-card rounded-card border border-border-soft p-6 shadow-card space-y-6">
-                        <div class="border-b border-border-soft pb-3">
-                            <h3 class="text-lg font-bold text-ink-primary">Neraca Keuangan (Balance Sheet)</h3>
-                            <p class="text-xs text-ink-secondary mt-0.5">Asset, Kewajiban & Ekuitas</p>
-                        </div>
-                        
-                        <div class="space-y-4 text-sm">
-                            <!-- Assets -->
-                            <div>
-                                <h4 class="font-bold text-brand text-xs uppercase tracking-wider mb-2">Aset (Assets)</h4>
-                                <div class="divide-y divide-border-soft bg-surface-main p-3 rounded-md">
-                                    <div v-for="item in financialReport.balance_sheet.assets" :key="item.account_code" class="py-2 flex justify-between font-mono">
-                                        <span class="text-ink-secondary text-xs">{{ item.account_code }} - {{ item.account_name }}</span>
-                                        <span class="font-semibold text-xs">{{ formatCurrency(item.balance) }}</span>
-                                    </div>
-                                    <div class="py-2 border-t border-border-soft flex justify-between font-bold text-ink-primary">
-                                        <span>TOTAL ASET:</span>
-                                        <span>{{ formatCurrency(financialReport.balance_sheet.total_assets) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Liabilities -->
-                            <div>
-                                <h4 class="font-bold text-brand text-xs uppercase tracking-wider mb-2">Kewajiban (Liabilities)</h4>
-                                <div class="divide-y divide-border-soft bg-surface-main p-3 rounded-md">
-                                    <div v-for="item in financialReport.balance_sheet.liabilities" :key="item.account_code" class="py-2 flex justify-between font-mono">
-                                        <span class="text-ink-secondary text-xs">{{ item.account_code }} - {{ item.account_name }}</span>
-                                        <span class="font-semibold text-xs">{{ formatCurrency(item.balance) }}</span>
-                                    </div>
-                                    <div class="py-2 border-t border-border-soft flex justify-between font-bold text-ink-primary">
-                                        <span>TOTAL KEWAJIBAN:</span>
-                                        <span>{{ formatCurrency(financialReport.balance_sheet.total_liabilities) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Equity -->
-                            <div>
-                                <h4 class="font-bold text-brand text-xs uppercase tracking-wider mb-2">Ekuitas Modal (Equity)</h4>
-                                <div class="divide-y divide-border-soft bg-surface-main p-3 rounded-md">
-                                    <div v-for="item in financialReport.balance_sheet.equity" :key="item.account_code" class="py-2 flex justify-between font-mono">
-                                        <span class="text-ink-secondary text-xs">{{ item.account_code }} - {{ item.account_name }}</span>
-                                        <span class="font-semibold text-xs">{{ formatCurrency(item.balance) }}</span>
-                                    </div>
-                                    <div class="py-2 border-t border-border-soft flex justify-between font-bold text-ink-primary">
-                                        <span>TOTAL EKUITAS:</span>
-                                        <span>{{ formatCurrency(financialReport.balance_sheet.total_equity) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Income Statement Card -->
-                    <div class="bg-surface-card rounded-card border border-border-soft p-6 shadow-card space-y-6">
-                        <div class="border-b border-border-soft pb-3">
-                            <h3 class="text-lg font-bold text-ink-primary">Laporan Laba Rugi (Income Statement)</h3>
-                            <p class="text-xs text-ink-secondary mt-0.5">Pendapatan vs Pengeluaran Operasional</p>
-                        </div>
-                        
-                        <div class="space-y-4 text-sm">
-                            <!-- Revenue -->
-                            <div>
-                                <h4 class="font-bold text-brand text-xs uppercase tracking-wider mb-2">Pendapatan Usaha (Revenue)</h4>
-                                <div class="divide-y divide-border-soft bg-surface-main p-3 rounded-md font-mono">
-                                    <div v-for="item in financialReport.income_statement.revenue" :key="item.account_code" class="py-2 flex justify-between">
-                                        <span class="text-ink-secondary text-xs">{{ item.account_code }} - {{ item.account_name }}</span>
-                                        <span class="font-semibold text-xs">{{ formatCurrency(item.balance) }}</span>
-                                    </div>
-                                    <div class="py-2 border-t border-border-soft flex justify-between font-bold text-ink-primary">
-                                        <span>TOTAL REVENUE:</span>
-                                        <span>{{ formatCurrency(financialReport.income_statement.total_revenue) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Expenses -->
-                            <div>
-                                <h4 class="font-bold text-brand text-xs uppercase tracking-wider mb-2">Beban Pengeluaran (Expenses)</h4>
-                                <div class="divide-y divide-border-soft bg-surface-main p-3 rounded-md font-mono">
-                                    <div v-for="item in financialReport.income_statement.expenses" :key="item.account_code" class="py-2 flex justify-between">
-                                        <span class="text-ink-secondary text-xs">{{ item.account_code }} - {{ item.account_name }}</span>
-                                        <span class="font-semibold text-xs">{{ formatCurrency(item.balance) }}</span>
-                                    </div>
-                                    <div class="py-2 border-t border-border-soft flex justify-between font-bold text-ink-primary">
-                                        <span>TOTAL BEBAN:</span>
-                                        <span>{{ formatCurrency(financialReport.income_statement.total_expenses) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Net Income -->
-                            <div class="p-4 rounded-md border border-border-soft flex justify-between items-center" :class="financialReport.income_statement.net_income >= 0 ? 'bg-semantic-success-soft/20 text-semantic-success' : 'bg-semantic-danger-soft/20 text-semantic-danger'">
-                                <span class="font-extrabold uppercase text-xs tracking-wider">LABA / RUGI BERSIH:</span>
-                                <span class="text-lg font-extrabold font-mono">{{ formatCurrency(financialReport.income_statement.net_income) }}</span>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Balance sheet -->
+                <div class="card-friendly p-lg">
+                    <h2 class="text-section-title font-bold text-ink-primary mb-base">Neraca ⚖️</h2>
+                    <p class="text-xs font-bold text-accent-sky uppercase tracking-wide mb-sm">Aset</p>
+                    <div v-for="a in financialReport.balance_sheet.assets" :key="a.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ a.account_name }}</span><span class="font-medium">{{ formatCurrency(a.balance) }}</span></div>
+                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Aset</span><span>{{ formatCurrency(financialReport.balance_sheet.total_assets) }}</span></div>
+                    <p class="text-xs font-bold text-accent-coral uppercase tracking-wide mb-sm mt-base">Kewajiban</p>
+                    <div v-for="l in financialReport.balance_sheet.liabilities" :key="l.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ l.account_name }}</span><span class="font-medium">{{ formatCurrency(l.balance) }}</span></div>
+                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Kewajiban</span><span>{{ formatCurrency(financialReport.balance_sheet.total_liabilities) }}</span></div>
+                    <p class="text-xs font-bold text-accent-grape uppercase tracking-wide mb-sm mt-base">Ekuitas</p>
+                    <div v-for="q in financialReport.balance_sheet.equity" :key="q.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ q.account_name }}</span><span class="font-medium">{{ formatCurrency(q.balance) }}</span></div>
+                    <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-brand-soft px-md text-brand"><span>Total Ekuitas</span><span>{{ formatCurrency(financialReport.balance_sheet.total_equity) }}</span></div>
                 </div>
-            </template>
-        </div>
+            </div>
+        </template>
     </DashboardLayout>
 </template>

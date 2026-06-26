@@ -1,4 +1,6 @@
 <script setup>
+import { ref, computed } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
 
 
 
