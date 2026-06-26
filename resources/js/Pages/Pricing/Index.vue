@@ -15,6 +15,7 @@ const priceLists = ref(props.priceLists);
 const priceChangeRequests = ref(props.priceChangeRequests);
 
 const listColumns = [
+    { key: 'no', label: 'No' },
     { key: 'price_list_name', label: 'Price List Name' },
     { key: 'price_list_type', label: 'Type' },
     { key: 'items', label: 'Items' },
@@ -23,6 +24,7 @@ const listColumns = [
 ];
 
 const requestColumns = [
+    { key: 'no', label: 'No' },
     { key: 'request_no', label: 'Request No' },
     { key: 'price_list', label: 'Target Price List' },
     { key: 'effective_date', label: 'Effective Date' },

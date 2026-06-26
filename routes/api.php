@@ -108,6 +108,7 @@ Route::prefix('v1')->group(function () {
         require __DIR__.'/pos.php';
 
         // ── Reporting ───────────────────────────────────────────────
+        Route::get('dashboard', [\App\Http\Controllers\Api\System\DashboardController::class, '__invoke']);
         require __DIR__.'/reporting.php';
     }); // end auth:sanctum
 }); // end v1

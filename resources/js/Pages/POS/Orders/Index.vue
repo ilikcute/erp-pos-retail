@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
+import Pagination from "@/Components/Navigation/Pagination.vue";
 import BaseButton from '@/Components/Base/BaseButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 
@@ -10,9 +11,8 @@ const props = defineProps({
     filters: Object,
 });
 
-const transactions = ref(props.transactions?.data || []);
-
 const columns = [
+    { key: 'no', label: 'No' },
     { key: 'transaction_no', label: 'Order No' },
     { key: 'cashier', label: 'Cashier' },
     { key: 'customer', label: 'Customer' },
@@ -70,8 +70,8 @@ const getStatusClass = (status) => {
             </div>
         </div>
 
-        <div class="bg-surface-card rounded-card border border-border-soft p-6 shadow-card">
-            <DataTable :columns="columns" :rows="transactions">
+        <div class="bg-surface-card rounded-lg shadow-soft border border-border-soft p-xl">
+            <DataTable :columns="columns" :rows="transactions.data" :paginated="false">
                 <template #cell-transaction_no="{ value }">
                     <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
                 </template>
@@ -101,6 +101,9 @@ const getStatusClass = (status) => {
                     </Link>
                 </template>
             </DataTable>
+            <div class="mt-4">
+                <Pagination :links="transactions.links" :meta="transactions" />
+            </div>
         </div>
     </DashboardLayout>
 </template>

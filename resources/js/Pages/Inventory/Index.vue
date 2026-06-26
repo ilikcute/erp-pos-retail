@@ -16,6 +16,7 @@ const inventoryBalance = ref(props.inventoryBalance || []);
 const movements = ref(props.movements || []);
 
 const balanceColumns = [
+    { key: 'no', label: 'No' },
     { key: 'product', label: 'Product' },
     { key: 'location', label: 'Location' },
     { key: 'quantity_on_hand', label: 'Quantity', align: 'right' },
@@ -25,6 +26,7 @@ const balanceColumns = [
 ];
 
 const movementColumns = [
+    { key: 'no', label: 'No' },
     { key: 'product', label: 'Product' },
     { key: 'document_no', label: 'Ref No' },
     { key: 'reference_date', label: 'Date' },

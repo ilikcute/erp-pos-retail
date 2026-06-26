@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\System;
 
+use App\Actions\System\CreateRoleAction;
+use App\Actions\System\DeleteRoleAction;
+use App\Actions\System\UpdateRoleAction;
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\System\StoreRoleRequest;
 use App\Http\Requests\System\UpdateRoleRequest;
-use App\Actions\System\CreateRoleAction;
-use App\Actions\System\UpdateRoleAction;
-use App\Actions\System\DeleteRoleAction;
-use App\Repositories\Contracts\System\RoleRepositoryInterface;
 use App\Repositories\Contracts\System\PermissionRepositoryInterface;
+use App\Repositories\Contracts\System\RoleRepositoryInterface;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class RoleController extends Controller
 {
@@ -23,7 +24,7 @@ class RoleController extends Controller
 
     public function index(): Response
     {
-        $roles = $this->roleRepository->listAll();
+        $roles = $this->roleRepository->paginate(request()->only('search'), 15);
         $permissions = $this->permissionRepository->getAll();
 
         return Inertia::render('System/Roles/Index', [
@@ -31,6 +32,7 @@ class RoleController extends Controller
             'permissions' => $permissions,
         ]);
     }
+
     public function store(StoreRoleRequest $request, CreateRoleAction $action): RedirectResponse
     {
         $action->execute($request->validated());
@@ -42,7 +44,9 @@ class RoleController extends Controller
     public function update(int $id, UpdateRoleRequest $request, UpdateRoleAction $action): RedirectResponse
     {
         $role = $this->roleRepository->findById($id);
-        if (!$role) abort(404);
+        if (! $role) {
+            abort(404);
+        }
 
         $action->execute($role, $request->validated());
 
@@ -53,13 +57,16 @@ class RoleController extends Controller
     public function destroy(int $id, DeleteRoleAction $action): RedirectResponse
     {
         $role = $this->roleRepository->findById($id);
-        if (!$role) abort(404);
+        if (! $role) {
+            abort(404);
+        }
 
         try {
             $action->execute($role);
+
             return redirect()->route('system.roles.index')
                 ->with('success', 'Role deleted successfully.');
-        } catch (\App\Exceptions\BusinessException $e) {
+        } catch (BusinessException $e) {
             // Tangkap error business rule (misal: hapus system role) agar tidak jadi halaman error 500
             return redirect()->route('system.roles.index')
                 ->withErrors(['delete' => $e->getMessage()]);

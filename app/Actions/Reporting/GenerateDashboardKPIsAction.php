@@ -46,22 +46,18 @@ class GenerateDashboardKPIsAction
             'total_sales' => $totalSales,
             'total_transactions' => $totalTransactions,
             'average_transaction' => $avgTransaction,
-            'daily_average' => $totalSales / $dateFrom->diffInDays($dateTo),
+            'daily_average' => $dateFrom->diffInDays($dateTo) > 0 ? $totalSales / $dateFrom->diffInDays($dateTo) : $totalSales,
         ];
     }
 
     private function getInventoryKPI(): array
     {
-        $inventory = InventoryBalance::all();
-        $lowStockCount = $inventory->filter(fn($i) => $i->quantity_on_hand <= $i->reorder_level)->count();
-
+        // Model InventoryBalance belum ada, skip untuk sementara 🚧.
         return [
-            'total_items' => $inventory->count(),
-            'total_value' => $inventory->sum('balance_value'),
-            'low_stock_count' => $lowStockCount,
-            'average_item_value' => $inventory->count() > 0 
-                ? $inventory->sum('balance_value') / $inventory->count() 
-                : 0,
+            'total_items' => 0,
+            'total_value' => 0,
+            'low_stock_count' => 0,
+            'average_item_value' => 0,
         ];
     }
 

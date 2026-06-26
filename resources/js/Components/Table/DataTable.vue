@@ -170,8 +170,13 @@ watch(() => props.rows, () => {
                                 col.align === 'right' && 'text-right',
                                 col.align === 'center' && 'text-center'
                             ]">
-                                <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
-                                    {{ row[col.key] }}
+                                <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]" :rowIndex="filteredRows.indexOf(row) + 1">
+                                    <template v-if="col.key === 'index' || col.key === 'no' || col.key === 'row_num' || col.key === 'row_number'">
+                                        {{ filteredRows.indexOf(row) + 1 }}
+                                    </template>
+                                    <template v-else>
+                                        {{ row[col.key] }}
+                                    </template>
                                 </slot>
                             </td>
                         </tr>

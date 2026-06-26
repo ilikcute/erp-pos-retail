@@ -17,6 +17,7 @@ const loyaltyTransactions = ref(props.loyaltyTransactions);
 const membershipTiers = ref(props.membershipTiers);
 
 const accountColumns = [
+    { key: 'no', label: 'No' },
     { key: 'customer', label: 'Customer Name' },
     { key: 'account_number', label: 'Account Number' },
     { key: 'current_points', label: 'Current Points', align: 'right' },

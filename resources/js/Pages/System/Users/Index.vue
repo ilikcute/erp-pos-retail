@@ -7,11 +7,12 @@ import BaseButton from "@/Components/Base/BaseButton.vue";
 import FormInput from "@/Components/Form/FormInput.vue";
 import FormTextarea from "@/Components/Form/FormTextarea.vue";
 import DataTable from "@/Components/Table/DataTable.vue";
+import Pagination from "@/Components/Navigation/Pagination.vue";
 import { Head } from "@inertiajs/vue3";
 
 const props = defineProps({
     users: {
-        type: Array,
+        type: Object,
         required: true,
     },
     roles: {
@@ -24,11 +25,11 @@ const page = usePage();
 const canManage = true; // Untuk sementara kita set true
 
 const columns = [
-    { key: "id", label: "ID" },
+    { key: "no", label: "No" },
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
     { key: "roles", label: "Roles" },
-    { key: "is_active", label: "Status" },
+    { key: "status", label: "Status" },
     { key: "actions", label: "Actions" },
 ];
 
@@ -43,7 +44,9 @@ const form = useForm({
     password: "",
     password_confirmation: "",
     phone: "",
+    status: "ACTIVE",
     is_active: true,
+    role_id: null,
     roles: [],
 });
 
@@ -51,6 +54,8 @@ function openCreateModal() {
     editingUser.value = null;
     form.reset();
     form.clearErrors();
+    form.is_active = true;
+    form.role_id = null;
     showModal.value = true;
 }
 
@@ -61,8 +66,10 @@ function openEditModal(user) {
     form.password = "";
     form.password_confirmation = "";
     form.phone = user.phone || "";
-    form.is_active = user.is_active ?? true;
-    form.roles = user.roles?.map((r) => Number(r.id)) || [];
+    form.is_active = user.status === 'ACTIVE';
+    form.status = user.status || 'ACTIVE';
+    form.role_id = user.roles?.[0]?.id ? Number(user.roles[0].id) : null;
+    form.roles = form.role_id ? [form.role_id] : [];
     form.clearErrors();
     showModal.value = true;
 }
@@ -74,6 +81,8 @@ function closeModal() {
 }
 
 function submit() {
+    form.status = form.is_active ? 'ACTIVE' : 'INACTIVE';
+    form.roles = form.role_id ? [form.role_id] : [];
     if (editingUser.value) {
         form.put(`/system/users/${editingUser.value.id}`, {
             preserveScroll: true,
@@ -99,16 +108,6 @@ function deleteUser(user) {
     router.delete(`/system/users/${user.id}`, {
         preserveScroll: true,
     });
-}
-
-function toggleRole(roleId) {
-    const id = Number(roleId);
-    const index = form.roles.indexOf(id);
-    if (index > -1) {
-        form.roles.splice(index, 1);
-    } else {
-        form.roles.push(id);
-    }
 }
 </script>
 
@@ -148,7 +147,7 @@ function toggleRole(roleId) {
         </div>
 
         <!-- Data Table -->
-        <DataTable :columns="columns" :rows="users">
+        <DataTable :columns="columns" :rows="users.data" :paginated="false">
             <template #cell-roles="{ row }">
                 <div class="flex flex-wrap gap-1">
                     <span
@@ -166,16 +165,16 @@ function toggleRole(roleId) {
                     </span>
                 </div>
             </template>
-            <template #cell-is_active="{ value }">
+            <template #cell-status="{ value }">
                 <span
                     :class="
-                        value
+                        value === 'ACTIVE'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                     "
                     class="px-2 py-1 rounded-full text-xs font-semibold"
                 >
-                    {{ value ? "Active" : "Inactive" }}
+                    {{ value === 'ACTIVE' ? "Active" : "Inactive" }}
                 </span>
             </template>
             <template #cell-actions="{ row }">
@@ -195,6 +194,10 @@ function toggleRole(roleId) {
                 </button>
             </template>
         </DataTable>
+        
+        <div class="mt-4">
+            <Pagination :links="users.links" :meta="users" />
+        </div>
 
         <!-- Modal Form Create/Edit -->
         <BaseModal
@@ -288,12 +291,11 @@ function toggleRole(roleId) {
                                     class="flex items-center text-sm hover:bg-white p-2 rounded cursor-pointer"
                                 >
                                     <input
-                                        type="checkbox"
-                                        :checked="
-                                            form.roles.includes(Number(role.id))
-                                        "
-                                        @change="toggleRole(role.id)"
-                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        type="radio"
+                                        name="user_role"
+                                        :value="Number(role.id)"
+                                        v-model="form.role_id"
+                                        class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                     />
                                     <span class="ml-2 font-medium">{{
                                         role.name

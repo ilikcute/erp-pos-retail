@@ -14,6 +14,7 @@ const activeTab = ref(props.activeTab || 'orders');
 const purchaseOrders = ref(props.purchaseOrders || []);
 
 const poColumns = [
+    { key: 'no', label: 'No' },
     { key: 'purchase_order_no', label: 'PO No' },
     { key: 'supplier', label: 'Supplier' },
     { key: 'grand_total', label: 'Total', align: 'right' },

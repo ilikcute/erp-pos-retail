@@ -12,63 +12,105 @@ const navigationGroups = [
         group: 'Overview',
         items: [
             { name: 'Dashboard', href: '/dashboard', icon: 'home' },
-            { name: 'Reporting', href: '/reporting', icon: 'trending-up' },
+            { name: 'Reporting', href: '/reporting', icon: 'trending-up', permission: 'pos.transaction.view' },
         ],
     },
     {
         group: 'Sales & POS',
         items: [
-            { name: 'POS', href: '/pos', icon: 'shopping-cart' },
-            { name: 'Orders', href: '/pos/sales', icon: 'list' },
+            { name: 'POS', href: '/pos', icon: 'shopping-cart', permission: 'pos.session.view' },
+            { name: 'Orders', href: '/pos/sales', icon: 'list', permission: 'pos.transaction.view' },
+            { name: 'Shifts', href: '/pos/shifts', icon: 'clock', permission: 'pos.shift.view' },
         ],
     },
     {
         group: 'Inventory',
         items: [
-            { name: 'Stock', href: '/inventory', icon: 'package' },
-            { name: 'Transfer', href: '/inventory/transfer', icon: 'arrow-right-left' },
+            { name: 'Stock', href: '/inventory', icon: 'package', roles: ['superadmin', 'admin', 'gudang'] },
+            { name: 'Transfer', href: '/inventory/transfer', icon: 'arrow-right-left', roles: ['superadmin', 'admin', 'gudang'] },
         ],
     },
     {
         group: 'Purchasing',
         items: [
-            { name: 'PO', href: '/purchasing/po', icon: 'file-text' },
-            { name: 'Goods Receipt', href: '/purchasing/receipt', icon: 'inbox' },
+            { name: 'PO', href: '/purchasing/po', icon: 'file-text', roles: ['superadmin', 'admin', 'purchasing'] },
+            { name: 'Goods Receipt', href: '/purchasing/receipt', icon: 'inbox', roles: ['superadmin', 'admin', 'purchasing', 'gudang'] },
+        ],
+    },
+    {
+        group: 'Product & Pricing',
+        items: [
+            { name: 'Products', href: '/product/products', icon: 'box', permission: 'product.product.view' },
+            { name: 'Categories', href: '/product/categories', icon: 'folder', permission: 'product.category.view' },
+            { name: 'Brands', href: '/product/brands', icon: 'tag', permission: 'product.brand.view' },
+            { name: 'Pricing', href: '/pricing', icon: 'percent', permission: 'pricing.price-list.view' },
+            { name: 'Promotions', href: '/promotions', icon: 'tag', roles: ['superadmin', 'admin', 'manager'] },
+            { name: 'Loyalty Program', href: '/loyalty', icon: 'users', roles: ['superadmin', 'admin', 'manager'] },
         ],
     },
     {
         group: 'Master Data',
         items: [
-            { name: 'Products', href: '/product/products', icon: 'box' },
-            { name: 'Categories', href: '/product/categories', icon: 'folder' },
-            { name: 'Brands', href: '/product/brands', icon: 'tag' },
-            { name: 'Suppliers', href: '/master-data/suppliers', icon: 'truck' },
-            { name: 'Customers', href: '/master-data/customers', icon: 'users' },
-        ],
-    },
-    {
-        group: 'Marketing',
-        items: [
-            { name: 'Pricing', href: '/pricing', icon: 'percent' },
-            { name: 'Promotions', href: '/promotions', icon: 'tag' },
-            { name: 'Loyalty Program', href: '/loyalty', icon: 'users' },
+            { name: 'Suppliers', href: '/master-data/suppliers', icon: 'truck', permission: 'master-data.supplier.view' },
+            { name: 'Customers', href: '/master-data/customers', icon: 'users', permission: 'master-data.customer.view' },
+            { name: 'Customer Categories', href: '/master-data/customer-categories', icon: 'tag', permission: 'master-data.customer.view' },
+            { name: 'Currencies', href: '/master-data/currencies', icon: 'dollar-sign', permission: 'system.setting.view' },
+            { name: 'Taxes', href: '/master-data/taxes', icon: 'percent', permission: 'master-data.tax.view' },
+            { name: 'Units', href: '/master-data/units', icon: 'layout', permission: 'master-data.unit.view' },
+            { name: 'Unit Conversions', href: '/master-data/unit-conversions', icon: 'arrow-right-left', permission: 'master-data.unit.view' },
+            { name: 'Price Lists', href: '/master-data/price-lists', icon: 'list', permission: 'pricing.price-list.view' },
         ],
     },
     {
         group: 'Accounting',
         items: [
-            { name: 'Chart of Accounts', href: '/accounting/coa', icon: 'layout' },
-            { name: 'Journals', href: '/accounting/journals', icon: 'book' },
+            { name: 'Chart of Accounts', href: '/accounting/coa', icon: 'layout', roles: ['superadmin', 'admin', 'accounting'] },
+            { name: 'Journals', href: '/accounting/journals', icon: 'book', roles: ['superadmin', 'admin', 'accounting'] },
         ],
     },
     {
         group: 'System',
         items: [
-            { name: 'Users', href: '/system/users', icon: 'users' },
-            { name: 'Roles', href: '/system/roles', icon: 'lock' },
+            { name: 'Users', href: '/system/users', icon: 'users', permission: 'system.user.view' },
+            { name: 'Roles', href: '/system/roles', icon: 'lock', permission: 'system.role.view' },
+            { name: 'Settings', href: '/system', icon: 'settings', permission: 'system.setting.view' },
         ],
     },
 ];
+
+const checkPermission = (item) => {
+    const auth = page.props.auth;
+    if (!auth?.user) return false;
+
+    // Superadmin bypass
+    if (auth.roles?.includes('superadmin')) {
+        return true;
+    }
+
+    // Role check (if specified)
+    if (item.roles && item.roles.length > 0) {
+        const hasRole = auth.roles?.some(r => item.roles.includes(r));
+        if (hasRole) return true;
+    }
+
+    // Permission check (if specified)
+    if (item.permission) {
+        return auth.permissions?.includes(item.permission) === true;
+    }
+
+    // Default: if no roles and no permission are specified, show to everyone authenticated
+    return !item.roles && !item.permission;
+};
+
+const visibleNavigationGroups = computed(() => {
+    return navigationGroups.map(group => {
+        const visibleItems = group.items.filter(item => checkPermission(item));
+        return {
+            ...group,
+            items: visibleItems
+        };
+    }).filter(group => group.items.length > 0);
+});
 
 const isCurrentPage = (href) => page.url === href || page.url.startsWith(href + '/');
 
@@ -108,7 +150,7 @@ navigationGroups.forEach(group => {
 
             <!-- Navigation -->
             <nav class="flex-1 py-base space-y-md overflow-y-auto">
-                <template v-for="(group, idx) in navigationGroups" :key="idx">
+                <template v-for="(group, idx) in visibleNavigationGroups" :key="idx">
                     <!-- Group Header (Collapsible) -->
                     <div
                         v-if="isSidebarOpen"

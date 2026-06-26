@@ -7,11 +7,12 @@ import BaseButton from "@/Components/Base/BaseButton.vue";
 import FormInput from "@/Components/Form/FormInput.vue";
 import FormTextarea from "@/Components/Form/FormTextarea.vue";
 import DataTable from "@/Components/Table/DataTable.vue";
+import Pagination from "@/Components/Navigation/Pagination.vue";
 import { Head } from "@inertiajs/vue3";
 
 const props = defineProps({
     roles: {
-        type: Array,
+        type: Object,
         required: true,
     },
     permissions: {
@@ -25,7 +26,7 @@ const page = usePage();
 const canManage = true; // Untuk sementara kita set true agar tombol muncul
 
 const columns = [
-    { key: "id", label: "ID" },
+    { key: "no", label: "No" },
     { key: "name", label: "Name" },
     { key: "code", label: "Code" },
     { key: "is_active", label: "Status" },
@@ -124,6 +125,32 @@ function togglePermission(permId) {
     }
 }
 
+const getSelectedCountForModule = (perms) => {
+    return perms.filter((p) => form.permissions.includes(Number(p.id))).length;
+};
+
+const isAllModuleSelected = (perms) => {
+    return (
+        perms.length > 0 && getSelectedCountForModule(perms) === perms.length
+    );
+};
+
+const toggleAllModule = (perms) => {
+    const permIds = perms.map((p) => Number(p.id));
+    const allSelected = isAllModuleSelected(perms);
+
+    if (allSelected) {
+        // Deselect all
+        form.permissions = form.permissions.filter(
+            (id) => !permIds.includes(id),
+        );
+    } else {
+        // Select all
+        const toAdd = permIds.filter((id) => !form.permissions.includes(id));
+        form.permissions.push(...toAdd);
+    }
+};
+
 // Group permissions by module untuk tampilan yang rapi
 const permissionsByModule = computed(() => {
     return props.permissions.reduce((acc, perm) => {
@@ -150,9 +177,7 @@ const permissionsByModule = computed(() => {
                 </p>
             </div>
 
-            <BaseButton
-                @click="openCreateModal"
-            >
+            <BaseButton @click="openCreateModal">
                 <svg
                     class="w-5 h-5 mr-2"
                     fill="none"
@@ -171,7 +196,7 @@ const permissionsByModule = computed(() => {
         </div>
 
         <!-- Data Table -->
-        <DataTable :columns="columns" :rows="roles">
+        <DataTable :columns="columns" :rows="roles.data" :paginated="false">
             <template #cell-code="{ value }">
                 <span
                     class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-mono"
@@ -212,6 +237,10 @@ const permissionsByModule = computed(() => {
                 </button>
             </template>
         </DataTable>
+        
+        <div class="mt-4">
+            <Pagination :links="roles.links" :meta="roles" />
+        </div>
 
         <!-- Modal Form Create/Edit -->
         <BaseModal
@@ -279,11 +308,31 @@ const permissionsByModule = computed(() => {
                                 :key="module"
                                 class="mb-4 last:mb-0"
                             >
-                                <h4
-                                    class="font-semibold text-gray-800 mb-2 capitalize border-b pb-1"
+                                <div
+                                    class="flex items-center mb-2 border-b pb-1"
                                 >
-                                    {{ module }}
-                                </h4>
+                                    <label
+                                        class="flex items-center cursor-pointer select-none"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :checked="
+                                                isAllModuleSelected(perms)
+                                            "
+                                            @change="toggleAllModule(perms)"
+                                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
+                                        />
+                                        <span
+                                            class="font-semibold text-gray-800 capitalize"
+                                        >
+                                            {{ module }} ({{
+                                                getSelectedCountForModule(
+                                                    perms,
+                                                )
+                                            }})
+                                        </span>
+                                    </label>
+                                </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <label
                                         v-for="perm in perms"
@@ -312,16 +361,10 @@ const permissionsByModule = computed(() => {
 
                 <!-- Footer Buttons -->
                 <div class="mt-6 flex justify-end space-x-3">
-                    <BaseButton
-                        variant="secondary"
-                        @click="closeModal"
-                    >
+                    <BaseButton variant="secondary" @click="closeModal">
                         Cancel
                     </BaseButton>
-                    <BaseButton
-                        type="submit"
-                        :loading="form.processing"
-                    >
+                    <BaseButton type="submit" :loading="form.processing">
                         {{ editingRole ? "Update Role" : "Create Role" }}
                     </BaseButton>
                 </div>

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Api\System;
 
-use App\Models\System\SystemSetting;
-use App\Models\System\BusinessProfile;
 use App\Models\System\AuditLog;
+use App\Models\System\BusinessProfile;
+use App\Models\System\SystemSetting;
 use Tests\ApiTestCase;
 
 class SystemSettingTest extends ApiTestCase
@@ -29,7 +29,7 @@ class SystemSettingTest extends ApiTestCase
                 'value' => 'ERP Retail Ltd',
                 'type' => 'string',
                 'group' => 'general',
-                'description' => 'Nama perusahaan'
+                'description' => 'Nama perusahaan',
             ]
         );
 
@@ -49,7 +49,7 @@ class SystemSettingTest extends ApiTestCase
                 'value' => 'UTC',
                 'type' => 'string',
                 'group' => 'general',
-                'description' => 'Zona waktu'
+                'description' => 'Zona waktu',
             ]
         );
 
@@ -92,10 +92,11 @@ class SystemSettingTest extends ApiTestCase
     {
         $this->actingAsUser('kasir');
 
-        BusinessProfile::firstOrCreate([], [
+        $profile = BusinessProfile::firstOrNew([]);
+        $profile->fill([
             'business_name' => 'My POS Store',
             'legal_name' => 'My POS Store Inc',
-        ]);
+        ])->save();
 
         $response = $this->getJson('/api/v1/system/business-profile');
 

@@ -16,6 +16,7 @@ const chartOfAccounts = ref(props.chartOfAccounts || []);
 const journalEntries = ref(props.journalEntries || []);
 
 const coaColumns = [
+    { key: 'no', label: 'No' },
     { key: 'account_code', label: 'Account Code' },
     { key: 'account_name', label: 'Account Name' },
     { key: 'account_type', label: 'Type' },
@@ -23,6 +24,7 @@ const coaColumns = [
 ];
 
 const journalColumns = [
+    { key: 'no', label: 'No' },
     { key: 'journal_no', label: 'Journal No' },
     { key: 'journal_date', label: 'Date' },
     { key: 'description', label: 'Description' },

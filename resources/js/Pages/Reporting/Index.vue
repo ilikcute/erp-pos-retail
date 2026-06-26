@@ -114,6 +114,7 @@ onMounted(() => {
 
 // Table columns setup
 const txColumns = [
+    { key: 'no', label: 'No' },
     { key: 'transaction_no', label: 'Order No' },
     { key: 'cashier', label: 'Kasir' },
     { key: 'customer', label: 'Pelanggan' },
@@ -122,6 +123,7 @@ const txColumns = [
 ];
 
 const lowStockColumns = [
+    { key: 'no', label: 'No' },
     { key: 'product', label: 'Product' },
     { key: 'location', label: 'Location' },
     { key: 'quantity_on_hand', label: 'Stok Saat Ini', align: 'right' },

@@ -4,12 +4,13 @@ namespace App\Actions\System;
 
 use App\Models\System\Role;
 use App\Repositories\Contracts\System\RoleRepositoryInterface;
-use App\Services\System\CodeGeneratorService;
+use App\Support\AuditService;
 
 class CreateRoleAction
 {
     public function __construct(
-        private RoleRepositoryInterface $roleRepository
+        private RoleRepositoryInterface $roleRepository,
+        private AuditService $auditService
     ) {}
 
     public function execute(array $data): Role
@@ -22,9 +23,17 @@ class CreateRoleAction
         $role = $this->roleRepository->create($data);
 
         // Sync permissions jika ada
-        if (!empty($permissionIds)) {
+        if (! empty($permissionIds)) {
             $this->roleRepository->syncPermissions($role, $permissionIds);
         }
+
+        $this->auditService->log(
+            module: 'System',
+            action: 'CREATE_ROLE',
+            tableName: 'roles',
+            recordId: $role->id,
+            newValues: ['name' => $role->name, 'display_name' => $role->display_name],
+        );
 
         return $role->load('permissions');
     }

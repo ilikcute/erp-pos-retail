@@ -7,13 +7,15 @@ import BaseButton from "@/Components/Base/BaseButton.vue";
 import FormInput from "@/Components/Form/FormInput.vue";
 import FormTextarea from "@/Components/Form/FormTextarea.vue";
 import DataTable from "@/Components/Table/DataTable.vue";
+import Pagination from "@/Components/Navigation/Pagination.vue";
 import { Head } from "@inertiajs/vue3";
 
 const props = defineProps({
-    brands: { type: Array, required: true },
+    brands: { type: Object, required: true },
 });
 
 const columns = [
+    { key: "no", label: "No" },
     { key: "code", label: "Code" },
     { key: "name", label: "Name" },
     { key: "description", label: "Description" },
@@ -91,7 +93,7 @@ function deleteBrand(brand) {
             <BaseButton @click="openCreateModal">+ Create Brand</BaseButton>
         </div>
 
-        <DataTable :columns="columns" :rows="brands">
+        <DataTable :columns="columns" :rows="brands.data" :paginated="false">
             <template #cell-code="{ value }">
                 <span
                     class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-mono"
@@ -125,11 +127,12 @@ function deleteBrand(brand) {
                 </button>
             </template>
         </DataTable>
+        
+        <div class="mt-4">
+            <Pagination :links="brands.links" :meta="brands" />
+        </div>
 
         <!-- Tambahkan kolom actions -->
-        <template v-if="brands.length > 0">
-            <!-- Actions column sudah ada di slot cell-actions -->
-        </template>
 
         <BaseModal
             :show="showModal"
