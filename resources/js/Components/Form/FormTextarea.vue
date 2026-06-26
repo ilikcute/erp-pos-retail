@@ -29,7 +29,7 @@ const emit = defineEmits(['update:modelValue']);
             :placeholder="placeholder"
             :disabled="disabled"
             :class="[
-                'w-full px-base py-md rounded-md border transition-all duration-200',
+                'w-full px-base py-md rounded-lg border transition-all duration-200',
                 'text-base text-ink-primary placeholder-ink-muted',
                 'focus:outline-none focus:ring-2 focus:ring-offset-0 resize-none',
                 error

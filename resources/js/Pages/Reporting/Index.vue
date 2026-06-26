@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import KPICard from '@/Components/Dashboard/KPICard.vue';
 import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 
@@ -181,7 +182,7 @@ const lowStockColumns = [
                     <span class="text-white/70">—</span>
                     <input v-model="dateTo" type="date" class="bg-transparent text-sm text-white border-0 focus:ring-0 outline-none" />
                 </div>
-                <button @click="handleExport(activeTab)" class="btn-pill bg-white text-accent-grape px-lg py-sm text-sm font-bold hover:opacity-95">⬇️ Export</button>
+                <BaseButton variant="soft" size="sm" @click="handleExport(activeTab)">⬇️ Export</BaseButton>
             </div>
         </div>
 
@@ -195,10 +196,10 @@ const lowStockColumns = [
         <!-- ===== SALES ===== -->
         <template v-if="activeTab === 'sales' && salesReport">
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">💰</div><p class="text-sm text-ink-secondary mt-base">Total Penjualan</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(salesReport.total_sales) }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">🧾</div><p class="text-sm text-ink-secondary mt-base">Transaksi</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ salesReport.total_transactions }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-sunset-gradient flex items-center justify-center text-2xl text-white">📈</div><p class="text-sm text-ink-secondary mt-base">Rata-rata / Transaksi</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(salesReport.average_sale) }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-grape-gradient flex items-center justify-center text-2xl text-white">📦</div><p class="text-sm text-ink-secondary mt-base">Item Terjual</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ salesReport.total_items_sold }}</p></div>
+                <KPICard label="Total Penjualan" :value="formatCurrency(salesReport.total_sales)" icon="dollar-sign" color="brand" />
+                <KPICard label="Transaksi" :value="salesReport.total_transactions" icon="file-text" color="mint" />
+                <KPICard label="Rata-rata / Transaksi" :value="formatCurrency(salesReport.average_sale)" icon="trending-up" color="sunny" />
+                <KPICard label="Item Terjual" :value="salesReport.total_items_sold" icon="package" color="grape" />
             </div>
             <div class="card-friendly p-lg mb-xl">
                 <h2 class="text-section-title font-bold text-ink-primary mb-base">Metode Pembayaran 💳</h2>
@@ -210,29 +211,29 @@ const lowStockColumns = [
             </div>
             <div class="card-friendly p-lg">
                 <h2 class="text-section-title font-bold text-ink-primary mb-base">Daftar Transaksi 🧾</h2>
-                <DataTable :columns="txColumns" :data="salesReport.transactions" :loading="loadingSales" />
+                <DataTable :columns="txColumns" :rows="salesReport.transactions" :loading="loadingSales" />
             </div>
         </template>
 
         <!-- ===== INVENTORY ===== -->
         <template v-if="activeTab === 'inventory' && inventoryReport">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">📦</div><p class="text-sm text-ink-secondary mt-base">Total Item</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ inventoryReport.total_items }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">💎</div><p class="text-sm text-ink-secondary mt-base">Total Nilai Aset</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(inventoryReport.total_value) }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-sunset-gradient flex items-center justify-center text-2xl text-white">⚠️</div><p class="text-sm text-ink-secondary mt-base">Stok Menipis</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ inventoryReport.low_stock_items.length }}</p></div>
+                <KPICard label="Total Item" :value="inventoryReport.total_items" icon="package" color="mint" />
+                <KPICard label="Total Nilai Aset" :value="formatCurrency(inventoryReport.total_value)" icon="dollar-sign" color="brand" />
+                <KPICard label="Stok Menipis" :value="inventoryReport.low_stock_items.length" icon="alert-triangle" color="sunny" />
             </div>
             <div class="card-friendly p-lg">
                 <h2 class="text-section-title font-bold text-ink-primary mb-base">Produk Perlu Reorder 🔻</h2>
-                <DataTable :columns="lowStockColumns" :data="inventoryReport.low_stock_items" :loading="loadingInventory" />
+                <DataTable :columns="lowStockColumns" :rows="inventoryReport.low_stock_items" :loading="loadingInventory" />
             </div>
         </template>
 
         <!-- ===== FINANCIAL ===== -->
         <template v-if="activeTab === 'financial' && financialReport">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-brand-gradient flex items-center justify-center text-2xl text-white">🏦</div><p class="text-sm text-ink-secondary mt-base">Total Aset</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(financialReport.summary.total_assets) }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-mint-gradient flex items-center justify-center text-2xl text-white">💵</div><p class="text-sm text-ink-secondary mt-base">Pendapatan</p><p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ formatCurrency(financialReport.summary.total_revenue) }}</p></div>
-                <div class="card-friendly p-lg"><div class="w-12 h-12 rounded-xl bg-grape-gradient flex items-center justify-center text-2xl text-white">✨</div><p class="text-sm text-ink-secondary mt-base">Laba Bersih</p><p class="text-page-title-sm font-extrabold text-accent-mint mt-xs">{{ formatCurrency(financialReport.summary.net_income) }}</p></div>
+                <KPICard label="Total Aset" :value="formatCurrency(financialReport.summary.total_assets)" icon="dollar-sign" color="brand" />
+                <KPICard label="Pendapatan" :value="formatCurrency(financialReport.summary.total_revenue)" icon="trending-up" color="mint" />
+                <KPICard label="Laba Bersih" :value="formatCurrency(financialReport.summary.net_income)" icon="trending-up" color="grape" />
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-base">
                 <!-- Income statement -->

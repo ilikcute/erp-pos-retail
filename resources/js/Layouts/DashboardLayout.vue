@@ -9,14 +9,14 @@ const isSidebarOpen = ref(true);
 
 const navigationGroups = [
     {
-        group: 'Overview',
+        group: 'Overview', icon: 'layout',
         items: [
             { name: 'Dashboard', href: '/dashboard', icon: 'home' },
             { name: 'Reporting', href: '/reporting', icon: 'trending-up', permission: 'pos.transaction.view' },
         ],
     },
     {
-        group: 'Sales & POS',
+        group: 'Sales & POS', icon: 'shopping-cart',
         items: [
             { name: 'POS', href: '/pos', icon: 'shopping-cart', permission: 'pos.session.view' },
             { name: 'Orders', href: '/pos/sales', icon: 'list', permission: 'pos.transaction.view' },
@@ -24,21 +24,21 @@ const navigationGroups = [
         ],
     },
     {
-        group: 'Inventory',
+        group: 'Inventory', icon: 'package',
         items: [
             { name: 'Stock', href: '/inventory', icon: 'package', roles: ['superadmin', 'admin', 'gudang'] },
             { name: 'Transfer', href: '/inventory/transfer', icon: 'arrow-right-left', roles: ['superadmin', 'admin', 'gudang'] },
         ],
     },
     {
-        group: 'Purchasing',
+        group: 'Purchasing', icon: 'truck',
         items: [
             { name: 'PO', href: '/purchasing/po', icon: 'file-text', roles: ['superadmin', 'admin', 'purchasing'] },
             { name: 'Goods Receipt', href: '/purchasing/receipt', icon: 'inbox', roles: ['superadmin', 'admin', 'purchasing', 'gudang'] },
         ],
     },
     {
-        group: 'Product & Pricing',
+        group: 'Product & Pricing', icon: 'tag',
         items: [
             { name: 'Products', href: '/product/products', icon: 'box', permission: 'product.product.view' },
             { name: 'Categories', href: '/product/categories', icon: 'folder', permission: 'product.category.view' },
@@ -49,7 +49,7 @@ const navigationGroups = [
         ],
     },
     {
-        group: 'Master Data',
+        group: 'Master Data', icon: 'folder',
         items: [
             { name: 'Suppliers', href: '/master-data/suppliers', icon: 'truck', permission: 'master-data.supplier.view' },
             { name: 'Customers', href: '/master-data/customers', icon: 'users', permission: 'master-data.customer.view' },
@@ -62,14 +62,14 @@ const navigationGroups = [
         ],
     },
     {
-        group: 'Accounting',
+        group: 'Accounting', icon: 'book',
         items: [
             { name: 'Chart of Accounts', href: '/accounting/coa', icon: 'layout', roles: ['superadmin', 'admin', 'accounting'] },
             { name: 'Journals', href: '/accounting/journals', icon: 'book', roles: ['superadmin', 'admin', 'accounting'] },
         ],
     },
     {
-        group: 'System',
+        group: 'System', icon: 'settings',
         items: [
             { name: 'Users', href: '/system/users', icon: 'users', permission: 'system.user.view' },
             { name: 'Roles', href: '/system/roles', icon: 'lock', permission: 'system.role.view' },
@@ -156,12 +156,16 @@ navigationGroups.forEach(group => {
             <!-- Navigation -->
             <nav class="flex-1 py-base space-y-base overflow-y-auto scroll-soft px-sm">
                 <template v-for="(group, idx) in visibleNavigationGroups" :key="idx">
+                    <div v-if="!isSidebarOpen" class="flex justify-center py-xs" :title="group.group">
+                        <span class="w-5 h-5 text-white/40"><Icon :name="group.icon" /></span>
+                    </div>
                     <div
                         v-if="isSidebarOpen"
                         @click="toggleGroup(group.group)"
                         class="px-sm py-xs flex justify-between items-center cursor-pointer rounded-md transition-colors select-none hover:bg-white/5"
                     >
-                        <span class="text-[11px] font-bold text-white/45 uppercase tracking-widest">
+                        <span class="flex items-center gap-sm text-[11px] font-bold text-white/55 uppercase tracking-widest">
+                            <span class="w-4 h-4 text-white/70"><Icon :name="group.icon" size="4" /></span>
                             {{ group.group }}
                         </span>
                         <svg

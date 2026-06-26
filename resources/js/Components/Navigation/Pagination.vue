@@ -29,7 +29,7 @@ defineProps({
                 :class="[
                     'px-3 py-1.5 border rounded text-xs transition-all font-medium',
                     link.active 
-                        ? 'bg-brand text-white border-brand' 
+                        ? 'bg-brand-gradient text-white shadow-brand-glow border-brand' 
                         : 'bg-surface-card text-ink-secondary border-border-soft hover:bg-surface-subtle',
                     !link.url ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
                 ]"

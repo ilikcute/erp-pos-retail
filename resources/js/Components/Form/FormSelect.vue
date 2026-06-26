@@ -28,7 +28,7 @@ const emit = defineEmits(['update:modelValue']);
                 @change="emit('update:modelValue', $event.target.value)"
                 :disabled="disabled"
                 :class="[
-                    'w-full px-base py-md rounded-md border transition-all duration-200',
+                    'w-full px-base py-md rounded-lg border transition-all duration-200',
                     'text-base text-ink-primary bg-surface-card appearance-none cursor-pointer',
                     'focus:outline-none focus:ring-2 focus:ring-offset-0',
                     error

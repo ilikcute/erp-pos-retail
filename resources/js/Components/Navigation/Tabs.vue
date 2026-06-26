@@ -51,8 +51,8 @@ const variantClasses = {
         active: 'border-brand text-ink-primary font-medium'
     },
     pills: {
-        tab: 'rounded-md text-ink-secondary bg-transparent hover:bg-surface-subtle transition-colors',
-        active: 'bg-brand text-white font-medium'
+        tab: 'rounded-pill text-ink-secondary bg-transparent hover:bg-surface-subtle transition-colors',
+        active: 'bg-brand-gradient text-white shadow-brand-glow font-medium'
     },
     underline: {
         tab: 'text-ink-secondary hover:text-ink-primary transition-colors pb-2 border-b-2 border-transparent',
@@ -83,7 +83,7 @@ const variantClasses = {
                     {{ tab.label }}
                 </span>
                 <span v-else>{{ tab.label }}</span>
-                <span v-if="tab.badge" class="ml-2 px-2 py-0.5 text-xs bg-brand text-white rounded-full">
+                <span v-if="tab.badge" class="ml-2 px-2 py-0.5 text-xs bg-brand-gradient text-white shadow-brand-glow rounded-full">
                     {{ tab.badge }}
                 </span>
             </button>

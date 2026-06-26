@@ -1,4 +1,6 @@
 <script setup>
+import KPICard from '@/Components/Dashboard/KPICard.vue';
+import BaseButton from '@/Components/Base/BaseButton.vue';
 import { ref, onMounted, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useChart, chartPresets } from '@/Composables/useChart.js';
@@ -28,10 +30,10 @@ const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', curren
 const compact = (n) => new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(n || 0);
 
 const kpis = computed(() => [
-    { label: 'Total Penjualan', value: rupiah(data.value.sales_kpi.total_sales), icon: '💰', grad: 'bg-brand-gradient',  trend: '+12.5%', up: true },
-    { label: 'Transaksi',       value: data.value.sales_kpi.total_transactions, icon: '🧾', grad: 'bg-mint-gradient',   trend: '+8.2%',  up: true },
-    { label: 'Margin Kotor',    value: data.value.financial_kpi.gross_margin_percent + '%', icon: '📈', grad: 'bg-grape-gradient', trend: '+2.1%', up: true },
-    { label: 'Pelanggan',       value: compact(data.value.customer_kpi.total_customers), icon: '👥', grad: 'bg-sunset-gradient', trend: '+5.0%', up: true },
+    { label: 'Total Penjualan', value: rupiah(data.value.sales_kpi.total_sales), icon: 'dollar-sign', color: 'brand',  trend: 'up', trendValue: '+12.5%' },
+    { label: 'Transaksi',       value: data.value.sales_kpi.total_transactions, icon: 'file-text',  color: 'mint',   trend: 'up', trendValue: '+8.2%' },
+    { label: 'Margin Kotor',    value: data.value.financial_kpi.gross_margin_percent + '%', icon: 'trending-up', color: 'grape', trend: 'up', trendValue: '+2.1%' },
+    { label: 'Pelanggan',       value: compact(data.value.customer_kpi.total_customers), icon: 'users', color: 'sunny', trend: 'up', trendValue: '+5.0%' },
 ]);
 
 const topMax = computed(() => Math.max(...data.value.top_products.map(p => p.total_sales), 1));
@@ -83,23 +85,12 @@ onMounted(async () => {
                 <h1 class="text-page-title font-extrabold">Halo, selamat datang! 👋</h1>
                 <p class="text-white/80 mt-xs text-base">Ringkasan performa toko Anda hari ini.</p>
             </div>
-            <Link href="/pos" class="btn-pill bg-white text-brand px-xl py-md text-base font-bold hover:opacity-95">
-                🛒 Buka Kasir
-            </Link>
+            <Link href="/pos"><BaseButton variant="soft" size="lg">🛒 Buka Kasir</BaseButton></Link>
         </div>
 
         <!-- KPI cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
-            <div v-for="k in kpis" :key="k.label" class="card-friendly p-lg hover:shadow-floating transition-shadow">
-                <div class="flex items-start justify-between">
-                    <div :class="['w-12 h-12 rounded-xl flex items-center justify-center text-2xl text-white shadow-soft', k.grad]">{{ k.icon }}</div>
-                    <span :class="['chip text-xs px-sm py-0.5', k.up ? 'bg-accent-mint-soft text-accent-mint' : 'bg-semantic-danger-soft text-semantic-danger']">
-                        {{ k.up ? '▲' : '▼' }} {{ k.trend }}
-                    </span>
-                </div>
-                <p class="text-sm font-medium text-ink-secondary mt-base">{{ k.label }}</p>
-                <p class="text-page-title-sm font-extrabold text-ink-primary mt-xs">{{ k.value }}</p>
-            </div>
+            <KPICard v-for="k in kpis" :key="k.label" :label="k.label" :value="k.value" :icon="k.icon" :color="k.color" :trend="k.trend" :trend-value="k.trendValue" />
         </div>
 
         <!-- Chart + Low stock -->

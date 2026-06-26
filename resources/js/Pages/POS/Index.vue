@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import BaseButton from '@/Components/Base/BaseButton.vue';
 
 
 
@@ -68,6 +69,19 @@ const quickCash = [50000, 100000, 150000, 200000];
 const setPaid = (v) => { paid.value = v; };
 
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
+
+const notice = ref(null);
+const checkout = () => {
+    if (cart.value.length === 0) return;
+    if (paid.value < total.value) {
+        notice.value = { type: 'error', text: `Pembayaran kurang ${rupiah(total.value - paid.value)}` };
+        return;
+    }
+    notice.value = { type: 'success', text: `Transaksi berhasil! Kembalian ${rupiah(change.value)}` };
+    cart.value = [];
+    paid.value = 0;
+    setTimeout(() => { notice.value = null; }, 4000);
+};
 </script>
 
 <template>
@@ -131,7 +145,7 @@ const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', curren
                     <h2 class="text-section-title font-bold text-ink-primary">Keranjang</h2>
                     <span class="chip bg-brand-soft text-brand px-sm py-0.5 text-xs">{{ itemCount }} item</span>
                 </div>
-                <button v-if="cart.length" @click="clearCart" class="text-sm font-semibold text-semantic-danger hover:bg-semantic-danger-soft rounded-pill px-md py-xs transition">Kosongkan</button>
+                <BaseButton v-if="cart.length" type="button" variant="ghost" size="sm" @click="clearCart" class="text-semantic-danger hover:bg-semantic-danger-soft">Kosongkan</BaseButton>
             </div>
 
             <!-- Cart items -->
@@ -177,10 +191,11 @@ const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', curren
                     <span class="text-accent-mint">{{ rupiah(change) }}</span>
                 </div>
 
-                <button :disabled="cart.length === 0"
-                    class="btn-pill w-full py-base text-base text-white bg-brand-gradient shadow-brand-glow hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                <div v-if="notice" :class="['rounded-lg px-md py-sm text-sm font-semibold text-center', notice.type === 'success' ? 'bg-accent-mint-soft text-accent-mint' : 'bg-semantic-danger-soft text-semantic-danger']">{{ notice.text }}</div>
+
+                <BaseButton type="button" variant="primary" size="lg" :disabled="cart.length === 0" class="w-full" @click="checkout">
                     💳 Bayar Sekarang
-                </button>
+                </BaseButton>
             </div>
         </aside>
     </div>
