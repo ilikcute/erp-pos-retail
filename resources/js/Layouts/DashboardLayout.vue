@@ -140,70 +140,88 @@ navigationGroups.forEach(group => {
         <!-- Sidebar -->
         <aside
             :class="isSidebarOpen ? 'w-64' : 'w-20'"
-            class="bg-ink-primary text-white transition-all duration-200 flex flex-col border-r border-border-soft fixed h-screen overflow-y-auto"
+            class="bg-sidebar-gradient text-white transition-all duration-200 flex flex-col fixed h-screen z-50"
         >
             <!-- Logo -->
-            <div class="h-16 flex items-center justify-center border-b border-white/10 flex-shrink-0">
-                <h1 v-if="isSidebarOpen" class="text-lg font-bold">ERP POS</h1>
-                <h1 v-else class="text-lg font-bold">E</h1>
+            <div class="h-16 flex items-center gap-md px-base border-b border-white/10 flex-shrink-0">
+                <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-lg font-extrabold shadow-soft">
+                    🛒
+                </div>
+                <div v-if="isSidebarOpen" class="leading-tight">
+                    <h1 class="text-base font-extrabold tracking-tight">ERP&nbsp;POS</h1>
+                    <p class="text-[11px] text-white/60 font-medium">Retail Suite</p>
+                </div>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 py-base space-y-md overflow-y-auto">
+            <nav class="flex-1 py-base space-y-base overflow-y-auto scroll-soft px-sm">
                 <template v-for="(group, idx) in visibleNavigationGroups" :key="idx">
-                    <!-- Group Header (Collapsible) -->
                     <div
                         v-if="isSidebarOpen"
                         @click="toggleGroup(group.group)"
-                        class="px-base py-sm flex justify-between items-center cursor-pointer hover:bg-white/5 rounded-md transition-colors select-none"
+                        class="px-sm py-xs flex justify-between items-center cursor-pointer rounded-md transition-colors select-none hover:bg-white/5"
                     >
-                        <span class="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                        <span class="text-[11px] font-bold text-white/45 uppercase tracking-widest">
                             {{ group.group }}
                         </span>
-                        <!-- Chevron icon -->
                         <svg
                             :class="isGroupExpanded(group.group) ? 'rotate-180' : ''"
-                            class="w-3.5 h-3.5 text-white/30 transition-transform duration-200"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                            class="w-3 h-3 text-white/35 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         >
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
                         </svg>
                     </div>
-                    
-                    <!-- Sub-menu Items -->
-                    <ul v-show="!isSidebarOpen || isGroupExpanded(group.group)" class="space-y-sm">
+
+                    <ul v-show="!isSidebarOpen || isGroupExpanded(group.group)" class="space-y-xs mb-sm">
                         <li v-for="item in group.items" :key="item.href">
                             <Link
                                 :href="item.href"
+                                :title="item.name"
                                 :class="[
-                                    'flex items-center px-base py-md gap-md rounded-md transition-colors duration-200',
+                                    'group flex items-center gap-md rounded-lg transition-all duration-150',
+                                    isSidebarOpen ? 'px-md py-sm' : 'px-0 py-sm justify-center',
                                     isCurrentPage(item.href)
-                                        ? 'bg-brand text-white'
-                                        : 'text-white/70 hover:bg-white/10'
+                                        ? 'bg-white text-brand font-semibold shadow-brand-glow'
+                                        : 'text-white/75 hover:bg-white/10 hover:text-white'
                                 ]"
                             >
-                                <span class="w-5 h-5 flex-shrink-0">
+                                <span
+                                    :class="[
+                                        'w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110',
+                                        isCurrentPage(item.href) ? 'text-brand' : 'text-white/80'
+                                    ]"
+                                >
                                     <Icon :name="item.icon" />
                                 </span>
-                                <span v-if="isSidebarOpen" class="text-sm font-medium">
-                                    {{ item.name }}
-                                </span>
+                                <span v-if="isSidebarOpen" class="text-sm">{{ item.name }}</span>
                             </Link>
                         </li>
                     </ul>
                 </template>
             </nav>
+
+            <!-- Sidebar footer user card -->
+            <div v-if="isSidebarOpen" class="p-sm border-t border-white/10 flex-shrink-0">
+                <div class="flex items-center gap-md rounded-xl bg-white/10 px-md py-sm">
+                    <div class="w-9 h-9 rounded-full bg-sunset-gradient flex items-center justify-center text-sm font-bold uppercase">
+                        {{ user.name?.charAt(0) }}
+                    </div>
+                    <div class="leading-tight overflow-hidden">
+                        <p class="text-sm font-semibold truncate">{{ user.name }}</p>
+                        <p class="text-[11px] text-white/60 truncate">{{ user.email }}</p>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
         <div :class="isSidebarOpen ? 'ml-64' : 'ml-20'" class="flex-1 flex flex-col transition-all duration-200">
             <!-- Topbar -->
-            <header class="h-16 bg-surface-card border-b border-border-soft sticky top-0 z-40 flex items-center justify-between px-xl shadow-soft">
+            <header class="h-16 bg-surface-card/90 backdrop-blur border-b border-border-soft sticky top-0 z-40 flex items-center justify-between px-xl">
                 <button
                     @click="isSidebarOpen = !isSidebarOpen"
-                    class="p-md text-ink-secondary hover:text-ink-primary hover:bg-surface-subtle rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand"
+                    class="p-sm text-ink-secondary hover:text-brand hover:bg-brand-soft rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand"
                     aria-label="Toggle sidebar"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,21 +229,27 @@ navigationGroups.forEach(group => {
                     </svg>
                 </button>
 
-                <div class="flex items-center gap-xl">
-                    <span class="text-sm font-medium text-ink-primary">{{ user.name }}</span>
-                    <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
-                        class="px-base py-md text-sm font-medium text-semantic-danger hover:bg-semantic-danger-soft rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-semantic-danger"
-                    >
-                        Logout
-                    </Link>
+                <div class="flex items-center gap-base">
+                    <div class="hidden sm:flex items-center gap-sm rounded-pill bg-surface-muted px-base py-sm text-ink-muted">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                        <span class="text-sm">Cari menu, produk...</span>
+                    </div>
+                    <div class="flex items-center gap-md pl-base border-l border-border-soft">
+                        <div class="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-sm font-bold uppercase shadow-brand-glow">
+                            {{ user.name?.charAt(0) }}
+                        </div>
+                        <span class="hidden sm:block text-sm font-semibold text-ink-primary">{{ user.name }}</span>
+                        <Link
+                            :href="route('logout')" method="post" as="button"
+                            class="px-base py-sm text-sm font-semibold text-semantic-danger hover:bg-semantic-danger-soft rounded-pill transition-colors"
+                        >
+                            Logout
+                        </Link>
+                    </div>
                 </div>
             </header>
 
-            <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto bg-surface-main">
+            <main class="flex-1 overflow-y-auto scroll-soft bg-surface-main">
                 <div class="p-xl">
                     <slot />
                 </div>

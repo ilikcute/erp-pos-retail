@@ -1,464 +1,189 @@
 <script setup>
-import { ref, computed } from 'vue';
-import BaseButton from '@/Components/Base/BaseButton.vue';
-import { Head, Link } from '@inertiajs/vue3';
 
-const barcode = ref('');
-const cartItems = ref([
-    { product_name: 'Apple Studio Display 27"', unit_price: 24999000, quantity: 1, line_total: 24999000 },
-    { product_name: 'Magic Keyboard with Touch ID', unit_price: 2799000, quantity: 2, line_total: 5598000 }
-]);
-const paymentMethod = ref('CASH');
-const amountPaid = ref(35000000);
-const taxRate = ref(11);
-const discountAmount = ref(1500000);
 
-const showSuccessModal = ref(false);
-const receiptData = ref(null);
 
-const subtotal = computed(() => {
-    return cartItems.value.reduce((sum, item) => sum + item.line_total, 0);
+const props = defineProps({
+    products: { type: Array, default: () => ([
+        { id: 1,  name: 'Kopi Susu Gula Aren', sku: 'BEV-001', price: 22000, stock: 48, category: 'Minuman', emoji: '☕' },
+        { id: 2,  name: 'Teh Lemon Segar',     sku: 'BEV-002', price: 18000, stock: 35, category: 'Minuman', emoji: '🍋' },
+        { id: 3,  name: 'Roti Bakar Cokelat',  sku: 'FOO-001', price: 25000, stock: 20, category: 'Makanan', emoji: '🍞' },
+        { id: 4,  name: 'Nasi Goreng Spesial', sku: 'FOO-002', price: 35000, stock: 15, category: 'Makanan', emoji: '🍛' },
+        { id: 5,  name: 'Kentang Goreng',      sku: 'SNK-001', price: 20000, stock: 60, category: 'Snack',   emoji: '🍟' },
+        { id: 6,  name: 'Donat Gula',          sku: 'SNK-002', price: 12000, stock: 40, category: 'Snack',   emoji: '🍩' },
+        { id: 7,  name: 'Air Mineral 600ml',   sku: 'BEV-003', price: 6000,  stock: 120,category: 'Minuman', emoji: '💧' },
+        { id: 8,  name: 'Es Krim Vanila',      sku: 'DES-001', price: 15000, stock: 25, category: 'Dessert', emoji: '🍦' },
+        { id: 9,  name: 'Burger Daging',       sku: 'FOO-003', price: 38000, stock: 12, category: 'Makanan', emoji: '🍔' },
+        { id: 10, name: 'Pizza Slice',         sku: 'FOO-004', price: 28000, stock: 8,  category: 'Makanan', emoji: '🍕' },
+        { id: 11, name: 'Cokelat Bar',         sku: 'SNK-003', price: 14000, stock: 50, category: 'Snack',   emoji: '🍫' },
+        { id: 12, name: 'Jus Jeruk Segar',     sku: 'BEV-004', price: 24000, stock: 30, category: 'Minuman', emoji: '🧃' },
+    ]) },
+    cashierName: { type: String, default: 'Kasir 01' },
+    shiftLabel: { type: String, default: 'Shift Pagi' },
 });
 
-const taxAmount = computed(() => {
-    return Math.round((subtotal.value - discountAmount.value) * (taxRate.value / 100));
+const palette = [
+    { ring: 'ring-accent-violet/30', tint: 'bg-accent-violet-soft', text: 'text-accent-violet' },
+    { ring: 'ring-accent-mint/30',   tint: 'bg-accent-mint-soft',   text: 'text-accent-mint' },
+    { ring: 'ring-accent-sunny/30',  tint: 'bg-accent-sunny-soft',  text: 'text-accent-sunny' },
+    { ring: 'ring-accent-sky/30',    tint: 'bg-accent-sky-soft',    text: 'text-accent-sky' },
+    { ring: 'ring-accent-coral/30',  tint: 'bg-accent-coral-soft',  text: 'text-accent-coral' },
+    { ring: 'ring-accent-grape/30',  tint: 'bg-accent-grape-soft',  text: 'text-accent-grape' },
+];
+const colorFor = (i) => palette[i % palette.length];
+
+const search = ref('');
+const activeCategory = ref('Semua');
+const cart = ref([]);
+const paid = ref(0);
+
+const categories = computed(() => ['Semua', ...new Set(props.products.map(p => p.category))]);
+
+const filteredProducts = computed(() => {
+    const q = search.value.trim().toLowerCase();
+    return props.products.filter(p => {
+        const okCat = activeCategory.value === 'Semua' || p.category === activeCategory.value;
+        const okSearch = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+        return okCat && okSearch;
+    });
 });
 
-const grandTotal = computed(() => {
-    return subtotal.value - discountAmount.value + taxAmount.value;
-});
-
-const change = computed(() => {
-    return Math.max(0, amountPaid.value - grandTotal.value);
-});
-
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
+const addToCart = (p) => {
+    const found = cart.value.find(i => i.id === p.id);
+    if (found) { found.qty++; } else { cart.value.push({ ...p, qty: 1 }); }
 };
+const inc = (i) => { i.qty++; };
+const dec = (i) => { i.qty--; if (i.qty <= 0) removeItem(i); };
+const removeItem = (i) => { cart.value = cart.value.filter(x => x.id !== i.id); };
+const clearCart = () => { cart.value = []; paid.value = 0; };
 
-// Mock product catalogue for scanner
-const mockProducts = {
-    '111': { name: 'MacBook Pro 14" M3', price: 28999000 },
-    '222': { name: 'iPhone 15 Pro Max 256GB', price: 22499000 },
-    '333': { name: 'iPad Air 11" M2', price: 10999000 },
-    '444': { name: 'AirPods Pro 2nd Gen', price: 3899000 },
-    '555': { name: 'Apple Watch Series 9', price: 6799000 },
-};
+const subtotal = computed(() => cart.value.reduce((s, i) => s + i.price * i.qty, 0));
+const tax = computed(() => Math.round(subtotal.value * 0.11));
+const total = computed(() => subtotal.value + tax.value);
+const change = computed(() => Math.max(0, paid.value - total.value));
+const itemCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0));
 
-const addProduct = () => {
-    const code = barcode.value.trim();
-    if (!code) return;
+const quickCash = [50000, 100000, 150000, 200000];
+const setPaid = (v) => { paid.value = v; };
 
-    const matchedProduct = mockProducts[code];
-    if (matchedProduct) {
-        const existingItem = cartItems.value.find(item => item.product_name === matchedProduct.name);
-        if (existingItem) {
-            existingItem.quantity += 1;
-            existingItem.line_total = existingItem.quantity * existingItem.unit_price;
-        } else {
-            cartItems.value.push({
-                product_name: matchedProduct.name,
-                unit_price: matchedProduct.price,
-                quantity: 1,
-                line_total: matchedProduct.price,
-            });
-        }
-    } else {
-        const price = Math.floor(Math.random() * 50 + 1) * 10000;
-        cartItems.value.push({
-            product_name: `Product [${code}]`,
-            unit_price: price,
-            quantity: 1,
-            line_total: price,
-        });
-    }
-
-    barcode.value = '';
-    
-    if (amountPaid.value < grandTotal.value) {
-        amountPaid.value = Math.ceil(grandTotal.value / 100000) * 100000;
-    }
-};
-
-const updateQuantity = (index, delta) => {
-    const item = cartItems.value[index];
-    item.quantity = Math.max(1, item.quantity + delta);
-    item.line_total = item.quantity * item.unit_price;
-
-    if (amountPaid.value < grandTotal.value) {
-        amountPaid.value = Math.ceil(grandTotal.value / 100000) * 100000;
-    }
-};
-
-const removeItem = (index) => {
-    cartItems.value.splice(index, 1);
-    
-    if (amountPaid.value < grandTotal.value) {
-        amountPaid.value = Math.ceil(grandTotal.value / 100000) * 100000;
-    }
-};
-
-const completeSale = () => {
-    if (cartItems.value.length === 0 || !paymentMethod.value) return;
-
-    const randNo = Math.floor(1000 + Math.random() * 9000);
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const transactionNo = `TR-${dateStr}-${randNo}`;
-
-    receiptData.value = {
-        transactionNo,
-        items: [...cartItems.value],
-        subtotal: subtotal.value,
-        discountAmount: discountAmount.value,
-        taxAmount: taxAmount.value,
-        grandTotal: grandTotal.value,
-        amountPaid: amountPaid.value,
-        change: change.value,
-        paymentMethod: paymentMethod.value,
-        date: new Date().toLocaleString('id-ID'),
-    };
-
-    showSuccessModal.value = true;
-};
-
-const resetSale = () => {
-    cartItems.value = [];
-    paymentMethod.value = 'CASH';
-    amountPaid.value = 0;
-    discountAmount.value = 0;
-    showSuccessModal.value = false;
-    receiptData.value = null;
-};
-
-const holdTransaction = () => {
-    alert('☕ Transaksi telah ditahan sementara (Hold Bill).');
-};
-
-const cancelTransaction = () => {
-    if (confirm('Apakah Anda yakin ingin membatalkan transaksi ini?')) {
-        cartItems.value = [];
-        paymentMethod.value = 'CASH';
-        amountPaid.value = 0;
-        discountAmount.value = 0;
-    }
-};
-
-const quickPay = (amount) => {
-    amountPaid.value = amount;
-};
-
-// Date time update
-const currentTime = ref(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
-setInterval(() => {
-    currentTime.value = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-}, 60000);
-const currentDate = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
 </script>
 
 <template>
-    <Head title="POS Terminal (Full Screen)" />
-
-    <div class="h-screen flex flex-col bg-surface-main overflow-hidden text-ink-primary font-sans">
-        <!-- POS Full-Screen Header -->
-        <header class="h-16 bg-white border-b border-border-soft px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
-            <div class="flex items-center gap-4">
-                <!-- Exit Button -->
-                <Link href="/dashboard" class="flex items-center gap-1.5 text-ink-secondary hover:text-ink-primary bg-surface-main border border-border-soft px-3 py-1.5 rounded-md text-xs font-semibold shadow-soft cursor-pointer transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Dashboard
+    <Head title="Kasir POS" />
+    <div class="h-screen flex bg-surface-main overflow-hidden">
+        <!-- ===== LEFT: Product catalog ===== -->
+        <section class="flex-1 flex flex-col min-w-0">
+            <!-- Header -->
+            <header class="flex items-center gap-base px-xl py-base bg-surface-card border-b border-border-soft">
+                <div class="w-11 h-11 rounded-xl bg-brand-gradient flex items-center justify-center text-xl shadow-brand-glow">🛒</div>
+                <div class="mr-auto leading-tight">
+                    <h1 class="text-section-title font-bold text-ink-primary">Kasir POS</h1>
+                    <p class="text-sm text-ink-muted">{{ cashierName }} · {{ shiftLabel }}</p>
+                </div>
+                <Link href="/dashboard" class="btn-pill px-base py-sm text-sm text-ink-secondary bg-surface-muted hover:bg-border-soft">
+                    ← Dashboard
                 </Link>
-                <div class="h-5 w-[1px] bg-border-soft"></div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base font-bold tracking-tight text-brand">ERP POS Terminal</span>
-                    <span class="bg-semantic-success-soft text-semantic-success text-[10px] font-bold px-2 py-0.5 rounded-full border border-transparent">
-                        Open Session
-                    </span>
+            </header>
+
+            <!-- Search + categories -->
+            <div class="px-xl pt-base space-y-base">
+                <div class="relative">
+                    <svg class="w-5 h-5 absolute left-base top-1/2 -translate-y-1/2 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                    <input v-model="search" type="text" placeholder="Scan barcode atau cari produk..." class="w-full pl-12 pr-base py-md rounded-pill border border-border-soft bg-surface-card text-base focus:ring-2 focus:ring-brand focus:border-brand outline-none transition" />
                 </div>
-            </div>
-
-            <!-- Time & Cashier Info -->
-            <div class="flex items-center gap-5 text-sm">
-                <div class="text-right">
-                    <p class="font-semibold text-ink-primary">{{ currentDate }}</p>
-                    <p class="text-xs text-ink-secondary font-mono">{{ currentTime }}</p>
-                </div>
-                <div class="h-8 w-[1px] bg-border-soft"></div>
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-brand-soft text-brand flex items-center justify-center font-bold text-xs">
-                        SA
-                    </div>
-                    <div class="text-left">
-                        <p class="text-xs text-ink-secondary">Kasir</p>
-                        <p class="text-xs font-bold text-ink-primary">Superadmin</p>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- POS Main Body -->
-        <div class="flex-1 flex overflow-hidden">
-            
-            <!-- Left Side: Product scanner and Cart Items list (Scrollable) -->
-            <div class="flex-1 flex flex-col p-6 overflow-hidden space-y-6">
-                <!-- Scanner Input Card -->
-                <div class="bg-surface-card rounded-card border border-border-soft p-5 shadow-card shrink-0">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-ink-secondary mb-2.5">Barcode Scanner / Kode Produk</h3>
-                    <div class="relative">
-                        <input
-                            v-model="barcode"
-                            @keyup.enter="addProduct"
-                            type="text"
-                            placeholder="Scan barcode (e.g. 111, 222, 333) lalu tekan Enter..."
-                            class="w-full px-base py-md pl-2xl rounded-md border border-border-strong bg-surface-card text-ink-primary placeholder-ink-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent font-mono text-sm"
-                            autofocus
-                        />
-                        <svg class="absolute left-base top-1/2 -translate-y-1/2 w-5 h-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                        </svg>
-                    </div>
-                    <div class="mt-2.5 flex items-center gap-sm overflow-x-auto py-0.5">
-                        <span class="text-[11px] text-ink-muted whitespace-nowrap">💡 Simulator Barcode:</span>
-                        <button @click="barcode = '111'; addProduct()" class="text-[10px] bg-surface-main hover:bg-border-soft border border-border-soft px-2 py-0.5 rounded text-ink-primary font-mono cursor-pointer transition-colors">111 (MacBook)</button>
-                        <button @click="barcode = '222'; addProduct()" class="text-[10px] bg-surface-main hover:bg-border-soft border border-border-soft px-2 py-0.5 rounded text-ink-primary font-mono cursor-pointer transition-colors">222 (iPhone)</button>
-                        <button @click="barcode = '333'; addProduct()" class="text-[10px] bg-surface-main hover:bg-border-soft border border-border-soft px-2 py-0.5 rounded text-ink-primary font-mono cursor-pointer transition-colors">333 (iPad)</button>
-                        <button @click="barcode = '444'; addProduct()" class="text-[10px] bg-surface-main hover:bg-border-soft border border-border-soft px-2 py-0.5 rounded text-ink-primary font-mono cursor-pointer transition-colors">444 (AirPods)</button>
-                        <button @click="barcode = '555'; addProduct()" class="text-[10px] bg-surface-main hover:bg-border-soft border border-border-soft px-2 py-0.5 rounded text-ink-primary font-mono cursor-pointer transition-colors">555 (Watch)</button>
-                    </div>
-                </div>
-
-                <!-- Cart Items Card (Scrollable inside) -->
-                <div class="bg-surface-card rounded-card border border-border-soft shadow-card flex-1 flex flex-col overflow-hidden">
-                    <div class="p-5 border-b border-border-soft flex justify-between items-center shrink-0">
-                        <h3 class="text-base font-bold text-ink-primary">Daftar Belanja</h3>
-                        <span class="bg-brand-soft text-brand text-xs font-bold px-2.5 py-1 rounded-full">{{ cartItems.length }} Item</span>
-                    </div>
-
-                    <!-- Cart Content -->
-                    <div class="flex-1 overflow-y-auto p-5">
-                        <div v-if="cartItems.length === 0" class="h-full flex flex-col items-center justify-center text-ink-secondary py-10">
-                            <svg class="w-16 h-16 text-ink-muted mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                            <p class="font-semibold text-ink-secondary">Belum Ada Item Terpilih</p>
-                            <p class="text-xs text-ink-muted mt-1">Scan produk atau gunakan simulator di atas untuk memasukkan barang</p>
-                        </div>
-                        
-                        <div v-else class="divide-y divide-border-soft">
-                            <div v-for="(item, index) in cartItems" :key="index" class="py-3.5 flex justify-between items-center gap-md first:pt-0 last:pb-0">
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="font-bold text-ink-primary truncate">{{ item.product_name }}</h4>
-                                    <p class="text-xs text-ink-secondary font-mono mt-0.5">
-                                        {{ formatCurrency(item.unit_price) }}
-                                    </p>
-                                </div>
-
-                                <!-- Quantity Control -->
-                                <div class="flex items-center border border-border-soft rounded-md bg-surface-main shrink-0">
-                                    <button
-                                        @click="updateQuantity(index, -1)"
-                                        class="px-2.5 py-1 text-ink-secondary hover:text-ink-primary font-bold hover:bg-border-soft transition-colors cursor-pointer rounded-l-md"
-                                    >
-                                        -
-                                    </button>
-                                    <span class="px-2.5 text-xs font-bold text-ink-primary font-mono w-9 text-center">
-                                        {{ item.quantity }}
-                                    </span>
-                                    <button
-                                        @click="updateQuantity(index, 1)"
-                                        class="px-2.5 py-1 text-ink-secondary hover:text-ink-primary font-bold hover:bg-border-soft transition-colors cursor-pointer rounded-r-md"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-
-                                <!-- Line Total and Delete -->
-                                <div class="text-right flex items-center gap-sm shrink-0">
-                                    <div class="min-w-[100px]">
-                                        <p class="font-bold text-ink-primary font-mono text-sm">{{ formatCurrency(item.line_total) }}</p>
-                                    </div>
-                                    <button
-                                        @click="removeItem(index)"
-                                        class="p-1.5 text-semantic-danger-soft hover:text-semantic-danger rounded-md hover:bg-semantic-danger-soft/10 transition-colors cursor-pointer"
-                                        title="Hapus"
-                                    >
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Check-out and Payments (Fixed Height Layout) -->
-            <div class="w-[420px] bg-white border-l border-border-soft shadow-xl shrink-0 flex flex-col justify-between overflow-hidden">
-                <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                    <h3 class="text-base font-bold text-ink-primary border-b border-border-soft pb-3">Kalkulasi & Pembayaran</h3>
-
-                    <!-- Totals Summary -->
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between text-ink-secondary">
-                            <span>Subtotal</span>
-                            <span class="font-mono">{{ formatCurrency(subtotal) }}</span>
-                        </div>
-                        <div class="flex justify-between text-semantic-danger font-medium">
-                            <span>Diskon</span>
-                            <span class="font-mono">-{{ formatCurrency(discountAmount) }}</span>
-                        </div>
-                        <div class="flex justify-between text-ink-secondary">
-                            <span>Pajak ({{ taxRate }}%)</span>
-                            <span class="font-mono">{{ formatCurrency(taxAmount) }}</span>
-                        </div>
-                        <div class="border-t border-border-soft pt-3 flex justify-between text-lg font-extrabold text-ink-primary">
-                            <span>Total Akhir</span>
-                            <span class="font-mono text-brand">{{ formatCurrency(grandTotal) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Payment Setup -->
-                    <div class="space-y-4 pt-4 border-t border-border-soft">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-2">Metode Pembayaran</label>
-                            <select
-                                v-model="paymentMethod"
-                                class="w-full px-base py-md rounded-md border border-border-strong bg-white text-ink-primary font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent cursor-pointer"
-                            >
-                                <option value="CASH">Tunai (Cash)</option>
-                                <option value="CARD">Debit / Kredit (Card)</option>
-                                <option value="TRANSFER">Transfer Bank</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-2">Jumlah Dibayar (Uang Masuk)</label>
-                            <input
-                                v-model.number="amountPaid"
-                                type="number"
-                                class="w-full px-base py-md rounded-md border border-border-strong bg-white text-ink-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent font-bold"
-                            />
-                        </div>
-
-                        <!-- Quick Cash Buttons -->
-                        <div v-if="paymentMethod === 'CASH'" class="grid grid-cols-3 gap-2">
-                            <button @click="quickPay(grandTotal)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">Uang Pas</button>
-                            <button @click="quickPay(50000)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">50.000</button>
-                            <button @click="quickPay(100000)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">100.000</button>
-                            <button @click="quickPay(200000)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">200.000</button>
-                            <button @click="quickPay(500000)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">500.000</button>
-                            <button @click="quickPay(1000000)" class="text-xs bg-surface-main hover:bg-border-soft border border-border-soft py-1.5 rounded text-ink-primary font-mono font-semibold cursor-pointer transition-colors">1.000.000</button>
-                        </div>
-
-                        <!-- Calculation Message Box -->
-                        <div :class="amountPaid >= grandTotal ? 'bg-semantic-success-soft/20 text-semantic-success' : 'bg-semantic-danger-soft/20 text-semantic-danger'" class="p-4 rounded-md transition-colors flex justify-between items-center shrink-0">
-                            <span class="text-xs font-bold uppercase tracking-wider">{{ amountPaid >= grandTotal ? 'Kembalian:' : 'Kurang:' }}</span>
-                            <span class="text-xl font-extrabold font-mono">{{ formatCurrency(Math.abs(amountPaid - grandTotal)) }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Footer Checkout Button Area -->
-                <div class="p-6 border-t border-border-soft bg-surface-main shrink-0 space-y-3">
-                    <button
-                        @click="completeSale"
-                        :disabled="cartItems.length === 0 || amountPaid < grandTotal"
-                        class="w-full bg-brand hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-md transition-colors cursor-pointer text-sm shadow-sm"
-                    >
-                        Selesaikan Transaksi (Complete)
-                    </button>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button
-                            @click="holdTransaction"
-                            :disabled="cartItems.length === 0"
-                            class="bg-white hover:bg-surface-subtle disabled:opacity-50 disabled:cursor-not-allowed border border-border-soft text-ink-primary font-semibold py-2 rounded-md transition-colors cursor-pointer text-xs"
-                        >
-                            Hold Bill
-                        </button>
-                        <button
-                            @click="cancelTransaction"
-                            :disabled="cartItems.length === 0"
-                            class="bg-semantic-danger-soft text-semantic-danger hover:bg-semantic-danger-soft/80 disabled:opacity-50 border border-transparent font-semibold py-2 rounded-md transition-colors cursor-pointer text-xs"
-                        >
-                            Batalkan
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Success Checkout Receipt Modal -->
-        <div v-if="showSuccessModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div class="bg-surface-card rounded-card border border-border-soft shadow-2xl max-w-md w-full p-6 space-y-6 transform scale-100 transition-transform">
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-semantic-success-soft text-semantic-success rounded-full flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-ink-primary">Transaksi Berhasil!</h3>
-                    <p class="text-xs text-ink-secondary mt-1">Pembayaran telah diterima dan dicatat.</p>
-                </div>
-
-                <!-- Simple Print Receipt Representation -->
-                <div class="border border-border-soft bg-surface-main p-4 rounded-md font-mono text-xs text-ink-primary space-y-3">
-                    <div class="text-center border-b border-border-soft pb-2 space-y-1">
-                        <h4 class="font-bold">ERP POS RETAIL</h4>
-                        <p class="text-[10px] text-ink-secondary">Jl. Retail Raya No. 42</p>
-                    </div>
-                    <div class="space-y-1 text-[11px]">
-                        <p class="flex justify-between"><span>No Transaksi:</span> <span>{{ receiptData?.transactionNo }}</span></p>
-                        <p class="flex justify-between"><span>Tanggal:</span> <span>{{ receiptData?.date }}</span></p>
-                        <p class="flex justify-between"><span>Kasir:</span> <span>Superadmin</span></p>
-                        <p class="flex justify-between"><span>Metode:</span> <span>{{ receiptData?.paymentMethod }}</span></p>
-                    </div>
-                    <div class="border-t border-b border-border-soft py-2 space-y-1.5 text-[11px]">
-                        <div v-for="(item, idx) in receiptData?.items" :key="idx" class="flex justify-between">
-                            <div class="max-w-[200px] truncate">
-                                <span>{{ item.product_name }}</span>
-                                <p class="text-[10px] text-ink-secondary">{{ item.quantity }} x {{ formatCurrency(item.unit_price) }}</p>
-                            </div>
-                            <span>{{ formatCurrency(item.line_total) }}</span>
-                        </div>
-                    </div>
-                    <div class="space-y-1 text-[11px] font-bold">
-                        <p class="flex justify-between font-normal text-ink-secondary"><span>Subtotal:</span> <span>{{ formatCurrency(receiptData?.subtotal) }}</span></p>
-                        <p class="flex justify-between font-normal text-semantic-danger"><span>Diskon:</span> <span>-{{ formatCurrency(receiptData?.discountAmount) }}</span></p>
-                        <p class="flex justify-between font-normal text-ink-secondary"><span>Pajak:</span> <span>{{ formatCurrency(receiptData?.taxAmount) }}</span></p>
-                        <p class="flex justify-between text-brand border-t border-border-soft pt-1"><span>TOTAL:</span> <span>{{ formatCurrency(receiptData?.grandTotal) }}</span></p>
-                        <p class="flex justify-between font-normal border-t border-border-soft pt-1"><span>Dibayar:</span> <span>{{ formatCurrency(receiptData?.amountPaid) }}</span></p>
-                        <p class="flex justify-between text-semantic-success"><span>Kembalian:</span> <span>{{ formatCurrency(receiptData?.change) }}</span></p>
-                    </div>
-                    <div class="text-center text-[10px] text-ink-secondary border-t border-border-soft pt-2">
-                        Terima kasih atas kunjungan Anda!
-                    </div>
-                </div>
-
-                <div class="flex gap-md">
-                    <button
-                        @click="resetSale"
-                        class="flex-1 bg-surface-main hover:bg-border-soft border border-border-soft text-ink-primary font-bold py-2.5 rounded-md transition-colors cursor-pointer text-xs"
-                    >
-                        Tutup & Transaksi Baru
-                    </button>
-                    <button
-                        @click="window.print()"
-                        class="flex-1 bg-brand hover:bg-brand/90 text-white font-bold py-2.5 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-center gap-xs"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Cetak Struk
+                <div class="flex gap-sm overflow-x-auto scroll-soft pb-xs">
+                    <button v-for="cat in categories" :key="cat" @click="activeCategory = cat"
+                        :class="['chip whitespace-nowrap', activeCategory === cat ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">
+                        {{ cat }}
                     </button>
                 </div>
             </div>
-        </div>
+
+            <!-- Product grid -->
+            <div class="flex-1 overflow-y-auto scroll-soft px-xl py-base">
+                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-base">
+                    <button v-for="(p, idx) in filteredProducts" :key="p.id" @click="addToCart(p)"
+                        class="card-friendly p-base text-left hover:shadow-floating hover:-translate-y-0.5 transition-all duration-150 active:scale-95 ring-1 ring-transparent focus:outline-none"
+                        :class="colorFor(idx).ring">
+                        <div class="w-full aspect-square rounded-xl flex items-center justify-center text-4xl mb-md" :class="colorFor(idx).tint">
+                            {{ p.emoji }}
+                        </div>
+                        <p class="text-sm font-semibold text-ink-primary leading-snug line-clamp-2 min-h-[2.5rem]">{{ p.name }}</p>
+                        <div class="flex items-center justify-between mt-xs">
+                            <span class="text-card-title font-bold" :class="colorFor(idx).text">{{ rupiah(p.price) }}</span>
+                        </div>
+                        <span class="inline-block mt-xs text-[11px] font-medium text-ink-muted">Stok: {{ p.stock }}</span>
+                    </button>
+                </div>
+                <div v-if="filteredProducts.length === 0" class="text-center py-5xl text-ink-muted">
+                    <p class="text-4xl mb-base">🔍</p>
+                    <p class="text-base">Produk tidak ditemukan</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== RIGHT: Cart ===== -->
+        <aside class="w-[400px] flex-shrink-0 bg-surface-card border-l border-border-soft flex flex-col">
+            <div class="px-lg py-base border-b border-border-soft flex items-center justify-between">
+                <div class="flex items-center gap-sm">
+                    <h2 class="text-section-title font-bold text-ink-primary">Keranjang</h2>
+                    <span class="chip bg-brand-soft text-brand px-sm py-0.5 text-xs">{{ itemCount }} item</span>
+                </div>
+                <button v-if="cart.length" @click="clearCart" class="text-sm font-semibold text-semantic-danger hover:bg-semantic-danger-soft rounded-pill px-md py-xs transition">Kosongkan</button>
+            </div>
+
+            <!-- Cart items -->
+            <div class="flex-1 overflow-y-auto scroll-soft px-lg py-base space-y-sm">
+                <div v-if="cart.length === 0" class="h-full flex flex-col items-center justify-center text-center text-ink-muted">
+                    <p class="text-5xl mb-base">🛍️</p>
+                    <p class="text-base font-medium">Keranjang masih kosong</p>
+                    <p class="text-sm">Pilih produk untuk memulai transaksi</p>
+                </div>
+                <div v-for="item in cart" :key="item.id" class="flex items-center gap-md rounded-lg bg-surface-muted p-sm">
+                    <div class="w-11 h-11 rounded-lg bg-surface-card flex items-center justify-center text-xl flex-shrink-0">{{ item.emoji }}</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-ink-primary truncate">{{ item.name }}</p>
+                        <p class="text-sm text-ink-muted">{{ rupiah(item.price) }}</p>
+                    </div>
+                    <div class="flex items-center gap-xs">
+                        <button @click="dec(item)" class="w-7 h-7 rounded-full bg-surface-card border border-border-soft text-ink-secondary font-bold hover:bg-semantic-danger-soft hover:text-semantic-danger transition">−</button>
+                        <span class="w-6 text-center text-sm font-bold text-ink-primary">{{ item.qty }}</span>
+                        <button @click="inc(item)" class="w-7 h-7 rounded-full bg-brand text-white font-bold hover:bg-brand-hover transition">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totals + payment -->
+            <div class="border-t border-border-soft p-lg space-y-md">
+                <div class="space-y-xs text-sm">
+                    <div class="flex justify-between text-ink-secondary"><span>Subtotal</span><span>{{ rupiah(subtotal) }}</span></div>
+                    <div class="flex justify-between text-ink-secondary"><span>PPN 11%</span><span>{{ rupiah(tax) }}</span></div>
+                    <div class="flex justify-between items-center pt-sm border-t border-border-soft">
+                        <span class="text-card-title font-bold text-ink-primary">Total</span>
+                        <span class="text-page-title-sm font-extrabold text-gradient-brand">{{ rupiah(total) }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-xs">
+                    <button v-for="c in quickCash" :key="c" @click="setPaid(c)"
+                        :class="['btn-pill py-sm text-xs', paid === c ? 'bg-accent-mint text-white' : 'bg-accent-mint-soft text-accent-mint']">
+                        {{ (c/1000) }}k
+                    </button>
+                </div>
+                <div v-if="paid > 0" class="flex justify-between text-sm font-semibold">
+                    <span class="text-ink-secondary">Kembalian</span>
+                    <span class="text-accent-mint">{{ rupiah(change) }}</span>
+                </div>
+
+                <button :disabled="cart.length === 0"
+                    class="btn-pill w-full py-base text-base text-white bg-brand-gradient shadow-brand-glow hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                    💳 Bayar Sekarang
+                </button>
+            </div>
+        </aside>
     </div>
 </template>
+
+<style scoped>
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
