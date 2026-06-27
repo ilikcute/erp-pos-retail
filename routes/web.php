@@ -15,13 +15,18 @@ use App\Http\Controllers\System\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Authenticated Routes
+// Landing Page
+Route::middleware(['guest'])->group(function () {
+    Route::get('/', fn() => Inertia::render('Welcome'))->name('welcome');
+});
+
+
 Route::middleware(['auth'])->group(function () {
-    Route::get('/', fn () => redirect('/dashboard'));
-    Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
+    // Route::get('/', fn () => redirect('/dashboard'));
+    Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
 
     // Business module pages
-    Route::get('/pos', fn () => Inertia::render('POS/Index'));
+    Route::get('/pos', fn() => Inertia::render('POS/Index'));
     Route::get('/pos/shifts', [SalesTransactionController::class, 'shifts'])->name('pos.shifts.index');
     Route::get('/pos/sales', [SalesTransactionController::class, 'index'])->name('pos.sales.index');
     Route::get('/pos/sales/{id}', [SalesTransactionController::class, 'show'])->name('pos.sales.show');
@@ -50,23 +55,23 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/brands/{id}', [ProductBrandController::class, 'update'])->name('brands.update');
         Route::delete('/brands/{id}', [ProductBrandController::class, 'destroy'])->name('brands.destroy');
     });
-    Route::get('/inventory', fn () => Inertia::render('Inventory/Index', ['activeTab' => 'balance']));
-    Route::get('/inventory/transfer', fn () => Inertia::render('Inventory/Index', ['activeTab' => 'transfers']));
-    Route::get('/purchasing', fn () => redirect('/purchasing/po'));
-    Route::get('/purchasing/po', fn () => Inertia::render('Purchasing/Index', ['activeTab' => 'orders']));
-    Route::get('/purchasing/receipt', fn () => Inertia::render('Purchasing/Index', ['activeTab' => 'receipts']));
-    Route::get('/purchasing/create', fn () => Inertia::render('Purchasing/Create'));
-    Route::get('/purchasing/{id}', fn () => Inertia::render('Purchasing/Show'));
+    Route::get('/inventory', fn() => Inertia::render('Inventory/Index', ['activeTab' => 'balance']));
+    Route::get('/inventory/transfer', fn() => Inertia::render('Inventory/Index', ['activeTab' => 'transfers']));
+    Route::get('/purchasing', fn() => redirect('/purchasing/po'));
+    Route::get('/purchasing/po', fn() => Inertia::render('Purchasing/Index', ['activeTab' => 'orders']));
+    Route::get('/purchasing/receipt', fn() => Inertia::render('Purchasing/Index', ['activeTab' => 'receipts']));
+    Route::get('/purchasing/create', fn() => Inertia::render('Purchasing/Create'));
+    Route::get('/purchasing/{id}', fn() => Inertia::render('Purchasing/Show'));
     Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
     Route::get('/promotions', [PromotionController::class, 'index'])->name('promotions.index');
     Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
-    Route::get('/accounting', fn () => redirect('/accounting/coa'));
-    Route::get('/accounting/coa', fn () => Inertia::render('Accounting/Index', ['activeTab' => 'coa']));
-    Route::get('/accounting/journals', fn () => Inertia::render('Accounting/Index', ['activeTab' => 'journals']));
-    Route::get('/reporting', fn () => Inertia::render('Reporting/Index'));
+    Route::get('/accounting', fn() => redirect('/accounting/coa'));
+    Route::get('/accounting/coa', fn() => Inertia::render('Accounting/Index', ['activeTab' => 'coa']));
+    Route::get('/accounting/journals', fn() => Inertia::render('Accounting/Index', ['activeTab' => 'journals']));
+    Route::get('/reporting', fn() => Inertia::render('Reporting/Index'));
 
     // Master data pages
-    Route::get('/master-data', fn () => redirect('/master-data/suppliers'));
+    Route::get('/master-data', fn() => redirect('/master-data/suppliers'));
     Route::get('/master-data/suppliers', [MasterDataController::class, 'suppliers'])->name('master-data.suppliers');
     Route::get('/master-data/customers', [MasterDataController::class, 'customers'])->name('master-data.customers');
     Route::get('/master-data/customer-categories', [MasterDataController::class, 'customerCategories'])->name('master-data.customer-categories');
@@ -95,4 +100,4 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

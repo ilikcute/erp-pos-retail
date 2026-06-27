@@ -1,206 +1,382 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
-import BaseButton from '@/Components/Base/BaseButton.vue';
+import { ref, computed, watch } from 'vue';
+import { Head, usePage } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
+import toast from '@/Utils/toast';
+import { queueTransaction } from '@/Utils/offlineDb';
+import { formatPrice } from '@/Utils/formatPrice';
 
+import POSLayout from '@/Layouts/POSLayout.vue';
+import ProductGrid from './Components/ProductGrid.vue';
+import CartPanel from './Components/CartPanel.vue';
+import PaymentPanel from './Components/PaymentPanel.vue';
+import CustomerSelect from './Components/CustomerSelect.vue';
+import SummaryFooter from './Components/SummaryFooter.vue';
+import VoidReasonModal from './Components/VoidReasonModal.vue';
+import ShiftOpener from './Components/ShiftOpener.vue';
+import NumpadModal from './Components/NumpadModal.vue';
 
+import { useBarcodeScanner } from '@/Composables/useBarcodeScanner';
+import { useCart } from '@/Composables/useCart';
+import { usePricingPreview } from '@/Composables/usePricingPreview';
+import { usePayment } from '@/Composables/usePayment';
+import { useKeyboardShortcuts } from '@/Composables/useKeyboardShortcuts';
 
+// === Props dari backend ===
 const props = defineProps({
-    products: { type: Array, default: () => ([
-        { id: 1,  name: 'Kopi Susu Gula Aren', sku: 'BEV-001', price: 22000, stock: 48, category: 'Minuman', emoji: '☕' },
-        { id: 2,  name: 'Teh Lemon Segar',     sku: 'BEV-002', price: 18000, stock: 35, category: 'Minuman', emoji: '🍋' },
-        { id: 3,  name: 'Roti Bakar Cokelat',  sku: 'FOO-001', price: 25000, stock: 20, category: 'Makanan', emoji: '🍞' },
-        { id: 4,  name: 'Nasi Goreng Spesial', sku: 'FOO-002', price: 35000, stock: 15, category: 'Makanan', emoji: '🍛' },
-        { id: 5,  name: 'Kentang Goreng',      sku: 'SNK-001', price: 20000, stock: 60, category: 'Snack',   emoji: '🍟' },
-        { id: 6,  name: 'Donat Gula',          sku: 'SNK-002', price: 12000, stock: 40, category: 'Snack',   emoji: '🍩' },
-        { id: 7,  name: 'Air Mineral 600ml',   sku: 'BEV-003', price: 6000,  stock: 120,category: 'Minuman', emoji: '💧' },
-        { id: 8,  name: 'Es Krim Vanila',      sku: 'DES-001', price: 15000, stock: 25, category: 'Dessert', emoji: '🍦' },
-        { id: 9,  name: 'Burger Daging',       sku: 'FOO-003', price: 38000, stock: 12, category: 'Makanan', emoji: '🍔' },
-        { id: 10, name: 'Pizza Slice',         sku: 'FOO-004', price: 28000, stock: 8,  category: 'Makanan', emoji: '🍕' },
-        { id: 11, name: 'Cokelat Bar',         sku: 'SNK-003', price: 14000, stock: 50, category: 'Snack',   emoji: '🍫' },
-        { id: 12, name: 'Jus Jeruk Segar',     sku: 'BEV-004', price: 24000, stock: 30, category: 'Minuman', emoji: '🧃' },
-    ]) },
-    cashierName: { type: String, default: 'Kasir 01' },
-    shiftLabel: { type: String, default: 'Shift Pagi' },
+    carts: { type: Array, default: () => [] },
+    carts_total: { type: Number, default: 0 },
+    heldCarts: { type: Array, default: () => [] },
+    customers: { type: Array, default: () => [] },
+    products: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
+    initialPricingPreview: { type: Object, default: () => ({ items: [], summary: {} }) },
+    paymentGateways: { type: Array, default: () => [] },
+    defaultPaymentGateway: { type: String, default: 'cash' },
+    bankAccounts: { type: Array, default: () => [] },
+    loyaltyTierOptions: { type: Array, default: () => [] },
 });
 
-const palette = [
-    { ring: 'ring-accent-violet/30', tint: 'bg-accent-violet-soft', text: 'text-accent-violet' },
-    { ring: 'ring-accent-mint/30',   tint: 'bg-accent-mint-soft',   text: 'text-accent-mint' },
-    { ring: 'ring-accent-sunny/30',  tint: 'bg-accent-sunny-soft',  text: 'text-accent-sunny' },
-    { ring: 'ring-accent-sky/30',    tint: 'bg-accent-sky-soft',    text: 'text-accent-sky' },
-    { ring: 'ring-accent-coral/30',  tint: 'bg-accent-coral-soft',  text: 'text-accent-coral' },
-    { ring: 'ring-accent-grape/30',  tint: 'bg-accent-grape-soft',  text: 'text-accent-grape' },
-];
-const colorFor = (i) => palette[i % palette.length];
+const { auth, errors, activeCashierShift } = usePage().props;
 
-const search = ref('');
-const activeCategory = ref('Semua');
-const cart = ref([]);
-const paid = ref(0);
+// === State lokal ===
+const searchQuery = ref('');
+const selectedCategory = ref(null);
+const selectedCustomer = ref(null);
+const discountInput = ref('');
+const shippingInput = ref('');
+const redeemPointsInput = ref('');
+const selectedVoucherId = ref('');
+const isSubmitting = ref(false);
+const mobileView = ref('products');
+const numpadOpen = ref(false);
+const showShortcuts = ref(false);
+const voidTarget = ref(null); // { id, productName }
+const productGridRef = ref(null);
 
-const categories = computed(() => ['Semua', ...new Set(props.products.map(p => p.category))]);
+// === Composables ===
+const { addToCart, updateQty, removeFromCart, holdCart, isHolding, removingItemId, updatingCartId, addingProductId } = useCart();
 
-const filteredProducts = computed(() => {
-    const q = search.value.trim().toLowerCase();
-    return props.products.filter(p => {
-        const okCat = activeCategory.value === 'Semua' || p.category === activeCategory.value;
-        const okSearch = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
-        return okCat && okSearch;
-    });
+const { pricingPreview, isLoadingPricing, pricingItemsByCartId, summary } = usePricingPreview(
+    props.initialPricingPreview,
+    computed(() => [
+        props.carts,
+        selectedCustomer.value,
+        discountInput.value,
+        shippingInput.value,
+        redeemPointsInput.value,
+        selectedVoucherId.value,
+    ])
+);
+
+const {
+    paymentMode, paymentMethod, payLater, dueDate, cashInput,
+    selectedBankAccount, paymentSplits, paymentOptions, isCashPayment,
+    splitTotal, splitRemaining, isSplitComplete,
+    switchMode, addSplit, updateSplitAmount, removeSplit,
+    reset: resetPayment,
+} = usePayment({
+    defaultGateway: props.defaultPaymentGateway,
+    gateways: props.paymentGateways,
 });
 
-const addToCart = (p) => {
-    const found = cart.value.find(i => i.id === p.id);
-    if (found) { found.qty++; } else { cart.value.push({ ...p, qty: 1 }); }
+// === Computed ===
+const cartCount = computed(() => props.carts.reduce((t, i) => t + Number(i.qty), 0));
+const baseSubtotal = computed(() => Number(summary.value?.base_subtotal ?? props.carts_total ?? 0));
+const promoDiscount = computed(() => Number(summary.value?.promo_discount_total ?? 0));
+const voucherDiscount = computed(() => Number(summary.value?.voucher_discount_total ?? 0));
+const loyaltyDiscount = computed(() => Number(summary.value?.loyalty_discount_total ?? 0));
+const taxTotal = computed(() => Number(summary.value?.tax_total ?? 0));
+const payable = computed(() => Number(summary.value?.grand_total ?? 0));
+
+// Sync payable ke payment composable
+watch(payable, (v) => {
+    // Gunakan internal setter jika ada
+}, { immediate: true });
+
+// === Barcode Scanner ===
+useBarcodeScanner((barcode) => {
+    const product = props.products.find(
+        (p) => p.barcode?.toLowerCase() === barcode.toLowerCase()
+    );
+    if (product) {
+        if (product.stock > 0) {
+            addToCart(product);
+        } else {
+            toast.error(`${product.title} stok habis`);
+        }
+    } else {
+        toast.error(`Produk tidak ditemukan: ${barcode}`);
+    }
+});
+
+// === Keyboard Shortcuts ===
+useKeyboardShortcuts({
+    focusSearch: () => productGridRef.value?.focusSearch(),
+    openNumpad: () => (numpadOpen.value = true),
+    submitTransaction: () => {
+        if (props.carts.length && selectedCustomer.value) handleSubmit();
+    },
+    toggleMobileView: () => (mobileView.value = mobileView.value === 'products' ? 'cart' : 'products'),
+    showShortcuts: () => (showShortcuts.value = !showShortcuts.value),
+    closeAll: () => {
+        numpadOpen.value = false;
+        showShortcuts.value = false;
+        voidTarget.value = null;
+    },
+});
+
+// === Handlers ===
+const handleVoidItem = (item) => {
+    voidTarget.value = { id: item.id, productName: item.product?.title };
 };
-const inc = (i) => { i.qty++; };
-const dec = (i) => { i.qty--; if (i.qty <= 0) removeItem(i); };
-const removeItem = (i) => { cart.value = cart.value.filter(x => x.id !== i.id); };
-const clearCart = () => { cart.value = []; paid.value = 0; };
 
-const subtotal = computed(() => cart.value.reduce((s, i) => s + i.price * i.qty, 0));
-const tax = computed(() => Math.round(subtotal.value * 0.11));
-const total = computed(() => subtotal.value + tax.value);
-const change = computed(() => Math.max(0, paid.value - total.value));
-const itemCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0));
+const confirmVoid = (reason) => {
+    removeFromCart(voidTarget.value.id, reason);
+    voidTarget.value = null;
+};
 
-const quickCash = [50000, 100000, 150000, 200000];
-const setPaid = (v) => { paid.value = v; };
+const handleSubmit = () => {
+    if (!props.carts.length) return toast.error('Keranjang masih kosong');
+    if (!selectedCustomer.value?.id) return toast.error('Pilih pelanggan terlebih dahulu');
+    if (payLater.value && !dueDate.value) return toast.error('Isi tanggal jatuh tempo');
 
-const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
+    // Validasi split payment
+    if (paymentMode.value === 'split' && !payLater.value) {
+        if (!isSplitComplete.value) {
+            return toast.error(`Split payment kurang ${formatPrice(splitRemaining.value)}`);
+        }
+    } else if (isCashPayment.value && !payLater.value && Number(cashInput.value) < payable.value) {
+        return toast.error('Jumlah pembayaran kurang');
+    }
 
-const notice = ref(null);
-const checkout = () => {
-    if (cart.value.length === 0) return;
-    if (paid.value < total.value) {
-        notice.value = { type: 'error', text: `Pembayaran kurang ${rupiah(total.value - paid.value)}` };
+    if (paymentMethod.value === 'bank_transfer' && !selectedBankAccount.value) {
+        return toast.error('Pilih rekening bank tujuan');
+    }
+
+    isSubmitting.value = true;
+
+    const payload = {
+        customer_id: selectedCustomer.value.id,
+        discount: Number(discountInput.value) || 0,
+        redeem_points: Number(redeemPointsInput.value) || 0,
+        customer_voucher_id: selectedVoucherId.value || null,
+        shipping_cost: Number(shippingInput.value) || 0,
+        grand_total: payable.value,
+        pay_later: payLater.value,
+        due_date: payLater.value ? dueDate.value : null,
+        // Single payment
+        payment_gateway: paymentMode.value === 'single' && !payLater.value
+            ? (isCashPayment.value ? null : paymentMethod.value)
+            : null,
+        cash: paymentMode.value === 'single' && isCashPayment.value ? Number(cashInput.value) : (payLater.value ? 0 : payable.value),
+        change: isCashPayment.value && !payLater.value ? Math.max(Number(cashInput.value) - payable.value, 0) : 0,
+        bank_account_id: paymentMethod.value === 'bank_transfer' ? selectedBankAccount.value?.id : null,
+        // Split payment
+        payment_splits: paymentMode.value === 'split' && !payLater.value ? paymentSplits.value : null,
+    };
+
+    // Offline queue
+    if (!navigator.onLine) {
+        queueTransaction(payload).then(() => {
+            toast.success('Transaksi disimpan offline');
+            resetAll();
+        });
+        isSubmitting.value = false;
         return;
     }
-    notice.value = { type: 'success', text: `Transaksi berhasil! Kembalian ${rupiah(change.value)}` };
-    cart.value = [];
-    paid.value = 0;
-    setTimeout(() => { notice.value = null; }, 4000);
+
+    router.post(route('transactions.store'), payload, {
+        onSuccess: () => {
+            toast.success('Transaksi berhasil!');
+            resetAll();
+        },
+        onError: () => {
+            toast.error('Gagal menyimpan transaksi');
+            isSubmitting.value = false;
+        },
+    });
 };
+
+const resetAll = () => {
+    discountInput.value = '';
+    shippingInput.value = '';
+    redeemPointsInput.value = '';
+    selectedVoucherId.value = '';
+    selectedCustomer.value = null;
+    resetPayment();
+    isSubmitting.value = false;
+};
+
+const handleNumpadConfirm = (value) => {
+    cashInput.value = String(value);
+    numpadOpen.value = false;
+};
+
+// Filter products
+const allProducts = computed(() =>
+    props.products.filter((p) => {
+        const matchCat = selectedCategory.value === null || Number(p.category_id) === Number(selectedCategory.value);
+        const matchSearch = !searchQuery.value ||
+            p.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            p.barcode?.toLowerCase().includes(searchQuery.value.toLowerCase());
+        return matchCat && matchSearch;
+    })
+);
 </script>
 
 <template>
-    <Head title="Kasir POS" />
-    <div class="h-screen flex bg-surface-main overflow-hidden">
-        <!-- ===== LEFT: Product catalog ===== -->
-        <section class="flex-1 flex flex-col min-w-0">
-            <!-- Header -->
-            <header class="flex items-center gap-base px-xl py-base bg-surface-card border-b border-border-soft">
-                <div class="w-11 h-11 rounded-xl bg-brand-gradient flex items-center justify-center text-xl shadow-brand-glow">🛒</div>
-                <div class="mr-auto leading-tight">
-                    <h1 class="text-section-title font-bold text-ink-primary">Kasir POS</h1>
-                    <p class="text-sm text-ink-muted">{{ cashierName }} · {{ shiftLabel }}</p>
-                </div>
-                <Link href="/dashboard" class="btn-pill px-base py-sm text-sm text-ink-secondary bg-surface-muted hover:bg-border-soft">
-                    ← Dashboard
-                </Link>
-            </header>
+    <Head title="Transaksi POS" />
 
-            <!-- Search + categories -->
-            <div class="px-xl pt-base space-y-base">
-                <div class="relative">
-                    <svg class="w-5 h-5 absolute left-base top-1/2 -translate-y-1/2 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                    <input v-model="search" type="text" placeholder="Scan barcode atau cari produk..." class="w-full pl-12 pr-base py-md rounded-pill border border-border-soft bg-surface-card text-base focus:ring-2 focus:ring-brand focus:border-brand outline-none transition" />
-                </div>
-                <div class="flex gap-sm overflow-x-auto scroll-soft pb-xs">
-                    <button v-for="cat in categories" :key="cat" @click="activeCategory = cat"
-                        :class="['chip whitespace-nowrap', activeCategory === cat ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">
-                        {{ cat }}
-                    </button>
-                </div>
+    <ShiftOpener
+        v-if="!activeCashierShift"
+        :errors="errors"
+        :can-open-shift="$page.props.auth?.can?.['cashier-shifts-open']"
+    />
+
+    <div v-else class="h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-surface-main">
+        <!-- Mobile Tab Switcher -->
+        <div class="lg:hidden flex border-b border-border-soft bg-surface-card flex-shrink-0">
+            <button
+                @click="mobileView = 'products'"
+                :class="['flex-1 py-3 text-sm font-medium transition', mobileView === 'products' ? 'text-brand border-b-2 border-brand' : 'text-ink-muted']"
+            >🛒 Produk</button>
+            <button
+                @click="mobileView = 'cart'"
+                :class="['flex-1 py-3 text-sm font-medium transition relative', mobileView === 'cart' ? 'text-brand border-b-2 border-brand' : 'text-ink-muted']"
+            >
+                🧾 Keranjang
+                <span v-if="cartCount" class="ml-1 px-1.5 min-w-[20px] h-5 inline-flex items-center justify-center text-[11px] font-bold bg-brand text-white rounded-full">
+                    {{ cartCount }}
+                </span>
+            </button>
+        </div>
+
+        <!-- Left: Products -->
+        <div :class="['flex-1 overflow-hidden', mobileView !== 'products' ? 'hidden lg:flex lg:flex-col' : 'flex flex-col']">
+            <ProductGrid
+                ref="productGridRef"
+                :products="allProducts"
+                :categories="categories"
+                :selected-category="selectedCategory"
+                :search-query="searchQuery"
+                :adding-product-id="addingProductId"
+                @update:selected-category="selectedCategory = $event"
+                @update:search-query="searchQuery = $event"
+                @add-to-cart="addToCart"
+            />
+        </div>
+
+        <!-- Right: Cart + Payment -->
+        <div :class="['w-full lg:w-[420px] xl:w-[480px] flex flex-col bg-surface-card border-l border-border-soft min-h-0 overflow-hidden', mobileView !== 'cart' ? 'hidden lg:flex' : 'flex']">
+            <!-- Customer -->
+            <div class="p-3 border-b border-border-soft flex-shrink-0">
+                <CustomerSelect
+                    :customers="customers"
+                    :selected="selectedCustomer"
+                    @select="selectedCustomer = $event"
+                    :error="errors?.customer_id"
+                />
             </div>
 
-            <!-- Product grid -->
-            <div class="flex-1 overflow-y-auto scroll-soft px-xl py-base">
-                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-base">
-                    <button v-for="(p, idx) in filteredProducts" :key="p.id" @click="addToCart(p)"
-                        class="card-friendly p-base text-left hover:shadow-floating hover:-translate-y-0.5 transition-all duration-150 active:scale-95 ring-1 ring-transparent focus:outline-none"
-                        :class="colorFor(idx).ring">
-                        <div class="w-full aspect-square rounded-xl flex items-center justify-center text-4xl mb-md" :class="colorFor(idx).tint">
-                            {{ p.emoji }}
-                        </div>
-                        <p class="text-sm font-semibold text-ink-primary leading-snug line-clamp-2 min-h-[2.5rem]">{{ p.name }}</p>
-                        <div class="flex items-center justify-between mt-xs">
-                            <span class="text-card-title font-bold" :class="colorFor(idx).text">{{ rupiah(p.price) }}</span>
-                        </div>
-                        <span class="inline-block mt-xs text-[11px] font-medium text-ink-muted">Stok: {{ p.stock }}</span>
-                    </button>
-                </div>
-                <div v-if="filteredProducts.length === 0" class="text-center py-5xl text-ink-muted">
-                    <p class="text-4xl mb-base">🔍</p>
-                    <p class="text-base">Produk tidak ditemukan</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ===== RIGHT: Cart ===== -->
-        <aside class="w-[400px] flex-shrink-0 bg-surface-card border-l border-border-soft flex flex-col">
-            <div class="px-lg py-base border-b border-border-soft flex items-center justify-between">
-                <div class="flex items-center gap-sm">
-                    <h2 class="text-section-title font-bold text-ink-primary">Keranjang</h2>
-                    <span class="chip bg-brand-soft text-brand px-sm py-0.5 text-xs">{{ itemCount }} item</span>
-                </div>
-                <BaseButton v-if="cart.length" type="button" variant="ghost" size="sm" @click="clearCart" class="text-semantic-danger hover:bg-semantic-danger-soft">Kosongkan</BaseButton>
+            <!-- Cart -->
+            <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
+                <CartPanel
+                    :carts="carts"
+                    :pricing-items-by-cart-id="pricingItemsByCartId"
+                    :cart-count="cartCount"
+                    :held-carts="heldCarts"
+                    :has-active-cart="carts.length > 0"
+                    :is-holding="isHolding"
+                    :removing-item-id="removingItemId"
+                    :updating-cart-id="updatingCartId"
+                    @update-qty="updateQty"
+                    @void-item="handleVoidItem"
+                    @hold-cart="holdCart()"
+                    @recall-held="(id) => router.post(route('transactions.recallHold', id))"
+                    @clear-cart="router.delete(route('transactions.clearCart'))"
+                />
             </div>
 
-            <!-- Cart items -->
-            <div class="flex-1 overflow-y-auto scroll-soft px-lg py-base space-y-sm">
-                <div v-if="cart.length === 0" class="h-full flex flex-col items-center justify-center text-center text-ink-muted">
-                    <p class="text-5xl mb-base">🛍️</p>
-                    <p class="text-base font-medium">Keranjang masih kosong</p>
-                    <p class="text-sm">Pilih produk untuk memulai transaksi</p>
-                </div>
-                <div v-for="item in cart" :key="item.id" class="flex items-center gap-md rounded-lg bg-surface-muted p-sm">
-                    <div class="w-11 h-11 rounded-lg bg-surface-card flex items-center justify-center text-xl flex-shrink-0">{{ item.emoji }}</div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-semibold text-ink-primary truncate">{{ item.name }}</p>
-                        <p class="text-sm text-ink-muted">{{ rupiah(item.price) }}</p>
-                    </div>
-                    <div class="flex items-center gap-xs">
-                        <button @click="dec(item)" class="w-7 h-7 rounded-full bg-surface-card border border-border-soft text-ink-secondary font-bold hover:bg-semantic-danger-soft hover:text-semantic-danger transition">−</button>
-                        <span class="w-6 text-center text-sm font-bold text-ink-primary">{{ item.qty }}</span>
-                        <button @click="inc(item)" class="w-7 h-7 rounded-full bg-brand text-white font-bold hover:bg-brand-hover transition">+</button>
-                    </div>
-                </div>
-            </div>
+            <!-- Payment -->
+            <PaymentPanel
+                :payment-mode="paymentMode"
+                :payment-method="paymentMethod"
+                :payment-options="paymentOptions"
+                :pay-later="payLater"
+                :due-date="dueDate"
+                :cash-input="cashInput"
+                :selected-bank-account="selectedBankAccount"
+                :bank-accounts="bankAccounts"
+                :payment-splits="paymentSplits"
+                :split-total="splitTotal"
+                :split-remaining="splitRemaining"
+                :is-split-complete="isSplitComplete"
+                :is-cash-payment="isCashPayment"
+                :payable="payable"
+                :promo-discount="promoDiscount"
+                :voucher-discount="voucherDiscount"
+                :loyalty-discount="loyaltyDiscount"
+                :discount-manual="discountInput"
+                :shipping="shippingInput"
+                :tax-total="taxTotal"
+                :base-subtotal="baseSubtotal"
+                :applied-groups="pricingPreview?.applied_groups || []"
+                :selected-customer="selectedCustomer"
+                :redeem-points-input="redeemPointsInput"
+                :selected-voucher-id="selectedVoucherId"
+                :eligible-vouchers="pricingPreview?.eligible_vouchers || []"
+                :available-points="pricingPreview?.summary?.available_loyalty_points || 0"
+                :is-loading-pricing="isLoadingPricing"
+                @update:payment-mode="paymentMode = $event"
+                @update:payment-method="paymentMethod = $event"
+                @update:pay-later="payLater = $event"
+                @update:due-date="dueDate = $event"
+                @update:cash-input="cashInput = $event"
+                @update:selected-bank-account="selectedBankAccount = $event"
+                @update:redeem-points-input="redeemPointsInput = $event"
+                @update:selected-voucher-id="selectedVoucherId = $event"
+                @update:discount-manual="discountInput = $event"
+                @update:shipping="shippingInput = $event"
+                @switch-mode="switchMode"
+                @add-split="addSplit"
+                @update-split-amount="updateSplitAmount"
+                @remove-split="removeSplit"
+            />
 
-            <!-- Totals + payment -->
-            <div class="border-t border-border-soft p-lg space-y-md">
-                <div class="space-y-xs text-sm">
-                    <div class="flex justify-between text-ink-secondary"><span>Subtotal</span><span>{{ rupiah(subtotal) }}</span></div>
-                    <div class="flex justify-between text-ink-secondary"><span>PPN 11%</span><span>{{ rupiah(tax) }}</span></div>
-                    <div class="flex justify-between items-center pt-sm border-t border-border-soft">
-                        <span class="text-card-title font-bold text-ink-primary">Total</span>
-                        <span class="text-page-title-sm font-extrabold text-gradient-brand">{{ rupiah(total) }}</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-4 gap-xs">
-                    <button v-for="c in quickCash" :key="c" @click="setPaid(c)"
-                        :class="['btn-pill py-sm text-xs', paid === c ? 'bg-accent-mint text-white' : 'bg-accent-mint-soft text-accent-mint']">
-                        {{ (c/1000) }}k
-                    </button>
-                </div>
-                <div v-if="paid > 0" class="flex justify-between text-sm font-semibold">
-                    <span class="text-ink-secondary">Kembalian</span>
-                    <span class="text-accent-mint">{{ rupiah(change) }}</span>
-                </div>
-
-                <div v-if="notice" :class="['rounded-lg px-md py-sm text-sm font-semibold text-center', notice.type === 'success' ? 'bg-accent-mint-soft text-accent-mint' : 'bg-semantic-danger-soft text-semantic-danger']">{{ notice.text }}</div>
-
-                <BaseButton type="button" variant="primary" size="lg" :disabled="cart.length === 0" class="w-full" @click="checkout">
-                    💳 Bayar Sekarang
-                </BaseButton>
-            </div>
-        </aside>
+            <!-- Summary + Submit -->
+            <SummaryFooter
+                :carts="carts"
+                :selected-customer="selectedCustomer"
+                :payable="payable"
+                :cash-input="cashInput"
+                :is-cash-payment="isCashPayment"
+                :pay-later="payLater"
+                :payment-mode="paymentMode"
+                :is-split-complete="isSplitComplete"
+                :is-loading-pricing="isLoadingPricing"
+                :is-submitting="isSubmitting"
+                @submit="handleSubmit"
+            />
+        </div>
     </div>
+
+    <!-- Modals -->
+    <VoidReasonModal
+        v-if="voidTarget"
+        :product-name="voidTarget.productName"
+        @confirm="confirmVoid"
+        @close="voidTarget = null"
+    />
+
+    <NumpadModal
+        v-if="numpadOpen"
+        :initial-value="Number(cashInput) || 0"
+        @confirm="handleNumpadConfirm"
+        @close="numpadOpen = false"
+    />
 </template>
 
-<style scoped>
-.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-</style>
+<!-- Layout wrapper -->
+<Index.layout = (page) => h(POSLayout, null, { default: () => page }) />
+</script>

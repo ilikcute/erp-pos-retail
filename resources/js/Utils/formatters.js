@@ -1,5 +1,5 @@
 // Currency Formatting
-export const formatCurrency = (value, options = {}) => {
+export const formatCurrency = (value = 0, options = {}) => {
     const {
         currency = "IDR",
         locale = "id-ID",

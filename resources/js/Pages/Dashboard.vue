@@ -1,158 +1,215 @@
 <script setup>
-import KPICard from '@/Components/Dashboard/KPICard.vue';
-import BaseButton from '@/Components/Base/BaseButton.vue';
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { useChart, chartPresets } from '@/Composables/useChart.js';
-
-import axios from 'axios';
+import Chart from 'chart.js/auto';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import Icon from '@/Components/Base/Icon.vue';
+import StatCard from '@/Components/Dashboard/StatCard.vue';
+import TargetCard from '@/Components/Dashboard/TargetCard.vue';
+import InfoCard from '@/Components/Dashboard/InfoCard.vue';
+import ListCard from '@/Components/Dashboard/ListCard.vue';
 
-
-
-const loading = ref(true);
-const data = ref({
-    sales_kpi: { total_sales: 18450000, total_transactions: 312 },
-    financial_kpi: { gross_margin_percent: 42.5 },
-    inventory_kpi: { low_stock_count: 7 },
-    customer_kpi: { total_customers: 1280 },
-    top_products: [
-        { product_id: 1, product_name: 'Kopi Susu Gula Aren', total_sales: 4200000, emoji: '☕' },
-        { product_id: 2, product_name: 'Nasi Goreng Spesial', total_sales: 3550000, emoji: '🍛' },
-        { product_id: 3, product_name: 'Burger Daging',       total_sales: 2980000, emoji: '🍔' },
-        { product_id: 4, product_name: 'Pizza Slice',         total_sales: 2410000, emoji: '🍕' },
-        { product_id: 5, product_name: 'Jus Jeruk Segar',     total_sales: 1870000, emoji: '🧃' },
-    ],
-    sales_trend: { labels: ['Sen','Sel','Rab','Kam','Jum','Sab','Min'], values: [2.1, 2.8, 2.4, 3.2, 3.8, 4.5, 4.1] },
+const props = defineProps({
+    totalCategories: { type: Number, default: 24 },
+    totalProducts: { type: Number, default: 318 },
+    totalTransactions: { type: Number, default: 1240 },
+    totalCustomers: { type: Number, default: 486 },
+    revenueTrend: { type: Array, default: () => [] },
+    totalRevenue: { type: Number, default: 0 },
+    totalProfit: { type: Number, default: 0 },
+    averageOrder: { type: Number, default: 0 },
+    todayTransactions: { type: Number, default: 37 },
+    todaySales: { type: Number, default: 4250000 },
+    todayProfit: { type: Number, default: 1180000 },
+    monthlyTarget: { type: Number, default: 150000000 },
+    currentMonthSales: { type: Number, default: 98500000 },
+    topProducts: { type: Array, default: () => [] },
+    slowMovingProducts: { type: Array, default: () => [] },
+    recentTransactions: { type: Array, default: () => [] },
+    topCustomers: { type: Array, default: () => [] },
+    topLocations: { type: Array, default: () => [] },
+    lowStockProducts: { type: Array, default: () => [] },
+    activeShifts: { type: Array, default: () => [] },
 });
 
-const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
-const compact = (n) => new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(n || 0);
+const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
-const kpis = computed(() => [
-    { label: 'Total Penjualan', value: rupiah(data.value.sales_kpi.total_sales), icon: 'dollar-sign', color: 'brand',  trend: 'up', trendValue: '+12.5%' },
-    { label: 'Transaksi',       value: data.value.sales_kpi.total_transactions, icon: 'file-text',  color: 'mint',   trend: 'up', trendValue: '+8.2%' },
-    { label: 'Margin Kotor',    value: data.value.financial_kpi.gross_margin_percent + '%', icon: 'trending-up', color: 'grape', trend: 'up', trendValue: '+2.1%' },
-    { label: 'Pelanggan',       value: compact(data.value.customer_kpi.total_customers), icon: 'users', color: 'sunny', trend: 'up', trendValue: '+5.0%' },
+// ---- mock fallbacks (render immediately before API is wired) ----
+const mockTrend = [
+    { label: 'Sen', value: 12 }, { label: 'Sel', value: 18 }, { label: 'Rab', value: 15 },
+    { label: 'Kam', value: 22 }, { label: 'Jum', value: 28 }, { label: 'Sab', value: 35 }, { label: 'Min', value: 30 },
+].map((d) => ({ label: d.label, value: d.value * 1000000 }));
+
+const trend = computed(() => (props.revenueTrend && props.revenueTrend.length ? props.revenueTrend : mockTrend));
+const trendLabel = (d) => d.label ?? d.date ?? d.day ?? d.name ?? '';
+const trendValue = (d) => Number(d.value ?? d.total ?? d.revenue ?? d.amount ?? 0);
+
+const products = computed(() => props.topProducts.length ? props.topProducts : [
+    { name: 'Kopi Susu Gula Aren', sold: 320, revenue: 9600000 },
+    { name: 'Roti Bakar Coklat', sold: 210, revenue: 4200000 },
+    { name: 'Teh Tarik', sold: 180, revenue: 2700000 },
+]);
+const transactions = computed(() => props.recentTransactions.length ? props.recentTransactions : [
+    { invoice: 'INV-1042', customer: 'Andi', total: 125000, created_at: '10:24' },
+    { invoice: 'INV-1041', customer: 'Sari', total: 86000, created_at: '10:11' },
+    { invoice: 'INV-1040', customer: 'Budi', total: 240000, created_at: '09:58' },
+]);
+const customers = computed(() => props.topCustomers.length ? props.topCustomers : [
+    { name: 'Andi Pratama', total_spent: 4200000 }, { name: 'Sari Dewi', total_spent: 3850000 }, { name: 'Budi Santoso', total_spent: 3100000 },
+]);
+const locations = computed(() => props.topLocations.length ? props.topLocations : [
+    { name: 'Menteng', total: 18500000 }, { name: 'Kebayoran', total: 14200000 }, { name: 'Cilandak', total: 9800000 },
+]);
+const lowStock = computed(() => props.lowStockProducts.length ? props.lowStockProducts : [
+    { name: 'Gula Aren 1kg', stock: 3 }, { name: 'Susu UHT 1L', stock: 5 }, { name: 'Kopi Robusta 500g', stock: 2 },
+]);
+const slowMoving = computed(() => props.slowMovingProducts.length ? props.slowMovingProducts : [
+    { name: 'Sirup Vanilla', stock: 24 }, { name: 'Cup 16oz', stock: 540 }, { name: 'Teh Hijau Premium', stock: 18 },
+]);
+const shifts = computed(() => props.activeShifts.length ? props.activeShifts : [
+    { cashier_name: 'Rina', opened_at: '08:00', expected_cash: 2350000 },
 ]);
 
-const topMax = computed(() => Math.max(...data.value.top_products.map(p => p.total_sales), 1));
-
-const quickActions = [
-    { name: 'Buka Kasir',    href: '/pos',        icon: '🛒', tint: 'bg-brand-soft text-brand' },
-    { name: 'Tambah Produk', href: '/products',   icon: '📦', tint: 'bg-accent-mint-soft text-accent-mint' },
-    { name: 'Pembelian',     href: '/purchasing', icon: '🚚', tint: 'bg-accent-sunny-soft text-accent-sunny' },
-    { name: 'Laporan',       href: '/reporting',  icon: '📊', tint: 'bg-accent-grape-soft text-accent-grape' },
-];
-
+// ---- chart ----
 const chartRef = ref(null);
-const { createChart } = useChart(chartRef);
-
-const renderChart = () => {
-    const t = data.value.sales_trend;
-    createChart(chartPresets.areaChart(t.labels, [{
-        label: 'Penjualan (juta Rp)',
-        data: t.values,
-        borderColor: '#6C5CE7',
-        backgroundColor: 'rgba(108, 92, 231, 0.12)',
-        borderWidth: 3,
-        tension: 0.45,
-        fill: true,
-        pointBackgroundColor: '#6C5CE7',
-        pointRadius: 4,
-    }]));
-};
-
-onMounted(async () => {
-    try {
-        const res = await axios.get('/api/v1/dashboard');
-        if (res.data) { data.value = { ...data.value, ...res.data }; }
-    } catch (e) {
-        console.warn('Dashboard API tidak tersedia, memakai data contoh.');
-    } finally {
-        loading.value = false;
-        renderChart();
-    }
+let chartInstance = null;
+onMounted(() => {
+    if (!chartRef.value) return;
+    const ctx = chartRef.value.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 280);
+    grad.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+    grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: trend.value.map(trendLabel),
+            datasets: [{
+                label: 'Pendapatan',
+                data: trend.value.map(trendValue),
+                borderColor: '#6366f1',
+                backgroundColor: grad,
+                fill: true,
+                tension: 0.4,
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: '#6366f1',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#f1f5f9', padding: 12, displayColors: false, callbacks: { label: (c) => fmt(c.parsed.y) } },
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: (v) => 'Rp' + (v / 1000000) + 'jt', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+            },
+        },
+    });
 });
 </script>
 
 <template>
     <Head title="Dashboard" />
     <DashboardLayout>
-        <!-- Greeting banner -->
-        <div class="rounded-card bg-brand-gradient text-white p-xl mb-xl shadow-brand-glow flex items-center justify-between flex-wrap gap-base">
-            <div>
-                <h1 class="text-page-title font-extrabold">Halo, selamat datang! 👋</h1>
-                <p class="text-white/80 mt-xs text-base">Ringkasan performa toko Anda hari ini.</p>
-            </div>
-            <Link href="/pos"><BaseButton variant="soft" size="lg">🛒 Buka Kasir</BaseButton></Link>
-        </div>
-
-        <!-- KPI cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
-            <KPICard v-for="k in kpis" :key="k.label" :label="k.label" :value="k.value" :icon="k.icon" :color="k.color" :trend="k.trend" :trend-value="k.trendValue" />
-        </div>
-
-        <!-- Chart + Low stock -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-base mb-xl">
-            <div class="card-friendly p-lg lg:col-span-2">
-                <div class="flex items-center justify-between mb-base">
-                    <h2 class="text-section-title font-bold text-ink-primary">Tren Penjualan</h2>
-                    <span class="chip bg-brand-soft text-brand text-xs">7 hari terakhir</span>
+        <div class="space-y-6">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-ink-primary">Dashboard</h1>
+                    <p class="text-sm text-ink-secondary mt-1">Ringkasan performa toko Anda hari ini</p>
                 </div>
-                <div class="h-64"><canvas ref="chartRef"></canvas></div>
+                <Link href="/pos" class="inline-flex items-center gap-2 rounded-pill bg-brand-gradient text-white px-5 py-2.5 text-sm font-bold shadow-brand-glow hover:opacity-95 transition">
+                    <Icon name="plus" size="4" /> <span>Transaksi Baru</span>
+                </Link>
             </div>
 
-            <div class="card-friendly p-lg flex flex-col">
-                <h2 class="text-section-title font-bold text-ink-primary mb-base">Perlu Perhatian</h2>
-                <div class="rounded-lg bg-semantic-warning-soft p-base flex items-center gap-md mb-md">
-                    <div class="w-11 h-11 rounded-xl bg-accent-sunny flex items-center justify-center text-xl text-white">⚠️</div>
-                    <div>
-                        <p class="text-page-title-sm font-extrabold text-ink-primary leading-none">{{ data.inventory_kpi.low_stock_count }}</p>
-                        <p class="text-sm text-ink-secondary">Produk stok menipis</p>
-                    </div>
-                </div>
-                <Link href="/inventory" class="btn-pill bg-accent-sunny-soft text-accent-sunny py-sm text-sm mb-base hover:opacity-90">Lihat Inventory →</Link>
-                <div class="rounded-lg bg-accent-mint-soft p-base flex items-center gap-md mt-auto">
-                    <div class="w-11 h-11 rounded-xl bg-accent-mint flex items-center justify-center text-xl text-white">✅</div>
-                    <div>
-                        <p class="text-sm font-semibold text-ink-primary">Semua sistem normal</p>
-                        <p class="text-sm text-ink-secondary">Sinkronisasi terakhir baru saja</p>
-                    </div>
-                </div>
+            <!-- Main Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Penjualan Hari Ini" :value="fmt(todaySales)" subtitle="Total penjualan hari ini" icon="dollar-sign" gradient="from-brand to-brand-strong" />
+                <StatCard title="Laba Hari Ini" :value="fmt(todayProfit)" subtitle="Estimasi margin" icon="trending-up" gradient="from-accent-mint to-accent-mint-strong" trend="Hari ini" />
+                <TargetCard title="Target Bulan Ini" :current="currentMonthSales" :target="monthlyTarget" icon="target" />
+                <StatCard title="Transaksi Hari Ini" :value="todayTransactions" subtitle="Jumlah struk" icon="receipt" gradient="from-accent-sunny to-accent-coral" />
             </div>
-        </div>
 
-        <!-- Top products + Quick actions -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-base">
-            <div class="card-friendly p-lg lg:col-span-2">
-                <h2 class="text-section-title font-bold text-ink-primary mb-base">Produk Terlaris 🔥</h2>
-                <div class="space-y-md">
-                    <div v-for="(p, i) in data.top_products" :key="p.product_id" class="flex items-center gap-md">
-                        <div class="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center text-xl flex-shrink-0">{{ p.emoji || '📦' }}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-center mb-xs">
-                                <span class="text-sm font-semibold text-ink-primary truncate">{{ i + 1 }}. {{ p.product_name }}</span>
-                                <span class="text-sm font-bold text-brand ml-md">{{ rupiah(p.total_sales) }}</span>
-                            </div>
-                            <div class="h-2 rounded-pill bg-surface-muted overflow-hidden">
-                                <div class="h-full rounded-pill bg-brand-gradient" :style="{ width: (p.total_sales / topMax * 100) + '%' }"></div>
-                            </div>
+            <!-- Secondary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <InfoCard title="Total Kategori" :value="totalCategories" icon="layers" />
+                <InfoCard title="Total Produk" :value="totalProducts" icon="box" />
+                <InfoCard title="Total Pelanggan" :value="totalCustomers" icon="users" />
+                <InfoCard title="Total Transaksi" :value="totalTransactions" icon="file-text" />
+            </div>
+
+            <!-- Revenue Chart -->
+            <ListCard title="Tren Pendapatan" subtitle="7 hari terakhir" icon="bar-chart">
+                <div class="h-72"><canvas ref="chartRef"></canvas></div>
+            </ListCard>
+
+            <!-- Bottom Widgets -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <ListCard title="Shift Aktif" subtitle="Pemantauan kasir" icon="dollar-sign" empty-message="Tidak ada shift aktif" :is-empty="shifts.length === 0">
+                    <div class="divide-y divide-border-soft">
+                        <div v-for="(s, i) in shifts" :key="i" class="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                            <div><p class="text-sm font-semibold text-ink-primary">{{ s.cashier_name }}</p><p class="text-xs text-ink-muted">Buka {{ s.opened_at }}</p></div>
+                            <span class="text-sm font-bold text-accent-mint">{{ fmt(s.expected_cash) }}</span>
                         </div>
                     </div>
-                </div>
+                </ListCard>
+                <ListCard title="Produk Terlaris" subtitle="Best seller" icon="box" :is-empty="products.length === 0">
+                    <div class="divide-y divide-border-soft">
+                        <div v-for="(p, i) in products.slice(0,3)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-3 min-w-0"><span class="w-7 h-7 rounded-full bg-brand-soft text-brand text-sm font-semibold flex items-center justify-center shrink-0">{{ i + 1 }}</span><div class="min-w-0"><p class="text-sm font-semibold text-ink-primary truncate">{{ p.name }}</p><p class="text-xs text-ink-muted">{{ p.sold ?? p.qty ?? 0 }} terjual</p></div></div>
+                            <span class="text-sm font-bold text-brand shrink-0">{{ fmt(p.revenue ?? 0) }}</span>
+                        </div>
+                    </div>
+                </ListCard>
+                <ListCard title="Transaksi Terbaru" subtitle="Aktivitas terkini" icon="receipt" :is-empty="transactions.length === 0">
+                    <ul class="divide-y divide-border-soft">
+                        <li v-for="(t, i) in transactions.slice(0,4)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="min-w-0"><p class="text-sm font-semibold text-ink-primary truncate">{{ t.invoice ?? t.code ?? "-" }}</p><p class="text-xs text-ink-muted truncate">{{ t.customer ?? "Umum" }} • {{ t.created_at ?? "" }}</p></div>
+                            <p class="text-sm font-bold text-brand shrink-0">{{ fmt(t.total) }}</p>
+                        </li>
+                    </ul>
+                </ListCard>
+                <ListCard title="Pelanggan Terbaik" subtitle="Top spender" icon="users" :is-empty="customers.length === 0">
+                    <ul class="divide-y divide-border-soft">
+                        <li v-for="(cst, i) in customers.slice(0,4)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-3 min-w-0"><span class="w-7 h-7 rounded-full bg-accent-grape-soft text-accent-grape text-sm font-semibold flex items-center justify-center shrink-0">{{ i + 1 }}</span><span class="text-sm text-ink-primary truncate">{{ cst.name }}</span></div>
+                            <span class="text-sm font-bold text-ink-primary shrink-0">{{ fmt(cst.total_spent ?? cst.total ?? 0) }}</span>
+                        </li>
+                    </ul>
+                </ListCard>
             </div>
 
-            <div class="card-friendly p-lg">
-                <h2 class="text-section-title font-bold text-ink-primary mb-base">Aksi Cepat ⚡</h2>
-                <div class="grid grid-cols-2 gap-md">
-                    <Link v-for="a in quickActions" :key="a.name" :href="a.href"
-                        class="rounded-xl p-base flex flex-col items-center justify-center gap-sm text-center hover:-translate-y-0.5 transition-transform active:scale-95"
-                        :class="a.tint">
-                        <span class="text-3xl">{{ a.icon }}</span>
-                        <span class="text-sm font-semibold">{{ a.name }}</span>
-                    </Link>
-                </div>
+            <!-- Secondary Widgets -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <ListCard title="Lokasi Teratas" subtitle="Berdasar kelurahan transaksi" icon="map-pin" :is-empty="locations.length === 0">
+                    <div class="divide-y divide-border-soft">
+                        <div v-for="(loc, i) in locations.slice(0,5)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-2 min-w-0"><Icon name="map-pin" size="4" class="text-brand shrink-0" /><span class="text-sm text-ink-primary truncate">{{ loc.name }}</span></div>
+                            <span class="text-sm font-bold text-ink-primary shrink-0">{{ fmt(loc.total ?? 0) }}</span>
+                        </div>
+                    </div>
+                </ListCard>
+                <ListCard title="Stok Menipis" subtitle="Perlu reorder" icon="alert-triangle" :is-empty="lowStock.length === 0">
+                    <div class="divide-y divide-border-soft">
+                        <div v-for="(p, i) in lowStock.slice(0,5)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-2 min-w-0"><Icon name="alert-triangle" size="4" class="text-accent-coral shrink-0" /><span class="text-sm text-ink-primary truncate">{{ p.name }}</span></div>
+                            <span class="text-xs font-semibold text-accent-coral shrink-0">{{ p.stock }} pcs</span>
+                        </div>
+                    </div>
+                </ListCard>
+                <ListCard title="Slow Moving" subtitle="Tidak terjual 30 hari" icon="package" :is-empty="slowMoving.length === 0">
+                    <div class="divide-y divide-border-soft">
+                        <div v-for="(p, i) in slowMoving.slice(0,5)" :key="i" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-2 min-w-0"><Icon name="package" size="4" class="text-ink-muted shrink-0" /><span class="text-sm text-ink-primary truncate">{{ p.name }}</span></div>
+                            <span class="text-xs font-semibold text-ink-muted shrink-0">{{ p.stock }} stok</span>
+                        </div>
+                    </div>
+                </ListCard>
             </div>
         </div>
     </DashboardLayout>

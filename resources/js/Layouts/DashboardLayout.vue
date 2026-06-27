@@ -1,263 +1,94 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
-import Icon from '@/Components/Base/Icon.vue';
+import { ref, computed, onMounted, onUnmounted, watch }  from 'vue';
+import { usePage }  from '@inertiajs/vue3';
+import Sidebar from '@/Components/Dashboard/Sidebar.vue';
+import Navbar from '@/Components/Dashboard/Navbar.vue';
+import Toaster from '@/Components/Dashboard/Toaster.vue';
 
 const page = usePage();
-const user = page.props.auth.user;
-const isSidebarOpen = ref(true);
 
-const navigationGroups = [
-    {
-        group: 'Overview', icon: 'layout',
-        items: [
-            { name: 'Dashboard', href: '/dashboard', icon: 'home' },
-            { name: 'Reporting', href: '/reporting', icon: 'trending-up', permission: 'pos.transaction.view' },
-        ],
-    },
-    {
-        group: 'Sales & POS', icon: 'shopping-cart',
-        items: [
-            { name: 'POS', href: '/pos', icon: 'shopping-cart', permission: 'pos.session.view' },
-            { name: 'Orders', href: '/pos/sales', icon: 'list', permission: 'pos.transaction.view' },
-            { name: 'Shifts', href: '/pos/shifts', icon: 'clock', permission: 'pos.shift.view' },
-        ],
-    },
-    {
-        group: 'Inventory', icon: 'package',
-        items: [
-            { name: 'Stock', href: '/inventory', icon: 'package', roles: ['superadmin', 'admin', 'gudang'] },
-            { name: 'Transfer', href: '/inventory/transfer', icon: 'arrow-right-left', roles: ['superadmin', 'admin', 'gudang'] },
-        ],
-    },
-    {
-        group: 'Purchasing', icon: 'truck',
-        items: [
-            { name: 'PO', href: '/purchasing/po', icon: 'file-text', roles: ['superadmin', 'admin', 'purchasing'] },
-            { name: 'Goods Receipt', href: '/purchasing/receipt', icon: 'inbox', roles: ['superadmin', 'admin', 'purchasing', 'gudang'] },
-        ],
-    },
-    {
-        group: 'Product & Pricing', icon: 'tag',
-        items: [
-            { name: 'Products', href: '/product/products', icon: 'box', permission: 'product.product.view' },
-            { name: 'Categories', href: '/product/categories', icon: 'folder', permission: 'product.category.view' },
-            { name: 'Brands', href: '/product/brands', icon: 'tag', permission: 'product.brand.view' },
-            { name: 'Pricing', href: '/pricing', icon: 'percent', permission: 'pricing.price-list.view' },
-            { name: 'Promotions', href: '/promotions', icon: 'tag', roles: ['superadmin', 'admin', 'manager'] },
-            { name: 'Loyalty Program', href: '/loyalty', icon: 'users', roles: ['superadmin', 'admin', 'manager'] },
-        ],
-    },
-    {
-        group: 'Master Data', icon: 'folder',
-        items: [
-            { name: 'Suppliers', href: '/master-data/suppliers', icon: 'truck', permission: 'master-data.supplier.view' },
-            { name: 'Customers', href: '/master-data/customers', icon: 'users', permission: 'master-data.customer.view' },
-            { name: 'Customer Categories', href: '/master-data/customer-categories', icon: 'tag', permission: 'master-data.customer.view' },
-            { name: 'Currencies', href: '/master-data/currencies', icon: 'dollar-sign', permission: 'system.setting.view' },
-            { name: 'Taxes', href: '/master-data/taxes', icon: 'percent', permission: 'master-data.tax.view' },
-            { name: 'Units', href: '/master-data/units', icon: 'layout', permission: 'master-data.unit.view' },
-            { name: 'Unit Conversions', href: '/master-data/unit-conversions', icon: 'arrow-right-left', permission: 'master-data.unit.view' },
-            { name: 'Price Lists', href: '/master-data/price-lists', icon: 'list', permission: 'pricing.price-list.view' },
-        ],
-    },
-    {
-        group: 'Accounting', icon: 'book',
-        items: [
-            { name: 'Chart of Accounts', href: '/accounting/coa', icon: 'layout', roles: ['superadmin', 'admin', 'accounting'] },
-            { name: 'Journals', href: '/accounting/journals', icon: 'book', roles: ['superadmin', 'admin', 'accounting'] },
-        ],
-    },
-    {
-        group: 'System', icon: 'settings',
-        items: [
-            { name: 'Users', href: '/system/users', icon: 'users', permission: 'system.user.view' },
-            { name: 'Roles', href: '/system/roles', icon: 'lock', permission: 'system.role.view' },
-            { name: 'Settings', href: '/system', icon: 'settings', permission: 'system.setting.view' },
-        ],
-    },
-];
+// ---- responsive + persisted UI state (Shell Layout A) ----
+const isMobile = ref(false);
+const collapsed = ref(false);   // desktop mini-variant (w-56 / w-16)
+const mobileOpen = ref(false);  // mobile off-canvas drawer
 
-const checkPermission = (item) => {
-    const auth = page.props.auth;
-    if (!auth?.user) return false;
+const STORAGE_KEY = "sidebarCollapsed";
 
-    // Superadmin bypass
-    if (auth.roles?.includes('superadmin')) {
-        return true;
-    }
-
-    // Role check (if specified)
-    if (item.roles && item.roles.length > 0) {
-        const hasRole = auth.roles?.some(r => item.roles.includes(r));
-        if (hasRole) return true;
-    }
-
-    // Permission check (if specified)
-    if (item.permission) {
-        return auth.permissions?.includes(item.permission) === true;
-    }
-
-    // Default: if no roles and no permission are specified, show to everyone authenticated
-    return !item.roles && !item.permission;
+const applyResponsive = () => {
+    if (typeof window === "undefined") return;
+    isMobile.value = window.innerWidth < 768;
+    if (isMobile.value) mobileOpen.value = false;
 };
 
-const visibleNavigationGroups = computed(() => {
-    return navigationGroups.map(group => {
-        const visibleItems = group.items.filter(item => checkPermission(item));
-        return {
-            ...group,
-            items: visibleItems
-        };
-    }).filter(group => group.items.length > 0);
+// toggle: mobile -> open/close drawer; desktop -> collapse mini-variant
+const toggleSidebar = () => {
+    if (isMobile.value) {
+        mobileOpen.value = !mobileOpen.value;
+    } else {
+        collapsed.value = !collapsed.value;
+    }
+};
+
+// persist mini-variant state to localStorage (Layout A behavior + Layout B mini-variant)
+watch(collapsed, (v) => {
+    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, v ? "true" : "false");
 });
 
-const isCurrentPage = (href) => page.url === href || page.url.startsWith(href + '/');
-
-const collapsedGroups = ref({});
-
-const isGroupExpanded = (groupName) => {
-    return collapsedGroups.value[groupName] !== true;
-};
-
-const toggleGroup = (groupName) => {
-    collapsedGroups.value[groupName] = !collapsedGroups.value[groupName];
-};
-
-// Initialize collapse states based on active page
-navigationGroups.forEach(group => {
-    const hasActiveItem = group.items.some(item => isCurrentPage(item.href));
-    if (hasActiveItem || group.group === 'Overview') {
-        collapsedGroups.value[group.group] = false;
-    } else {
-        collapsedGroups.value[group.group] = true;
+onMounted(() => {
+    if (typeof window !== "undefined") {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored !== null) collapsed.value = stored === "true";
+        applyResponsive();
+        window.addEventListener("resize", applyResponsive);
     }
+});
+onUnmounted(() => {
+    if (typeof window !== "undefined") window.removeEventListener("resize", applyResponsive);
+});
+
+// ---- security warnings (Layout A) ----
+const securityWarnings = computed(() => page.props.security?.warnings ?? []);
+const showSecurityWarnings = computed(() => page.props.auth?.super === true && securityWarnings.value.length > 0);
+
+// main content margin follows desktop sidebar width; on mobile no offset
+const contentMargin = computed(() => {
+    if (isMobile.value) return "ml-0";
+    return collapsed.value ? "ml-16" : "ml-56";
 });
 </script>
 
 <template>
-    <div class="min-h-screen flex bg-surface-main">
-        <!-- Sidebar -->
-        <aside
-            :class="isSidebarOpen ? 'w-64' : 'w-20'"
-            class="bg-sidebar-gradient text-white transition-all duration-200 flex flex-col fixed h-screen z-50"
-        >
-            <!-- Logo -->
-            <div class="h-16 flex items-center gap-md px-base border-b border-white/10 flex-shrink-0">
-                <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-lg font-extrabold shadow-soft">
-                    🛒
-                </div>
-                <div v-if="isSidebarOpen" class="leading-tight">
-                    <h1 class="text-base font-extrabold tracking-tight">ERP&nbsp;POS</h1>
-                    <p class="text-[11px] text-white/60 font-medium">Retail Suite</p>
-                </div>
-            </div>
+    <div class="min-h-screen flex bg-surface-main transition-colors duration-200">
+        <!-- Sidebar (nav logic + mini-variant + accordion live inside) -->
+        <Sidebar :collapsed="collapsed" :is-mobile="isMobile" :mobile-open="mobileOpen" @close="mobileOpen = false" />
 
-            <!-- Navigation -->
-            <nav class="flex-1 py-base space-y-base overflow-y-auto scroll-soft px-sm">
-                <template v-for="(group, idx) in visibleNavigationGroups" :key="idx">
-                    <div v-if="!isSidebarOpen" class="flex justify-center py-xs" :title="group.group">
-                        <span class="w-5 h-5 text-white/40"><Icon :name="group.icon" /></span>
-                    </div>
-                    <div
-                        v-if="isSidebarOpen"
-                        @click="toggleGroup(group.group)"
-                        class="px-sm py-xs flex justify-between items-center cursor-pointer rounded-md transition-colors select-none hover:bg-white/5"
-                    >
-                        <span class="flex items-center gap-sm text-[11px] font-bold text-white/55 uppercase tracking-widest">
-                            <span class="w-4 h-4 text-white/70"><Icon :name="group.icon" size="4" /></span>
-                            {{ group.group }}
-                        </span>
-                        <svg
-                            :class="isGroupExpanded(group.group) ? 'rotate-180' : ''"
-                            class="w-3 h-3 text-white/35 transition-transform duration-200"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        >
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
-                        </svg>
+        <!-- Mobile overlay (Layout A) -->
+        <div
+            :class="mobileOpen ? 'opacity-100 pointer-events-auto z-40' : 'opacity-0 pointer-events-none'"
+            class="fixed inset-0 bg-ink-primary/40 md:hidden transition-opacity duration-300"
+            @click="mobileOpen = false"
+        ></div>
+
+        <!-- Main column -->
+        <div :class="contentMargin" class="flex-1 flex flex-col min-w-0 transition-all duration-200">
+            <Navbar :collapsed="collapsed" :is-mobile="isMobile" @toggle="toggleSidebar" />
+
+            <main class="dashboard-scrollbar flex-1 overflow-y-auto scroll-soft bg-surface-main">
+                <div class="w-full py-6 px-4 md:px-6 lg:px-8 pb-20 md:pb-6">
+                    <!-- Security baseline warnings (Layout A) -->
+                    <div v-if="showSecurityWarnings" class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-800">
+                        <p class="text-sm font-semibold">Production security baseline warning</p>
+                        <ul class="mt-2 space-y-1 text-sm">
+                            <li v-for="warning in securityWarnings" :key="warning.key">- {{ warning.message }}</li>
+                        </ul>
                     </div>
 
-                    <ul v-show="!isSidebarOpen || isGroupExpanded(group.group)" class="space-y-xs mb-sm">
-                        <li v-for="item in group.items" :key="item.href">
-                            <Link
-                                :href="item.href"
-                                :title="item.name"
-                                :class="[
-                                    'group flex items-center gap-md rounded-lg transition-all duration-150',
-                                    isSidebarOpen ? 'px-md py-sm' : 'px-0 py-sm justify-center',
-                                    isCurrentPage(item.href)
-                                        ? 'bg-white text-brand font-semibold shadow-brand-glow'
-                                        : 'text-white/75 hover:bg-white/10 hover:text-white'
-                                ]"
-                            >
-                                <span
-                                    :class="[
-                                        'w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110',
-                                        isCurrentPage(item.href) ? 'text-brand' : 'text-white/80'
-                                    ]"
-                                >
-                                    <Icon :name="item.icon" />
-                                </span>
-                                <span v-if="isSidebarOpen" class="text-sm">{{ item.name }}</span>
-                            </Link>
-                        </li>
-                    </ul>
-                </template>
-            </nav>
-
-            <!-- Sidebar footer user card -->
-            <div v-if="isSidebarOpen" class="p-sm border-t border-white/10 flex-shrink-0">
-                <div class="flex items-center gap-md rounded-xl bg-white/10 px-md py-sm">
-                    <div class="w-9 h-9 rounded-full bg-sunset-gradient flex items-center justify-center text-sm font-bold uppercase">
-                        {{ user.name?.charAt(0) }}
-                    </div>
-                    <div class="leading-tight overflow-hidden">
-                        <p class="text-sm font-semibold truncate">{{ user.name }}</p>
-                        <p class="text-[11px] text-white/60 truncate">{{ user.email }}</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <div :class="isSidebarOpen ? 'ml-64' : 'ml-20'" class="flex-1 flex flex-col transition-all duration-200">
-            <!-- Topbar -->
-            <header class="h-16 bg-surface-card/90 backdrop-blur border-b border-border-soft sticky top-0 z-40 flex items-center justify-between px-xl">
-                <button
-                    @click="isSidebarOpen = !isSidebarOpen"
-                    class="p-sm text-ink-secondary hover:text-brand hover:bg-brand-soft rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand"
-                    aria-label="Toggle sidebar"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-
-                <div class="flex items-center gap-base">
-                    <div class="hidden sm:flex items-center gap-sm rounded-pill bg-surface-muted px-base py-sm text-ink-muted">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                        <span class="text-sm">Cari menu, produk...</span>
-                    </div>
-                    <div class="flex items-center gap-md pl-base border-l border-border-soft">
-                        <div class="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-sm font-bold uppercase shadow-brand-glow">
-                            {{ user.name?.charAt(0) }}
-                        </div>
-                        <span class="hidden sm:block text-sm font-semibold text-ink-primary">{{ user.name }}</span>
-                        <Link
-                            :href="route('logout')" method="post" as="button"
-                            class="px-base py-sm text-sm font-semibold text-semantic-danger hover:bg-semantic-danger-soft rounded-pill transition-colors"
-                        >
-                            Logout
-                        </Link>
-                    </div>
-                </div>
-            </header>
-
-            <main class="flex-1 overflow-y-auto scroll-soft bg-surface-main">
-                <div class="p-xl">
                     <slot />
                 </div>
             </main>
         </div>
+
+        <!-- Toast notifications (Layout A) -->
+        <Toaster />
     </div>
 </template>
