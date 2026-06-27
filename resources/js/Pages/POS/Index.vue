@@ -7,6 +7,8 @@ import { queueTransaction } from '@/Utils/offlineDb';
 import { formatPrice } from '@/Utils/formatPrice';
 
 import POSLayout from '@/Layouts/POSLayout.vue';
+
+defineOptions({ layout: POSLayout });
 import ProductGrid from './Components/ProductGrid.vue';
 import CartPanel from './Components/CartPanel.vue';
 import PaymentPanel from './Components/PaymentPanel.vue';
@@ -38,6 +40,10 @@ const props = defineProps({
 });
 
 const { auth, errors, activeCashierShift } = usePage().props;
+
+// Local shift state — works in frontend-only mode (no backend) and respects real backend shift.
+const localShift = ref(activeCashierShift || null);
+const onShiftOpened = (shift) => { localShift.value = shift; };
 
 // === State lokal ===
 const searchQuery = ref('');
@@ -229,7 +235,8 @@ const allProducts = computed(() =>
     <Head title="Transaksi POS" />
 
     <ShiftOpener
-        v-if="!activeCashierShift"
+        v-if="!localShift"
+            @opened="onShiftOpened"
         :errors="errors"
         :can-open-shift="$page.props.auth?.can?.['cashier-shifts-open']"
     />
@@ -376,7 +383,3 @@ const allProducts = computed(() =>
         @close="numpadOpen = false"
     />
 </template>
-
-<!-- Layout wrapper -->
-<Index.layout = (page) => h(POSLayout, null, { default: () => page }) />
-</script>
