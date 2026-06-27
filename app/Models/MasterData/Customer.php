@@ -4,7 +4,9 @@ namespace App\Models\MasterData;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Loyalty\LoyaltyAccount;
 use App\Traits\HasCreatedBy;
 
 class Customer extends Model
@@ -34,6 +36,11 @@ class Customer extends Model
         'credit_limit' => 'decimal:2',
         'birth_date'   => 'date',
     ];
+
+    public function loyaltyAccount(): HasOne
+    {
+        return $this->hasOne(LoyaltyAccount::class, 'customer_id');
+    }
 
     public function category(): BelongsTo
     {

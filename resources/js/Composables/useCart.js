@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { router } from "@inertiajs/vue3";
-import toast from "@/Utils/toast"; // wrapper vue-sonner atau vue-toastification
+import toast from "@/Utils/toast";
 
 export function useCart() {
     const addingProductId = ref(null);
@@ -13,7 +13,7 @@ export function useCart() {
         addingProductId.value = product.id;
 
         router.post(
-            route("transactions.addToCart"),
+            route("pos.cart.add"),
             { product_id: product.id, sell_price: product.sell_price, qty: 1 },
             {
                 preserveScroll: true,
@@ -32,8 +32,9 @@ export function useCart() {
     const updateQty = (cartId, newQty) => {
         if (newQty < 1) return;
         updatingCartId.value = cartId;
+
         router.patch(
-            route("transactions.updateCart", cartId),
+            route("pos.cart.update", cartId),
             { qty: newQty },
             {
                 preserveScroll: true,
@@ -48,7 +49,8 @@ export function useCart() {
 
     const removeFromCart = (cartId, voidReason = null) => {
         removingItemId.value = cartId;
-        router.delete(route("transactions.destroyCart", cartId), {
+
+        router.delete(route("pos.cart.destroy", cartId), {
             data: voidReason ? { void_reason: voidReason } : {},
             preserveScroll: true,
             onSuccess: () => {
@@ -66,8 +68,9 @@ export function useCart() {
 
     const holdCart = (label = null) => {
         isHolding.value = true;
+
         router.post(
-            route("transactions.hold"),
+            route("pos.hold"),
             { label },
             {
                 preserveScroll: true,

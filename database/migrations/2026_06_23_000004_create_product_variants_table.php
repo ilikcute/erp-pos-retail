@@ -13,6 +13,8 @@ return new class extends Migration
             $table->unsignedBigInteger('product_id');
             $table->string('sku', 100)->unique();
             $table->string('variant_name', 255);
+            $table->json('attributes')->nullable();
+            $table->decimal('reorder_point', 15, 2)->default(0);
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
             $table->decimal('weight', 18, 2)->default(0);

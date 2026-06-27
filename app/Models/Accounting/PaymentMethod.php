@@ -2,42 +2,39 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\PaymentMethodType;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentMethod extends Model
 {
-    use HasCreatedBy;
+    use SoftDeletes;
 
     protected $fillable = [
-        'code',
-        'name',
-        'type',
+        'method_code',
+        'method_name',
+        'method_type',
         'account_id',
+        'gateway_code',
+        'logo_url',
         'is_active',
         'sort_order',
-        'description',
         'created_by',
-        'updated_by',
     ];
 
     protected $casts = [
-        'is_active'   => 'boolean',
-        'sort_order'  => 'integer',
+        'method_type' => PaymentMethodType::class,
+        'is_active' => 'boolean',
     ];
 
-    public function scopeActive($query)
+    public function account(): BelongsTo
     {
-        return $query->where('is_active', true);
+        return $this->belongsTo(ChartOfAccount::class, 'account_id');
     }
 
-    public function scopeCash($query)
+    public function isCash(): bool
     {
-        return $query->where('type', 'CASH');
-    }
-
-    public function scopeNonCash($query)
-    {
-        return $query->where('type', '!=', 'CASH');
+        return $this->method_type->isCash();
     }
 }

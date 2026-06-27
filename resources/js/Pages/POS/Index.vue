@@ -1,3 +1,8 @@
+<script>
+import POSLayout from '@/Layouts/POSLayout.vue';
+export default { layout: POSLayout };
+</script>
+
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { Head, usePage } from '@inertiajs/vue3';
@@ -6,9 +11,7 @@ import toast from '@/Utils/toast';
 import { queueTransaction } from '@/Utils/offlineDb';
 import { formatPrice } from '@/Utils/formatPrice';
 
-import POSLayout from '@/Layouts/POSLayout.vue';
 
-defineOptions({ layout: POSLayout });
 import ProductGrid from './Components/ProductGrid.vue';
 import CartPanel from './Components/CartPanel.vue';
 import PaymentPanel from './Components/PaymentPanel.vue';

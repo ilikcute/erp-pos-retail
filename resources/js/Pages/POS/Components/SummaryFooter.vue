@@ -1,4 +1,7 @@
 <script setup>
+import { computed } from 'vue';
+import { formatPrice } from '@/Utils/formatPrice';
+
 const props = defineProps({
     carts: { type: Array, default: () => [] },
     selectedCustomer: { type: Object, default: null },

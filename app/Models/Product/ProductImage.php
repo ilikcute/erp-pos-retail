@@ -9,7 +9,7 @@ use App\Traits\HasCreatedBy;
 class ProductImage extends Model
 {
     use HasCreatedBy;
-
+    protected $table = 'product_images';
     protected $fillable = [
         'product_id',
         'product_variant_id',
@@ -29,5 +29,13 @@ class ProductImage extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+    public function getImageAttribute()
+    {
+        return $this->image_path;
     }
 }

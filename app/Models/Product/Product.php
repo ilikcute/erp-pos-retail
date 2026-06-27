@@ -63,6 +63,30 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function priceListItems()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Product\PriceListItem::class,
+            ProductVariant::class,
+            'product_id',
+            'product_variant_id',
+            'id',
+            'id'
+        );
+    }
+
+    public function barcodes()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Product\ProductBarcode::class,
+            ProductVariant::class,
+            'product_id',            // FK di product_variants → products
+            'product_variant_id',    // FK di product_barcodes → product_variants
+            'id',                    // Local key di products
+            'id'                     // Local key di product_variants
+        );
+    }
+
     public function defaultVariant(): HasOne
     {
         return $this->hasOne(ProductVariant::class)->where('is_default', true);
@@ -70,7 +94,7 @@ class Product extends Model
 
     public function images(): HasMany
     {
-        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+        return $this->hasMany(ProductImage::class)->where('is_primary', true)->orderBy('sort_order');
     }
 
     public function attributes(): HasMany
@@ -115,5 +139,12 @@ class Product extends Model
     public function scopePurchasable($query)
     {
         return $query->where('is_active', true)->where('is_purchasable', true);
+    }
+    /**
+     * Accessor for title to maintain compatibility with UI expecting `title`.
+     */
+    public function getTitleAttribute(): string
+    {
+        return $this->product_name;
     }
 }

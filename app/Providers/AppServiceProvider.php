@@ -41,6 +41,28 @@ class AppServiceProvider extends ServiceProvider
         // ── Pricing (Singletons) ──────────────────────────────────────
         // PriceResolverService dipakai di POS setiap transaksi — singleton agar tidak re-instantiate
         $this->app->singleton(\App\Services\Pricing\PriceResolverService::class);
+
+        // Inventory
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Inventory\BalanceRepositoryInterface::class,
+            \App\Repositories\Eloquent\Inventory\BalanceRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Inventory\LedgerRepositoryInterface::class,
+            \App\Repositories\Eloquent\Inventory\LedgerRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Accounting\CoaRepositoryInterface::class,
+            \App\Repositories\Eloquent\Accounting\CoaRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Accounting\PaymentMethodRepositoryInterface::class,
+            \App\Repositories\Eloquent\Accounting\PaymentMethodRepository::class
+        );
     }
 
     /**

@@ -61,7 +61,7 @@ export function usePricingPreview(initialPreview, deps) {
         isLoadingPricing.value = true;
         try {
             const { data } = await axios.post(
-                route("transactions.pricing-preview"),
+                route("pos.pricing-preview"),
                 {
                     customer_id: selectedCustomer?.id ?? null,
                     discount: Number(discount) || 0,

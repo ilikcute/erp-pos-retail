@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Http\Resources\Inventory;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class BalanceResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'success' => true,
+            'data' => [
+                'product_variant_id' => $this->product_variant_id,
+                'sku' => $this->variant?->sku,
+                'variant_name' => $this->variant?->variant_name,
+                'location_id' => $this->location_id,
+                'location_name' => $this->location?->name,
+                'location_type' => $this->location?->type?->value,
+                'qty_on_hand' => (float) $this->qty_on_hand,
+                'qty_reserved' => (float) $this->qty_reserved,
+                'qty_available' => (float) $this->qty_available,
+            ],
+        ];
+    }
+}

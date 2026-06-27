@@ -59,6 +59,12 @@ const change = computed(() => {
     if (!props.isCashPayment || props.payLater) return 0;
     return Math.max(0, Number(props.cashInput) - props.payable);
 });
+
+// ✅ Helper untuk konversi poin ke Rupiah (point_value = 100)
+const POINT_VALUE = 100;
+const redeemRupiahValue = computed(() => {
+    return Number(props.redeemPointsInput || 0) * POINT_VALUE;
+});
 </script>
 
 <template>
@@ -124,9 +130,9 @@ const change = computed(() => {
         </div>
 
         <div v-if="payLater">
-            <label class="block text-xs font-medium text-ink-secondary mb-2"
-                >Tanggal Jatuh Tempo</label
-            >
+            <label class="block text-xs font-medium text-ink-secondary mb-2">
+                Tanggal Jatuh Tempo
+            </label>
             <input
                 type="date"
                 :value="dueDate"
@@ -138,9 +144,11 @@ const change = computed(() => {
         <!-- SINGLE PAYMENT MODE -->
         <template v-if="paymentMode === 'single' && !payLater">
             <div>
-                <label class="block text-xs font-medium text-ink-secondary mb-2"
-                    >Metode Pembayaran</label
+                <label
+                    class="block text-xs font-medium text-ink-secondary mb-2"
                 >
+                    Metode Pembayaran
+                </label>
                 <div class="grid grid-cols-2 gap-2">
                     <button
                         v-for="method in paymentOptions"
@@ -189,9 +197,11 @@ const change = computed(() => {
             <div
                 v-if="paymentMethod === 'bank_transfer' && bankAccounts.length"
             >
-                <label class="block text-xs font-medium text-ink-secondary mb-2"
-                    >Rekening Tujuan</label
+                <label
+                    class="block text-xs font-medium text-ink-secondary mb-2"
                 >
+                    Rekening Tujuan
+                </label>
                 <div class="grid grid-cols-1 gap-2">
                     <button
                         v-for="bank in bankAccounts"
@@ -231,14 +241,17 @@ const change = computed(() => {
 
             <!-- Cash Input -->
             <div v-if="isCashPayment">
-                <label class="block text-xs font-medium text-ink-secondary mb-2"
-                    >Jumlah Bayar</label
+                <label
+                    class="block text-xs font-medium text-ink-secondary mb-2"
                 >
+                    Jumlah Bayar
+                </label>
                 <div class="relative">
                     <span
                         class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm"
-                        >Rp</span
                     >
+                        Rp
+                    </span>
                     <input
                         type="text"
                         inputmode="numeric"
@@ -292,8 +305,9 @@ const change = computed(() => {
                 >
                     <span
                         class="text-xs font-bold uppercase w-24 text-ink-secondary"
-                        >{{ split.method }}</span
                     >
+                        {{ split.method }}
+                    </span>
                     <input
                         type="text"
                         inputmode="numeric"
@@ -319,17 +333,17 @@ const change = computed(() => {
                 <div
                     class="flex justify-between pt-2 border-t border-border-soft"
                 >
-                    <span class="text-xs font-semibold text-ink-muted"
-                        >Total Split</span
-                    >
-                    <span class="text-sm font-bold text-ink-primary">{{
-                        formatPrice(splitTotal)
-                    }}</span>
+                    <span class="text-xs font-semibold text-ink-muted">
+                        Total Split
+                    </span>
+                    <span class="text-sm font-bold text-ink-primary">
+                        {{ formatPrice(splitTotal) }}
+                    </span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-xs font-semibold text-ink-muted"
-                        >Sisa</span
-                    >
+                    <span class="text-xs font-semibold text-ink-muted">
+                        Sisa
+                    </span>
                     <span
                         :class="[
                             'text-sm font-bold',
@@ -344,70 +358,125 @@ const change = computed(() => {
             </div>
         </template>
 
-        <!-- Customer Loyalty -->
-        <template v-if="selectedCustomer?.is_loyalty_member">
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- ✅ CUSTOMER LOYALTY (FIXED: template tanpa class) -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <template
+            v-if="
+                selectedCustomer?.is_loyalty_member ||
+                selectedCustomer?.loyalty_account
+            "
+        >
             <div
-                class="rounded-xl border border-brand-border bg-brand-soft p-3"
+                class="rounded-xl border border-brand-border bg-brand-soft p-3 space-y-3"
             >
-                <p class="text-sm font-semibold text-brand">Loyalty Member</p>
-                <p class="text-xs text-ink-muted">
-                    Tier {{ selectedCustomer.loyalty_tier }} ·
-                    {{ availablePoints }} poin
-                </p>
-            </div>
+                <!-- Loyalty Info Header -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-brand">
+                            ⭐
+                            {{
+                                selectedCustomer.loyalty_account
+                                    ?.membership_tier || "Member"
+                            }}
+                        </p>
+                        <p class="text-xs text-ink-muted">
+                            Saldo:
+                            <span class="font-bold text-brand">
+                                {{
+                                    selectedCustomer.loyalty_account
+                                        ?.current_balance || 0
+                                }}
+                                poin
+                            </span>
+                            <span class="ml-2">
+                                (≈
+                                {{
+                                    formatPrice(
+                                        (selectedCustomer.loyalty_account
+                                            ?.current_balance || 0) *
+                                            POINT_VALUE,
+                                    )
+                                }})
+                            </span>
+                        </p>
+                    </div>
+                </div>
 
-            <div>
-                <label class="block text-xs font-medium text-ink-secondary mb-2"
-                    >Redeem Poin</label
-                >
-                <input
-                    type="text"
-                    inputmode="numeric"
-                    :value="redeemPointsInput"
-                    @input="
-                        emit(
-                            'update:redeemPointsInput',
-                            $event.target.value.replace(/[^\d]/g, ''),
-                        )
-                    "
-                    :placeholder="`Maks ${availablePoints} poin`"
-                    class="w-full h-10 px-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
-                />
-            </div>
-
-            <div v-if="eligibleVouchers?.length">
-                <label class="block text-xs font-medium text-ink-secondary mb-2"
-                    >Voucher</label
-                >
-                <select
-                    :value="selectedVoucherId"
-                    @change="
-                        emit('update:selectedVoucherId', $event.target.value)
-                    "
-                    class="w-full h-10 px-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
-                >
-                    <option value="">Tanpa voucher</option>
-                    <option
-                        v-for="v in eligibleVouchers"
-                        :key="v.id"
-                        :value="v.id"
+                <!-- Redeem Points Input -->
+                <div>
+                    <label
+                        class="block text-xs font-medium text-ink-secondary mb-2"
                     >
-                        {{ v.code }} - {{ v.name }}
-                    </option>
-                </select>
+                        Redeem / Tukar Point Loyalty
+                    </label>
+                    <!-- ✅ FIXED: pakai :value + @input, BUKAN v-model -->
+                    <input
+                        type="number"
+                        :value="redeemPointsInput"
+                        @input="
+                            emit(
+                                'update:redeemPointsInput',
+                                $event.target.value.replace(/[^\d]/g, ''),
+                            )
+                        "
+                        :max="
+                            selectedCustomer.loyalty_account?.current_balance ||
+                            0
+                        "
+                        :min="0"
+                        placeholder="0"
+                        class="w-full h-10 px-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
+                    />
+                    <p
+                        v-if="Number(redeemPointsInput) > 0"
+                        class="text-xs text-accent-mint mt-1"
+                    >
+                        Potongan: {{ formatPrice(redeemRupiahValue) }}
+                    </p>
+                </div>
+
+                <!-- Voucher Selector -->
+                <div v-if="eligibleVouchers?.length">
+                    <label
+                        class="block text-xs font-medium text-ink-secondary mb-2"
+                    >
+                        Voucher
+                    </label>
+                    <select
+                        :value="selectedVoucherId"
+                        @change="
+                            emit(
+                                'update:selectedVoucherId',
+                                $event.target.value,
+                            )
+                        "
+                        class="w-full h-10 px-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
+                    >
+                        <option value="">Tanpa voucher</option>
+                        <option
+                            v-for="v in eligibleVouchers"
+                            :key="v.id"
+                            :value="v.id"
+                        >
+                            {{ v.code }} - {{ v.name }}
+                        </option>
+                    </select>
+                </div>
             </div>
         </template>
 
         <!-- Manual Discount -->
         <div>
-            <label class="block text-xs font-medium text-ink-secondary mb-2"
-                >Diskon Manual</label
-            >
+            <label class="block text-xs font-medium text-ink-secondary mb-2">
+                Diskon Manual
+            </label>
             <div class="relative">
                 <span
                     class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm"
-                    >Rp</span
                 >
+                    Rp
+                </span>
                 <input
                     type="text"
                     inputmode="numeric"
@@ -425,14 +494,15 @@ const change = computed(() => {
 
         <!-- Shipping -->
         <div>
-            <label class="block text-xs font-medium text-ink-secondary mb-2"
-                >Ongkos Kirim</label
-            >
+            <label class="block text-xs font-medium text-ink-secondary mb-2">
+                Ongkos Kirim
+            </label>
             <div class="relative">
                 <span
                     class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm"
-                    >Rp</span
                 >
+                    Rp
+                </span>
                 <input
                     type="text"
                     inputmode="numeric"

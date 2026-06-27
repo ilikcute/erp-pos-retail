@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import toast from "@/Utils/toast";
 
 const props = defineProps({
