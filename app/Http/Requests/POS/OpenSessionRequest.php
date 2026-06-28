@@ -8,15 +8,26 @@ class OpenSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('pos.session.open');
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'shift_id'     => 'required|exists:shifts,id',
+            'shift_id' => 'required|integer|exists:cashier_shifts,id',
             'opening_cash' => 'required|numeric|min:0',
-            'notes'        => 'nullable|string|max:500',
+            'location_id' => 'nullable|integer|exists:inventory_locations,id',
+            'notes' => 'nullable|string|max:500',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'shift_id.required' => 'Shift wajib dipilih',
+            'shift_id.exists' => 'Shift tidak ditemukan',
+            'opening_cash.required' => 'Modal awal wajib diisi',
+            'opening_cash.min' => 'Modal awal tidak boleh negatif',
         ];
     }
 }

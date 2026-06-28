@@ -2,27 +2,31 @@
 
 namespace App\Http\Controllers\POS;
 
+use App\Enums\Inventory\TransactionType;
 use App\Http\Controllers\Controller;
+use App\Models\Accounting\PaymentMethod;
 use App\Models\Inventory\InventoryBalance;
-use App\Models\MasterData\BankAccount;
+use App\Models\Inventory\InventoryBatch;
 use App\Models\MasterData\Customer;
 use App\Models\POS\Cart;
 use App\Models\POS\CartVoidLog;
 use App\Models\POS\HeldCart;
 use App\Models\Product\Product;
 use App\Models\Product\ProductCategory as Category;
+use App\Models\Product\ProductVariant;
 use App\Repositories\Contracts\Inventory\BalanceRepositoryInterface;
+use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
+use App\Services\Accounting\JournalService;
 use App\Services\Inventory\StockMovementService;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\POS\CartService;
 use App\Services\Pricing\PricingService;
-use App\Enums\Inventory\TransactionType;
+use App\Services\Promotion\PromotionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use App\Models\Accounting\PaymentMethod;          // ← GANTI BankAccount
-use App\Services\Accounting\JournalService;       // ← BARU
-
 
 class PosTransactionController extends Controller
 {
@@ -32,10 +36,13 @@ class PosTransactionController extends Controller
         private readonly BalanceRepositoryInterface $balanceRepository,
         private readonly StockMovementService $stockMovement,
         private readonly JournalService $journalService,
+        private readonly LoyaltyService $loyaltyService,
+        private readonly PromotionService $promotionService,
+        private readonly AccountRepositoryInterface $loyaltyAccountRepo,
     ) {}
 
     // ═══════════════════════════════════════════════════════════
-    // RENDER HALAMAN POS UTAMA
+    // 1. RENDER HALAMAN POS UTAMA
     // ═══════════════════════════════════════════════════════════
     public function index(Request $request)
     {
@@ -43,16 +50,11 @@ class PosTransactionController extends Controller
         $locationId = $this->getCurrentLocationId($user);
 
         // ───────────────────────────────────────────────────────
-        // 1. AMBIL PRODUCTS
-        //    Subquery disesuaikan dengan struktur DB Anda:
-        //    - product_barcodes → FK ke product_variant_id (JOIN ke product_variants)
-        //    - price_list_items → FK ke product_variant_id (JOIN ke product_variants)
-        //    - product_images   → kolom image_path (bukan image)
+        // 1.1 PRODUCTS (dengan subquery)
         // ───────────────────────────────────────────────────────
         $products = Product::where('is_active', true)
             ->with(['category', 'variants'])
             ->select('id', 'product_name', 'product_code', 'category_id')
-            // ✅ BARCODE: via product_variants (FK product_variant_id)
             ->addSelect(['barcode' => function ($query) {
                 $query->select('pb.barcode')
                     ->from('product_barcodes as pb')
@@ -61,9 +63,6 @@ class PosTransactionController extends Controller
                     ->orderBy('pb.is_primary', 'desc')
                     ->limit(1);
             }])
-
-            // ✅ SELL PRICE: via product_variants (FK product_variant_id)
-            //    Ambil harga dengan min_qty terkecil (harga satuan)
             ->addSelect(['sell_price' => function ($query) {
                 $query->select('pli.price')
                     ->from('price_list_items as pli')
@@ -72,8 +71,6 @@ class PosTransactionController extends Controller
                     ->orderBy('pli.min_qty', 'asc')
                     ->limit(1);
             }])
-
-            // ✅ IMAGE: kolom image_path (bukan 'image')
             ->addSelect(['image' => function ($query) {
                 $query->select('image_path')
                     ->from('product_images')
@@ -85,35 +82,30 @@ class PosTransactionController extends Controller
             ->get();
 
         // ───────────────────────────────────────────────────────
-        // 2. AMBIL STOK DARI INVENTORY BALANCES
+        // 1.2 STOCK dari inventory balances
         // ───────────────────────────────────────────────────────
         $stockPerProduct = $this->getStockPerProduct($products, $locationId);
 
-        // ───────────────────────────────────────────────────────
-        // 3. FORMAT PRODUCTS UNTUK FRONTEND
-        // ───────────────────────────────────────────────────────
-        $productsFormatted = $products->map(function (Product $product) use ($stockPerProduct) {
-            return [
-                'id'            => $product->id,
-                'title'         => $product->product_name,
-                'sku'           => $product->product_code,
-                'barcode'       => $product->barcode,
-                'sell_price'    => (float) ($product->sell_price ?? 0),
-                'image'         => $product->image,
-                'stock'         => $stockPerProduct[$product->id] ?? 0,
-                'category_id'   => $product->category_id,
-                'category_name' => $product->category?->name,
-                'has_variants'  => $product->variants->isNotEmpty(),
-            ];
-        });
+        $productsFormatted = $products->map(fn(Product $product) => [
+            'id'            => $product->id,
+            'title'         => $product->product_name,
+            'sku'           => $product->product_code,
+            'barcode'       => $product->barcode,
+            'sell_price'    => (float) ($product->sell_price ?? 0),
+            'image'         => $product->image,
+            'stock'         => $stockPerProduct[$product->id] ?? 0,
+            'category_id'   => $product->category_id,
+            'category_name' => $product->category?->name,
+            'has_variants'  => $product->variants->isNotEmpty(),
+        ]);
 
         // ───────────────────────────────────────────────────────
-        // 4. CATEGORIES
+        // 1.3 CATEGORIES
         // ───────────────────────────────────────────────────────
         $categories = Category::select('id', 'category_name')->get();
 
         // ───────────────────────────────────────────────────────
-        // 5. CUSTOMERS (dengan eager load loyalty account)
+        // 1.4 CUSTOMERS (dengan loyalty eager load)
         // ───────────────────────────────────────────────────────
         $customers = Customer::select(
             'id',
@@ -128,33 +120,34 @@ class PosTransactionController extends Controller
             ->with(['loyaltyAccount.tier'])
             ->limit(100)
             ->get()
-            ->map(function ($customer) {
-                return [
-                    'id'                    => $customer->id,
-                    'code'                  => $customer->customer_code,
-                    'name'                  => $customer->customer_name,
-                    'phone'                 => $customer->phone,
-                    'email'                 => $customer->email,
-                    'credit_limit'          => (float) $customer->credit_limit,
-                    'customer_category_id'  => $customer->customer_category_id,
-                    'is_loyalty_member'     => $customer->loyaltyAccount !== null,
-                    'loyalty_account'       => $customer->loyaltyAccount ? [
-                        'account_no'        => $customer->loyaltyAccount->account_no,
-                        'current_balance'   => $customer->loyaltyAccount->current_balance,
-                        'membership_tier'   => $customer->loyaltyAccount->tier?->tier_code,
-                        'tier_name'         => $customer->loyaltyAccount->tier?->tier_name,
-                        'lifetime_spending' => (float) $customer->loyaltyAccount->lifetime_spending,
-                        'point_expiry_date' => $customer->loyaltyAccount->point_expiry_date?->format('Y-m-d'),
-                    ] : null,
-                ];
-            });
-
+            ->map(fn($customer) => [
+                'id'                    => $customer->id,
+                'code'                  => $customer->customer_code,
+                'name'                  => $customer->customer_name,
+                'phone'                 => $customer->phone,
+                'email'                 => $customer->email,
+                'credit_limit'          => (float) $customer->credit_limit,
+                'customer_category_id'  => $customer->customer_category_id,
+                'is_loyalty_member'     => $customer->loyaltyAccount !== null,
+                'loyalty_account'       => $customer->loyaltyAccount ? [
+                    'account_no'        => $customer->loyaltyAccount->account_no,
+                    'current_balance'   => $customer->loyaltyAccount->current_balance,
+                    'membership_tier'   => $customer->loyaltyAccount->tier?->tier_code,
+                    'tier_name'         => $customer->loyaltyAccount->tier?->tier_name,
+                    'lifetime_spending' => (float) $customer->loyaltyAccount->lifetime_spending,
+                    'point_expiry_date' => $customer->loyaltyAccount->point_expiry_date?->format('Y-m-d'),
+                ] : null,
+            ]);
 
         // ───────────────────────────────────────────────────────
-        // 6. CART USER SAAT INI
+        // 1.5 CART (✅ FIXED: eager load untuk hindari N+1)
         // ───────────────────────────────────────────────────────
         $carts = Cart::where('user_id', $user->id)
-            ->with('product')
+            ->with([
+                'product.images',
+                'product.priceListItems',
+                'product.variants',
+            ])
             ->get()
             ->map(fn(Cart $cart) => [
                 'id'         => $cart->id,
@@ -164,18 +157,20 @@ class PosTransactionController extends Controller
                 'product'    => [
                     'id'         => $cart->product->id,
                     'title'      => $cart->product->product_name,
-                    'image'      => $cart->product->images()
-                        ->orderBy('is_primary', 'desc')
-                        ->orderBy('sort_order', 'asc')
-                        ->value('image_path'),
-                    'sell_price' => $this->getProductSellPrice($cart->product_id),
+                    'image'      => $cart->product->images
+                        ->sortByDesc('is_primary')
+                        ->sortBy('sort_order')
+                        ->first()?->image_path,
+                    'sell_price' => $cart->product->priceListItems
+                        ->sortBy('min_qty')
+                        ->first()?->price ?? $cart->sell_price,
                 ],
             ]);
 
         $cartsTotal = $carts->sum(fn($c) => $c['price'] * $c['qty']);
 
         // ───────────────────────────────────────────────────────
-        // 7. HELD CARTS
+        // 1.6 HELD CARTS
         // ───────────────────────────────────────────────────────
         $heldCarts = HeldCart::where('user_id', $user->id)
             ->with('items.product')
@@ -189,7 +184,7 @@ class PosTransactionController extends Controller
             ]);
 
         // ───────────────────────────────────────────────────────
-        // 8. INITIAL PRICING PREVIEW
+        // 1.7 INITIAL PRICING PREVIEW
         // ───────────────────────────────────────────────────────
         $initialPricingPreview = $this->pricingService->calculatePreview(
             $carts,
@@ -201,7 +196,7 @@ class PosTransactionController extends Controller
         );
 
         // ───────────────────────────────────────────────────────
-        // 7. PAYMENT METHODS (✅ FIXED - pakai PaymentMethod)
+        // 1.8 PAYMENT METHODS (dari Accounting module)
         // ───────────────────────────────────────────────────────
         $paymentMethods = PaymentMethod::with('account')
             ->where('is_active', true)
@@ -218,16 +213,18 @@ class PosTransactionController extends Controller
                 'is_cash'      => $pm->isCash(),
             ]);
 
-        // Pisahkan untuk compatibility dengan frontend lama
-        $paymentGateways = $paymentMethods->map(fn($pm) => [
-            'value' => $pm['value'],
-            'label' => $pm['label'],
-        ])->unique('value')->values()->toArray();
+        $paymentGateways = $paymentMethods
+            ->map(fn($pm) => ['value' => $pm['value'], 'label' => $pm['label']])
+            ->unique('value')
+            ->values()
+            ->toArray();
 
-        $bankAccounts = $paymentMethods->filter(fn($pm) => $pm['value'] === 'TRANSFER')->values();
+        $bankAccounts = $paymentMethods
+            ->filter(fn($pm) => $pm['value'] === 'TRANSFER')
+            ->values();
 
         // ───────────────────────────────────────────────────────
-        // 10. RENDER INERTIA
+        // 1.9 RENDER
         // ───────────────────────────────────────────────────────
         return Inertia::render('POS/Index', [
             'carts'                   => $carts,
@@ -247,7 +244,7 @@ class PosTransactionController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════
-    // TAMBAH PRODUK KE CART
+    // 2. CART OPERATIONS
     // ═══════════════════════════════════════════════════════════
     public function addToCart(Request $request)
     {
@@ -277,14 +274,9 @@ class PosTransactionController extends Controller
         return back()->with('success', 'Produk ditambahkan');
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // UPDATE QUANTITY CART
-    // ═══════════════════════════════════════════════════════════
     public function updateCart(Request $request, int $cartId)
     {
-        $request->validate([
-            'qty' => 'required|integer|min:1',
-        ]);
+        $request->validate(['qty' => 'required|integer|min:1']);
 
         $user = Auth::user();
         $locationId = $this->getCurrentLocationId($user);
@@ -309,9 +301,6 @@ class PosTransactionController extends Controller
         return back();
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // HAPUS ITEM DARI CART
-    // ═══════════════════════════════════════════════════════════
     public function destroyCart(Request $request, int $cartId)
     {
         $user = Auth::user();
@@ -336,9 +325,6 @@ class PosTransactionController extends Controller
         return back();
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // HOLD / RECALL / CLEAR CART
-    // ═══════════════════════════════════════════════════════════
     public function hold(Request $request)
     {
         $user = Auth::user();
@@ -361,7 +347,7 @@ class PosTransactionController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PRICING PREVIEW (AJAX)
+    // 3. PRICING PREVIEW (AJAX)
     // ═══════════════════════════════════════════════════════════
     public function pricingPreview(Request $request)
     {
@@ -384,7 +370,7 @@ class PosTransactionController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════
-    // SUBMIT TRANSAKSI
+    // 4. SUBMIT TRANSAKSI (✅ FIXED: validasi lengkap + error handling)
     // ═══════════════════════════════════════════════════════════
     public function store(Request $request)
     {
@@ -393,7 +379,7 @@ class PosTransactionController extends Controller
             'grand_total'              => 'required|numeric|min:0',
             'cash'                     => 'required_if:pay_later,false|numeric|min:0',
             'payment_gateway'          => 'nullable|string',
-            'payment_method_id'        => 'nullable|integer|exists:payment_methods,id',  // ← BARU
+            'payment_method_id'        => 'nullable|integer|exists:payment_methods,id',
             'pay_later'                => 'boolean',
             'due_date'                 => 'required_if:pay_later,true|date|after:today',
             'payment_splits'           => 'nullable|array',
@@ -403,27 +389,88 @@ class PosTransactionController extends Controller
             'location_id'              => 'nullable|integer|exists:inventory_locations,id',
             'redeem_points'            => 'nullable|integer|min:0',
             'earn_points'              => 'nullable|boolean',
+            'applied_promotions'       => 'nullable|array',
         ]);
 
         $user = Auth::user();
         $locationId = $request->location_id ?? $this->getCurrentLocationId($user);
+        $transactionDate = now();
 
-        // Validasi stock
+        // ═══════════════════════════════════════════════════════════
+        // ✅ VALIDASI 1: Cek apakah hari sudah ditutup
+        // ═══════════════════════════════════════════════════════════
+        $dayClosingService = app(\App\Services\POS\DayClosingService::class);
+        $dayCheck = $dayClosingService->canTransactOnDate(
+            $transactionDate->toDateString(),
+            $locationId
+        );
+
+        if (!$dayCheck['allowed']) {
+            return back()->withErrors([
+                'transaction' => $dayCheck['reason']
+            ]);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // ✅ VALIDASI 2: Cek apakah bulan sudah dikunci
+        // ═══════════════════════════════════════════════════════════
+        $monthClosingService = app(\App\Services\POS\MonthClosingService::class);
+        $monthCheck = $monthClosingService->canTransactInPeriod(
+            $transactionDate->year,
+            $transactionDate->month,
+            $locationId
+        );
+
+        if (!$monthCheck['allowed']) {
+            return back()->withErrors([
+                'transaction' => $monthCheck['reason']
+            ]);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // ✅ VALIDASI 3: Cek sesi aktif
+        // ═══════════════════════════════════════════════════════════
+        $activeSession = session('pos_session_id')
+            ? \App\Models\POS\CashierSession::find(session('pos_session_id'))
+            : null;
+
+        if (!$activeSession || $activeSession->isClosed()) {
+            return back()->withErrors([
+                'session' => 'Sesi kasir belum dibuka atau sudah ditutup.'
+            ]);
+        }
+
+
+        // ✅ BARU: Validasi sesi aktif
+        $activeSession = session('pos_session_id')
+            ? \App\Models\POS\CashierSession::find(session('pos_session_id'))
+            : null;
+
+        if (!$activeSession || $activeSession->isClosed()) {
+            return back()->withErrors([
+                'session' => 'Sesi kasir belum dibuka atau sudah ditutup. Silakan buka sesi terlebih dahulu.'
+            ]);
+        }
+
+        // ───────────────────────────────────────────────────────
+        // 4.1 VALIDASI STOCK
+        // ───────────────────────────────────────────────────────
         $carts = Cart::where('user_id', $user->id)->with('product')->get();
         foreach ($carts as $cart) {
             $availableStock = $this->getProductStock($cart->product_id, $locationId);
             if ($availableStock < $cart->qty) {
                 return back()->withErrors([
-                    'stock' => "Stok {$cart->product->product_name} tidak mencukupi"
+                    'stock' => "Stok {$cart->product->product_name} tidak mencukupi. Tersedia: {$availableStock}"
                 ]);
             }
         }
 
-        // Validasi redeem points
+        // ───────────────────────────────────────────────────────
+        // 4.2 VALIDASI REDEEM POINTS
+        // ───────────────────────────────────────────────────────
         $redeemPointsValue = 0;
         if ($request->redeem_points > 0) {
-            $account = app(\App\Repositories\Contracts\Loyalty\AccountRepositoryInterface::class)
-                ->findByCustomerId($request->customer_id);
+            $account = $this->loyaltyAccountRepo->findByCustomerId($request->customer_id);
 
             if (!$account || $account->current_balance < $request->redeem_points) {
                 return back()->withErrors([
@@ -435,92 +482,159 @@ class PosTransactionController extends Controller
             $redeemPointsValue = $request->redeem_points * $config->point_value;
         }
 
-        $transaction = DB::transaction(function () use ($user, $request, $locationId, $carts, $redeemPointsValue) {
-            // 1. Buat transaksi
-            $transaction = $this->cartService->checkout($user->id, $request->all());
+        // ───────────────────────────────────────────────────────
+        // 4.3 ✅ VALIDASI SPLIT PAYMENT TOTAL
+        // ───────────────────────────────────────────────────────
+        if (!empty($request->payment_splits) && !$request->pay_later) {
+            $splitTotal = collect($request->payment_splits)->sum('amount');
+            $expectedTotal = $request->grand_total - $redeemPointsValue;
 
-            // 2. Kurangi stock
-            foreach ($carts as $cart) {
-                $this->decreaseStockOnSale(
-                    productId: $cart->product_id,
-                    qty: $cart->qty,
-                    locationId: $locationId,
-                    reference: $transaction,
-                    userId: $user->id
-                );
+            if (abs($splitTotal - $expectedTotal) > 0.01) {
+                return back()->withErrors([
+                    'payment_splits' => "Total split payment (Rp " .
+                        number_format($splitTotal, 0, ',', '.') .
+                        ") tidak sama dengan total bayar (Rp " .
+                        number_format($expectedTotal, 0, ',', '.') . ")"
+                ]);
             }
+        }
 
-            // 3. ✅ AUTO JOURNAL - Payment entry
-            $paymentMethodsData = $this->buildPaymentMethodsArray($request, $transaction);
+        // ───────────────────────────────────────────────────────
+        // 4.4 EKSEKUSI TRANSAKSI (dalam 1 transaction besar)
+        // ───────────────────────────────────────────────────────
+        try {
+            $transaction = DB::transaction(function () use ($user, $request, $locationId, $carts, $redeemPointsValue) {
+                $payload = $request->all();
+                $payload['cashier_session_id'] = $activeSession->id;
 
-            if (!empty($paymentMethodsData)) {
-                $this->journalService->createPosTransactionJournal(
-                    $transaction,
-                    $paymentMethodsData
+                // 1. Buat transaksi
+                $transaction = $this->cartService->checkout($user->id, $payload);
+
+                // 2. Kurangi stock (dengan exception jika gagal)
+                foreach ($carts as $cart) {
+                    $this->decreaseStockOnSale(
+                        productId: $cart->product_id,
+                        qty: $cart->qty,
+                        locationId: $locationId,
+                        reference: $transaction,
+                        userId: $user->id
+                    );
+                }
+
+                // 3. ✅ AUTO JOURNAL - Sales entry
+                $paymentMethodsData = $this->buildPaymentMethodsArray($request, $transaction, $redeemPointsValue);
+                if (!empty($paymentMethodsData)) {
+                    $this->journalService->createPosTransactionJournal(
+                        $transaction,
+                        $paymentMethodsData
+                    );
+                }
+
+                // 4. ✅ AUTO JOURNAL - COGS entry (HPP)
+                $cogsItems = $this->buildCogsItems($carts, $locationId);
+                if (!empty($cogsItems)) {
+                    $this->journalService->createCogsJournal($transaction, $cogsItems);
+                }
+
+                // 5. Log penggunaan promosi
+                if (!empty($request->applied_promotions)) {
+                    foreach ($request->applied_promotions as $promo) {
+                        if (!empty($promo['promotion_id']) && !empty($promo['discount_amount'])) {
+                            $this->promotionService->logUsage(
+                                promotionId: $promo['promotion_id'],
+                                customerId: $request->customer_id,
+                                transactionId: $transaction->id,
+                                discountAmount: $promo['discount_amount']
+                            );
+                        }
+                    }
+                }
+
+                // 6. Redeem loyalty points
+                if ($request->redeem_points > 0) {
+                    $this->loyaltyService->redeemPointsAsPayment(
+                        customerId: $request->customer_id,
+                        pointsToRedeem: $request->redeem_points,
+                        reference: $transaction,
+                        userId: $user->id
+                    );
+                }
+
+                // 7. Earn loyalty points
+                if ($request->earn_points !== false) {
+                    $earnResult = $this->loyaltyService->earnPoints(
+                        customerId: $request->customer_id,
+                        transactionValue: $request->grand_total,
+                        reference: $transaction,
+                        userId: $user->id
+                    );
+                    session()->flash('earned_points', $earnResult['earned']);
+                }
+
+                // ✅ BARU: Refresh session stats
+                $sessionService = app(\App\Services\POS\SessionService::class);
+                $sessionService->refreshSessionStats($activeSession->id);
+
+                return $transaction;
+            });
+
+            return redirect()
+                ->route('pos.sales.show', $transaction->id)
+                ->with(
+                    'success',
+                    'Transaksi berhasil!' .
+                        (session('earned_points') ? ' +' . session('earned_points') . ' poin' : '')
                 );
-            }
-
-            // 4. REDEEM POINTS
-            if ($request->redeem_points > 0) {
-                $loyaltyService = app(\App\Services\Loyalty\LoyaltyService::class);
-                $loyaltyService->redeemPointsAsPayment(
-                    customerId: $request->customer_id,
-                    pointsToRedeem: $request->redeem_points,
-                    reference: $transaction,
-                    userId: $user->id
-                );
-            }
-
-            // 5. EARN POINTS
-            if ($request->earn_points !== false) {
-                $loyaltyService = app(\App\Services\Loyalty\LoyaltyService::class);
-                $earnResult = $loyaltyService->earnPoints(
-                    customerId: $request->customer_id,
-                    transactionValue: $request->grand_total,
-                    reference: $transaction,
-                    userId: $user->id
-                );
-                session()->flash('earned_points', $earnResult['earned']);
-            }
-
-            return $transaction;
-        });
-
-        return redirect()
-            ->route('pos.sales.show', $transaction->id)
-            ->with(
-                'success',
-                'Transaksi berhasil!' .
-                    (session('earned_points') ? ' +' . session('earned_points') . ' poin' : '')
-            );
+        } catch (\DomainException $e) {
+            // ✅ Error handling yang jelas
+            return back()->withErrors([
+                'transaction' => $e->getMessage()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('POS Transaction failed: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors([
+                'transaction' => 'Terjadi kesalahan saat memproses transaksi. Silakan coba lagi.'
+            ]);
+        }
     }
 
-    /**
-     * Helper: Build array payment methods untuk auto journal
-     */
-    private function buildPaymentMethodsArray($request, $transaction): array
+    // ═══════════════════════════════════════════════════════════
+    // 5. HELPER METHODS
+    // ═══════════════════════════════════════════════════════════
+
+    private function buildPaymentMethodsArray($request, $transaction, float $redeemPointsValue = 0): array
     {
         $payments = [];
 
-        // Split payment
         if (!empty($request->payment_splits)) {
             foreach ($request->payment_splits as $split) {
                 $pmId = $split['payment_method_id'] ?? null;
                 $pm = $pmId ? PaymentMethod::with('account')->find($pmId) : null;
 
+                if (!$pm && !empty($split['method'])) {
+                    $pm = PaymentMethod::with('account')
+                        ->where('method_type', strtoupper($split['method']))
+                        ->where('is_active', true)
+                        ->first();
+                }
+
+                if (!$pm) {
+                    throw new \DomainException("Payment method tidak ditemukan: " . ($split['method'] ?? 'unknown'));
+                }
+
                 $payments[] = [
-                    'method_name'  => $pm?->method_name ?? $split['method'],
-                    'account_id'   => $pm?->account_id ?? $this->getDefaultAccountIdForType($split['method']),
+                    'method_name'  => $pm->method_name,
+                    'account_id'   => $pm->account_id,
                     'amount'       => (float) $split['amount'],
                 ];
             }
-        }
-        // Single payment
-        elseif (!$request->pay_later) {
+        } elseif (!$request->pay_later) {
             $pmId = $request->payment_method_id ?? null;
             $pm = $pmId ? PaymentMethod::with('account')->find($pmId) : null;
 
-            // Fallback: cari by method_type
             if (!$pm && $request->payment_gateway) {
                 $pm = PaymentMethod::with('account')
                     ->where('method_type', strtoupper($request->payment_gateway))
@@ -528,9 +642,21 @@ class PosTransactionController extends Controller
                     ->first();
             }
 
+            if (!$pm) {
+                // Fallback ke CASH jika tidak ada yang cocok
+                $pm = PaymentMethod::with('account')
+                    ->where('method_type', 'CASH')
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            if (!$pm) {
+                throw new \DomainException('Payment method CASH tidak ditemukan di sistem');
+            }
+
             $payments[] = [
-                'method_name'  => $pm?->method_name ?? ($request->payment_gateway ?? 'Cash'),
-                'account_id'   => $pm?->account_id ?? $this->getDefaultAccountIdForType('CASH'),
+                'method_name'  => $pm->method_name,
+                'account_id'   => $pm->account_id,
                 'amount'       => (float) ($request->cash ?? $transaction->grand_total),
             ];
         }
@@ -538,23 +664,33 @@ class PosTransactionController extends Controller
         return $payments;
     }
 
-    private function getDefaultAccountIdForType(string $type): int
+    /**
+     * ✅ BARU: Build items untuk COGS journal
+     */
+    private function buildCogsItems($carts, ?int $locationId): array
     {
-        $pm = PaymentMethod::with('account')
-            ->where('method_type', strtoupper($type))
-            ->where('is_active', true)
-            ->first();
+        $items = [];
 
-        if (!$pm) {
-            throw new \DomainException("Payment method type {$type} tidak ditemukan");
+        foreach ($carts as $cart) {
+            $variant = ProductVariant::where('product_id', $cart->product_id)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$variant) continue;
+
+            $batch = InventoryBatch::where('product_variant_id', $variant->id)
+                ->where('location_id', $locationId)
+                ->where('is_active', true)
+                ->first();
+
+            $items[] = (object) [
+                'qty' => $cart->qty,
+                'unit_cost' => $batch?->unit_cost ?? 0,
+            ];
         }
 
-        return $pm->account_id;
+        return $items;
     }
-
-    // ═══════════════════════════════════════════════════════════
-    // HELPER METHODS
-    // ═══════════════════════════════════════════════════════════
 
     private function getCurrentLocationId($user): ?int
     {
@@ -638,24 +774,15 @@ class PosTransactionController extends Controller
 
         if ($available < $totalNeeded) {
             $product = Product::find($productId);
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'stock' => "Stok {$product?->product_name} tidak mencukupi. Tersedia: {$available}, dibutuhkan: {$totalNeeded}"
             ]);
         }
     }
 
     /**
-     * ✅ Helper baru: Ambil harga jual dari price_list_items via variant
+     * ✅ FIXED: Throw exception jika stock kurang (bukan silent fail)
      */
-    private function getProductSellPrice(int $productId): float
-    {
-        return (float) DB::table('price_list_items as pli')
-            ->join('product_variants as pv', 'pv.id', '=', 'pli.product_variant_id')
-            ->where('pv.product_id', $productId)
-            ->orderBy('pli.min_qty', 'asc')
-            ->value('pli.price') ?? 0;
-    }
-
     private function decreaseStockOnSale(
         int $productId,
         float $qty,
@@ -664,27 +791,33 @@ class PosTransactionController extends Controller
         int $userId
     ): void {
         if (!$locationId) {
-            return;
+            throw new \DomainException('Location ID wajib untuk transaksi POS');
         }
 
-        $variant = \App\Models\Product\ProductVariant::where('product_id', $productId)
+        $variant = ProductVariant::where('product_id', $productId)
             ->where('is_active', true)
             ->first();
 
         if (!$variant) {
-            return;
+            throw new \DomainException("Produk ID {$productId} tidak memiliki variant aktif");
         }
 
         $balance = InventoryBalance::where('product_variant_id', $variant->id)
             ->where('location_id', $locationId)
+            ->lockForUpdate()
             ->first();
 
-        if (!$balance || $balance->qty_available < $qty) {
-            \Log::warning("Stock tidak cukup untuk variant {$variant->id} di location {$locationId}");
-            return;
+        if (!$balance) {
+            throw new \DomainException("Stok tidak ditemukan untuk produk di lokasi ini");
         }
 
-        $batch = \App\Models\Inventory\InventoryBatch::where('product_variant_id', $variant->id)
+        if ($balance->qty_available < $qty) {
+            throw new \DomainException(
+                "Stok tidak cukup. Tersedia: {$balance->qty_available}, diminta: {$qty}"
+            );
+        }
+
+        $batch = InventoryBatch::where('product_variant_id', $variant->id)
             ->where('location_id', $locationId)
             ->where('is_active', true)
             ->first();

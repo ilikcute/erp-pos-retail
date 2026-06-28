@@ -2,68 +2,302 @@
 
 namespace App\Services\Pricing;
 
+use App\Services\Promotion\PromotionService;  // ✅ FIXED: Import PromotionService
+use Illuminate\Support\Collection;
+
 class PricingService
 {
-    public function calculatePreview($carts, ?int $customerId, float $discount, float $shipping, float $redeemPoints, ?int $voucherId): array
-    {
+    public function __construct(
+        private readonly PromotionService $promotionService,
+    ) {}
+
+    /**
+     * Hitung preview harga untuk cart + customer
+     * Termasuk: harga dasar, promo otomatis, voucher, loyalty, pajak
+     *
+     * @param Collection $carts Cart items dari database
+     * @param int|null $customerId ID customer (untuk loyalty & voucher)
+     * @param float $manualDiscount Diskon manual dari kasir
+     * @param float $shippingCost Ongkos kirim
+     * @param float $redeemPoints Poin yang ditukar
+     * @param int|null $voucherId ID voucher yang dipilih
+     * @return array Struktur preview lengkap
+     */
+    public function calculatePreview(
+        $carts,
+        ?int $customerId = null,
+        float $manualDiscount = 0,
+        float $shippingCost = 0,
+        float $redeemPoints = 0,
+        ?int $voucherId = null
+    ): array {
+        // ═══════════════════════════════════════════════════════════
+        // 1. HITUNG HARGA DASAR PER ITEM
+        // ═══════════════════════════════════════════════════════════
         $items = [];
         $baseSubtotal = 0;
-        $promoDiscount = 0;
 
         foreach ($carts as $cart) {
-            $basePrice = $cart->product->sell_price ?? $cart->sell_price;
-            $lineBaseTotal = $basePrice * $cart->qty;
+            // ✅ SAFE: Ambil harga dari priceListItems dengan fallback
+            $baseUnitPrice = $this->getBaseUnitPrice($cart);
+            $lineBaseTotal = $baseUnitPrice * $cart->qty;
 
-            // TODO: Apply promo rules here
-            $effectivePrice = $basePrice;
-            $lineTotal = $effectivePrice * $cart->qty;
-            $promoDiscount += ($basePrice - $effectivePrice) * $cart->qty;
-
-            $items[] = [
-                'cart_id' => $cart->id,
-                'base_unit_price' => $basePrice,
-                'effective_unit_price' => $effectivePrice,
-                'line_base_total' => $lineBaseTotal,
-                'line_total' => $lineTotal,
-                'pricing_rule' => null,
+            $items[$cart->id] = [
+                'cart_id'             => $cart->id,
+                'product_id'          => $cart->product_id,
+                'category_id'         => $cart->product->category_id ?? null,
+                'qty'                 => $cart->qty,
+                'base_unit_price'     => $baseUnitPrice,
+                'effective_unit_price' => $baseUnitPrice, // Akan diupdate jika ada promo
+                'line_base_total'     => $lineBaseTotal,
+                'line_total'          => $lineBaseTotal, // Akan diupdate jika ada promo
+                'pricing_rule'        => null,
+                'discount_amount'     => 0,
             ];
 
             $baseSubtotal += $lineBaseTotal;
         }
 
-        $subtotalAfterPromo = $baseSubtotal - $promoDiscount;
+        // ═══════════════════════════════════════════════════════════
+        // 2. TERAPKAN PROMOSI OTOMATIS
+        // ═══════════════════════════════════════════════════════════
+        $promotionResult = $this->applyPromotions($items, $customerId);
+        $promoDiscountTotal = $promotionResult['total_discount'];
+        $appliedPromotions = $promotionResult['applied_promotions'];
 
-        // Manual discount
-        $manualDiscount = min($discount, $subtotalAfterPromo);
+        // Update items dengan harga setelah promo
+        foreach ($promotionResult['item_discounts'] as $cartId => $discount) {
+            if (!isset($items[$cartId])) continue;
 
-        // Voucher discount (TODO: implement)
-        $voucherDiscount = 0;
+            $items[$cartId]['discount_amount'] = $discount;
+            $items[$cartId]['line_total'] = $items[$cartId]['line_base_total'] - $discount;
+            $items[$cartId]['effective_unit_price'] = $items[$cartId]['qty'] > 0
+                ? $items[$cartId]['line_total'] / $items[$cartId]['qty']
+                : 0;
 
-        // Loyalty discount (TODO: implement)
-        $loyaltyDiscount = 0;
+            // Attach promo info ke item (ambil promo pertama yang apply)
+            $appliedPromo = collect($appliedPromotions)
+                ->first(fn($p) => in_array($cartId, $p['affected_cart_ids'] ?? []));
 
-        // Tax (11% PPN)
-        $taxableAmount = $subtotalAfterPromo - $manualDiscount - $voucherDiscount - $loyaltyDiscount + $shipping;
-        $taxTotal = round($taxableAmount * 0.11);
+            if ($appliedPromo) {
+                $items[$cartId]['pricing_rule'] = [
+                    'id'              => $appliedPromo['promotion_id'],
+                    'name'            => $appliedPromo['promotion_name'],
+                    'code'            => $appliedPromo['promotion_code'],
+                    'type'            => 'PROMOTION',
+                    'discount_amount' => $discount,
+                ];
+            }
+        }
 
+        // ═══════════════════════════════════════════════════════════
+        // 3. HITUNG SUBTOTAL SETELAH PROMO
+        // ═══════════════════════════════════════════════════════════
+        $subtotalAfterPromo = collect($items)->sum('line_total');
+
+        // ═══════════════════════════════════════════════════════════
+        // 4. VOUCHER & LOYALTY DISCOUNT
+        // ═══════════════════════════════════════════════════════════
+        $voucherData = $this->calculateVoucherDiscount($voucherId, $subtotalAfterPromo);
+        $voucherDiscount = $voucherData['discount'];
+        $eligibleVouchers = $voucherData['eligible'];
+
+        $loyaltyData = $this->calculateLoyaltyDiscount($customerId, $redeemPoints, $subtotalAfterPromo);
+        $loyaltyDiscount = $loyaltyData['discount'];
+        $availablePoints = $loyaltyData['available'];
+
+        // ═══════════════════════════════════════════════════════════
+        // 5. DISKON MANUAL
+        // ═══════════════════════════════════════════════════════════
+        $remainingAfterDiscounts = $subtotalAfterPromo - $voucherDiscount - $loyaltyDiscount;
+        $manualDiscountApplied = min($manualDiscount, max(0, $remainingAfterDiscounts));
+
+        // ═══════════════════════════════════════════════════════════
+        // 6. PAJAK (PPN 11%)
+        // ═══════════════════════════════════════════════════════════
+        $taxableAmount = max(
+            0,
+            $subtotalAfterPromo
+                - $voucherDiscount
+                - $loyaltyDiscount
+                - $manualDiscountApplied
+                + $shippingCost
+        );
+        $taxTotal = (int) round($taxableAmount * 0.11);
+
+        // ═══════════════════════════════════════════════════════════
+        // 7. GRAND TOTAL
+        // ═══════════════════════════════════════════════════════════
         $grandTotal = $taxableAmount + $taxTotal;
 
+        // ═══════════════════════════════════════════════════════════
+        // 8. RETURN HASIL
+        // ═══════════════════════════════════════════════════════════
         return [
-            'items' => $items,
+            'items' => array_values($items),
             'summary' => [
-                'base_subtotal' => $baseSubtotal,
-                'promo_discount_total' => $promoDiscount,
-                'subtotal_after_promo' => $subtotalAfterPromo,
-                'voucher_discount_total' => $voucherDiscount,
-                'loyalty_discount_total' => $loyaltyDiscount,
-                'manual_discount_total' => $manualDiscount,
-                'shipping_cost' => $shipping,
-                'tax_total' => $taxTotal,
-                'grand_total' => $grandTotal,
-                'available_loyalty_points' => 0, // TODO: get from customer
+                'base_subtotal'          => (float) $baseSubtotal,
+                'promo_discount_total'   => (float) $promoDiscountTotal,
+                'subtotal_after_promo'   => (float) $subtotalAfterPromo,
+                'voucher_discount_total' => (float) $voucherDiscount,
+                'loyalty_discount_total' => (float) $loyaltyDiscount,
+                'manual_discount_total'  => (float) $manualDiscountApplied,
+                'shipping_cost'          => (float) $shippingCost,
+                'tax_total'              => (float) $taxTotal,
+                'grand_total'            => (float) $grandTotal,
+                'available_loyalty_points' => (int) $availablePoints,
             ],
-            'eligible_vouchers' => [],
-            'applied_groups' => [],
+            'applied_promotions' => $appliedPromotions,
+            'eligible_vouchers'  => $eligibleVouchers,
+            'applied_groups'     => [], // Reserved for future use
         ];
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PRIVATE HELPER METHODS
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * ✅ NEW: Terapkan promosi ke cart items
+     */
+    private function applyPromotions(array $items, ?int $customerId): array
+    {
+        if (empty($items)) {
+            return [
+                'total_discount'     => 0,
+                'applied_promotions' => [],
+                'item_discounts'     => [],
+            ];
+        }
+
+        // Format items untuk PromotionService
+        $cartItemsForPromo = collect($items)->map(fn($item) => [
+            'id'          => $item['cart_id'],
+            'product_id'  => $item['product_id'],
+            'category_id' => $item['category_id'],
+            'qty'         => $item['qty'],
+            'unit_price'  => $item['base_unit_price'],
+        ])->toArray();
+
+        // Simulasi promosi
+        try {
+            $result = $this->promotionService->simulate($customerId, $cartItemsForPromo);
+        } catch (\Throwable $e) {
+            // ✅ SAFE: Jika promotion service error, lanjut tanpa promo
+            \Log::warning('Promotion simulation failed: ' . $e->getMessage());
+            return [
+                'total_discount'     => 0,
+                'applied_promotions' => [],
+                'item_discounts'     => [],
+            ];
+        }
+
+        // Distribusi diskon ke tiap cart item
+        $itemDiscounts = [];
+        foreach ($result['applied_promotions'] as $promo) {
+            // Track affected cart IDs untuk referensi di item
+            $affectedCartIds = [];
+
+            foreach ($promo['item_discounts'] as $itemDiscount) {
+                $cartId = $itemDiscount['item_id'] ?? null;
+                if ($cartId) {
+                    $itemDiscounts[$cartId] = ($itemDiscounts[$cartId] ?? 0) + $itemDiscount['discount'];
+                    $affectedCartIds[] = $cartId;
+                }
+            }
+
+            // ✅ NEW: Tambahkan affected_cart_ids ke promo info
+            $promo['affected_cart_ids'] = $affectedCartIds;
+        }
+
+        return [
+            'total_discount'     => (float) $result['total_discount'],
+            'applied_promotions' => $result['applied_promotions'],
+            'item_discounts'     => $itemDiscounts,
+        ];
+    }
+
+    /**
+     * ✅ NEW: Ambil base unit price dari cart item
+     */
+    private function getBaseUnitPrice($cart): float
+    {
+        // Priority 1: priceListItems (jika di-eager load)
+        if ($cart->product && $cart->product->priceListItems && $cart->product->priceListItems->isNotEmpty()) {
+            $priceItem = $cart->product->priceListItems
+                ->sortBy('min_qty')
+                ->first();
+            if ($priceItem && $priceItem->price > 0) {
+                return (float) $priceItem->price;
+            }
+        }
+
+        // Priority 2: sell_price dari cart
+        if ($cart->sell_price > 0) {
+            return (float) $cart->sell_price;
+        }
+
+        // Priority 3: sell_price dari product (fallback)
+        if ($cart->product && isset($cart->product->sell_price)) {
+            return (float) $cart->product->sell_price;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * ✅ NEW: Hitung diskon voucher
+     */
+    private function calculateVoucherDiscount(?int $voucherId, float $subtotal): array
+    {
+        if (!$voucherId) {
+            return ['discount' => 0, 'eligible' => []];
+        }
+
+        // TODO: Implement voucher logic
+        // Contoh implementasi:
+        // $voucher = CustomerVoucher::with('voucher')->find($voucherId);
+        // if ($voucher && $voucher->isEligible($subtotal)) {
+        //     return ['discount' => $voucher->calculateDiscount($subtotal), 'eligible' => []];
+        // }
+
+        return ['discount' => 0, 'eligible' => []];
+    }
+
+    /**
+     * ✅ NEW: Hitung diskon loyalty points
+     */
+    private function calculateLoyaltyDiscount(?int $customerId, float $redeemPoints, float $subtotal): array
+    {
+        if (!$customerId || $redeemPoints <= 0) {
+            return ['discount' => 0, 'available' => 0];
+        }
+
+        try {
+            $accountRepo = app(\App\Repositories\Contracts\Loyalty\AccountRepositoryInterface::class);
+            $account = $accountRepo->findByCustomerId($customerId);
+
+            if (!$account) {
+                return ['discount' => 0, 'available' => 0];
+            }
+
+            $config = \App\Models\Loyalty\LoyaltyConfiguration::getInstance();
+            $pointValue = $config->point_value ?? 100; // Rp per poin
+
+            // Validasi poin tidak melebihi saldo
+            $validPoints = min($redeemPoints, $account->current_balance);
+
+            // Validasi nilai diskon tidak melebihi subtotal
+            $discountValue = $validPoints * $pointValue;
+            $discount = min($discountValue, $subtotal);
+
+            return [
+                'discount'  => (float) $discount,
+                'available' => (int) $account->current_balance,
+            ];
+        } catch (\Throwable $e) {
+            \Log::warning('Loyalty calculation failed: ' . $e->getMessage());
+            return ['discount' => 0, 'available' => 0];
+        }
     }
 }

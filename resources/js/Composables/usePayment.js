@@ -30,7 +30,7 @@ export function usePayment({ defaultGateway = "cash", gateways = [] }) {
 
     // Auto-set cash input untuk non-cash
     watch(
-        [() => paymentMethod.value, () => payable.value, () => payLater.value],
+        [() => paymentMethod.value, () => payableAmount.value, () => payLater.value],
         ([method, payable, isLater]) => {
             if (method !== "cash" && !isLater && payable > 0) {
                 cashInput.value = String(payable);

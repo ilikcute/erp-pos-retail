@@ -12,6 +12,10 @@ return new class extends Migration
             $table->id();
             $table->string('transaction_no', 50)->unique();
             $table->unsignedBigInteger('sales_session_id');
+            $table->foreignId('cashier_session_id')
+                ->nullable()
+                ->constrained('cashier_sessions')
+                ->nullOnDelete();
             $table->unsignedBigInteger('cashier_id');
             $table->unsignedBigInteger('customer_id')->nullable();
             $table->date('transaction_date');

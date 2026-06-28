@@ -1,117 +1,148 @@
 <script setup>
-import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { ref, onMounted } from "vue";
+import axios from "axios";
+import { router } from "@inertiajs/vue3";
 import toast from "@/Utils/toast";
 
 const props = defineProps({
-    errors: { type: Object, default: () => ({}) },
-    // Default true so the open button always shows in frontend-only mode.
-    canOpenShift: { type: Boolean, default: true },
+    errors: Object,
+    canOpenShift: Boolean,
 });
 
 const emit = defineEmits(["opened"]);
 
+const shifts = ref([]);
+const selectedShiftId = ref(null);
 const openingCash = ref("");
 const notes = ref("");
-const isSubmitting = ref(false);
+const isLoading = ref(false);
 
-// True only if the Laravel route is actually registered (Ziggy).
-const hasBackend = () => {
-    try { return typeof route === "function" && route().has("cashier-shifts.store"); }
-    catch (e) { return false; }
-};
-const safeRoute = (name, params) => {
-    try { return (typeof route === "function" && route().has(name)) ? route(name, params) : "#"; }
-    catch (e) { return "#"; }
-};
+onMounted(async () => {
+    try {
+        // Fetch daftar shift aktif
+        const { data } = await axios.get(route("pos.shifts.list"));
+        shifts.value = data.data || [];
+        if (shifts.value.length > 0) {
+            selectedShiftId.value = shifts.value[0].id;
+        }
+    } catch (error) {
+        console.error("Failed to load shifts:", error);
+    }
+});
 
-const handleOpen = () => {
-    const cash = Number(openingCash.value);
-    if (!openingCash.value || isNaN(cash) || cash < 0) {
-        toast.error("Masukkan modal awal yang valid");
-        return;
+const handleOpen = async () => {
+    if (!selectedShiftId.value) {
+        return toast.error("Pilih shift terlebih dahulu");
     }
 
-    const payload = { opening_cash: cash, notes: notes.value };
-
-    if (hasBackend()) {
-        // Real backend flow
-        isSubmitting.value = true;
-        router.post(safeRoute("cashier-shifts.store"), payload, {
-            preserveScroll: true,
-            onFinish: () => { isSubmitting.value = false; },
-        });
-        return;
-    }
-
-    // Frontend-only fallback: open the shift client-side so the POS becomes usable.
-    isSubmitting.value = true;
-    setTimeout(() => {
-        emit("opened", {
-            id: "local-" + Date.now(),
-            opening_cash: cash,
+    isLoading.value = true;
+    try {
+        const { data } = await axios.post(route("pos.sessions.open"), {
+            shift_id: selectedShiftId.value,
+            opening_cash: Number(openingCash.value) || 0,
             notes: notes.value,
-            opened_at: new Date().toISOString(),
-            is_local: true,
         });
-        toast.success("Shift dibuka (mode lokal)");
-        openingCash.value = "";
-        notes.value = "";
-        isSubmitting.value = false;
-    }, 250);
+
+        if (data.success !== false) {
+            toast.success("Sesi kasir berhasil dibuka");
+            emit("opened", data.data);
+            router.reload(); // Reload untuk dapat data sesi
+        } else {
+            toast.error(data.message || "Gagal membuka sesi");
+        }
+    } catch (error) {
+        toast.error(error.response?.data?.message || "Gagal membuka sesi");
+    } finally {
+        isLoading.value = false;
+    }
 };
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-surface-app p-4">
-        <div class="w-full max-w-md rounded-3xl bg-surface-card shadow-xl border border-border-soft p-7">
-            <div class="text-center mb-6">
-                <div class="mx-auto mb-3 h-14 w-14 rounded-2xl bg-brand-gradient flex items-center justify-center text-2xl">🛒</div>
-                <h1 class="text-xl font-extrabold text-ink-primary">Buka Shift Kasir</h1>
-                <p class="text-sm text-ink-secondary mt-1">Masukkan modal awal untuk memulai sesi penjualan.</p>
+    <div
+        class="mx-auto flex min-h-screen max-w-2xl items-center justify-center p-4"
+    >
+        <div
+            class="w-full rounded-2xl border border-border-soft bg-surface-card p-8 shadow-2xl"
+        >
+            <div
+                class="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-mint-soft text-accent-mint"
+            >
+                <span class="text-2xl">💰</span>
+            </div>
+            <h1 class="text-2xl font-bold text-ink-primary">Buka Sesi Kasir</h1>
+            <p class="mt-2 text-sm text-ink-muted">
+                Buka sesi untuk memulai transaksi. Pastikan modal awal sudah
+                dihitung.
+            </p>
+
+            <div class="mt-6 space-y-4">
+                <!-- Pilih Shift -->
+                <div>
+                    <label
+                        class="mb-2 block text-sm font-medium text-ink-primary"
+                        >Shift</label
+                    >
+                    <select
+                        v-model="selectedShiftId"
+                        class="w-full h-12 rounded-xl border border-border-soft bg-surface-main px-4 text-sm focus:ring-2 focus:ring-brand"
+                    >
+                        <option value="">Pilih shift...</option>
+                        <option
+                            v-for="shift in shifts"
+                            :key="shift.id"
+                            :value="shift.id"
+                        >
+                            {{ shift.name }} ({{ shift.start_time }} -
+                            {{ shift.end_time }})
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Modal Awal -->
+                <div>
+                    <label
+                        class="mb-2 block text-sm font-medium text-ink-primary"
+                        >Modal Awal</label
+                    >
+                    <div class="relative">
+                        <span
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted"
+                            >Rp</span
+                        >
+                        <input
+                            v-model="openingCash"
+                            type="number"
+                            min="0"
+                            class="h-12 w-full rounded-xl border border-border-soft bg-surface-main pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand"
+                            placeholder="0"
+                        />
+                    </div>
+                </div>
+
+                <!-- Catatan -->
+                <div>
+                    <label
+                        class="mb-2 block text-sm font-medium text-ink-primary"
+                        >Catatan</label
+                    >
+                    <input
+                        v-model="notes"
+                        type="text"
+                        class="h-12 w-full rounded-xl border border-border-soft bg-surface-main px-4 text-sm focus:ring-2 focus:ring-brand"
+                        placeholder="Opsional"
+                    />
+                </div>
             </div>
 
-            <form @submit.prevent="handleOpen" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-ink-secondary mb-1">Modal Awal (Rp)</label>
-                    <input
-                        v-model="openingCash"
-                        type="number" min="0" step="1000" inputmode="numeric" autofocus
-                        placeholder="contoh: 500000"
-                        class="h-12 w-full rounded-2xl border border-border-soft bg-surface-main px-4 text-sm text-ink-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-                    />
-                    <p v-if="errors?.opening_cash" class="text-xs text-rose-500 mt-1">{{ errors.opening_cash }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-ink-secondary mb-1">Catatan (opsional)</label>
-                    <textarea
-                        v-model="notes" rows="2"
-                        placeholder="mis. shift pagi, kas dari brankas"
-                        class="w-full rounded-2xl border border-border-soft bg-surface-main px-4 py-3 text-sm text-ink-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-                    ></textarea>
-                </div>
-
-                <button
-                    type="submit"
-                    :disabled="isSubmitting || !canOpenShift"
-                    class="h-12 w-full rounded-2xl bg-brand-gradient text-white text-sm font-bold transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <span v-if="isSubmitting">Membuka…</span>
-                    <span v-else>Buka Shift</span>
-                </button>
-
-                <p v-if="!canOpenShift" class="text-center text-xs text-rose-500">
-                    Anda tidak memiliki izin untuk membuka shift.
-                </p>
-
-                <a
-                    :href="safeRoute('cashier-shifts.index')"
-                    class="block text-center rounded-2xl border border-border-soft py-3 text-sm font-medium text-ink-primary hover:bg-surface-muted"
-                >
-                    Lihat Histori Shift
-                </a>
-            </form>
+            <button
+                @click="handleOpen"
+                :disabled="isLoading || !selectedShiftId"
+                class="mt-6 w-full rounded-xl bg-brand px-5 py-3 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+            >
+                <span v-if="isLoading">Membuka...</span>
+                <span v-else>💰 Buka Sesi Sekarang</span>
+            </button>
         </div>
     </div>
 </template>

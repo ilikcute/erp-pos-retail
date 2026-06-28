@@ -25,6 +25,11 @@ use App\Http\Controllers\Api\Loyalty\AdjustmentController as AdjustmentControlle
 use App\Http\Controllers\Api\Loyalty\ConfigurationController;
 use App\Http\Controllers\Api\Loyalty\TierController;
 use App\Http\Controllers\Api\Loyalty\RewardCatalogController;
+use App\Http\Controllers\POS\CashierSessionController;
+use App\Http\Controllers\POS\{
+    DayClosingController,
+    MonthClosingController,
+};
 
 
 use Illuminate\Support\Facades\Route;
@@ -43,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('pos')->name('pos.')->group(function () {
         // Halaman utama POS
         Route::get('/', [PosTransactionController::class, 'index'])->name('index');
+        Route::get('shifts/list', [SalesTransactionController::class, 'shiftsList'])->name('shifts.list');
 
         // Cart operations (Inertia requests)
         Route::post('cart/add', [PosTransactionController::class, 'addToCart'])->name('cart.add');
@@ -64,6 +70,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('shifts', [SalesTransactionController::class, 'shifts'])->name('shifts.index');
         Route::get('sales', [SalesTransactionController::class, 'index'])->name('sales.index');
         Route::get('sales/{id}', [SalesTransactionController::class, 'show'])->name('sales.show');
+
+        Route::prefix('sessions')->name('sessions.')->group(function () {
+            Route::get('/active', [CashierSessionController::class, 'active'])->name('active');
+            Route::get('/', [CashierSessionController::class, 'index'])->name('index');
+            Route::post('/open', [CashierSessionController::class, 'open'])->name('open');
+            Route::post('/{id}/close', [CashierSessionController::class, 'close'])->name('close');
+            Route::get('/{id}', [CashierSessionController::class, 'show'])->name('show');
+        });
     });
 
     // Product Module Routes
@@ -147,6 +161,23 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('rewards/{id}', [RewardCatalogController::class, 'destroy']);
     });
 
+    Route::prefix('promotions')->group(function () {
+        Route::get('/', [PromotionController::class, 'index']);
+        Route::post('/', [PromotionController::class, 'store']);
+        Route::get('/{id}', [PromotionController::class, 'show']);
+        Route::post('/{id}/activate', [PromotionController::class, 'activate']);
+        Route::post('/{id}/deactivate', [PromotionController::class, 'deactivate']);
+        Route::post('/simulate', [PromotionController::class, 'simulate']);
+    });
+
+    Route::prefix('promotions/settings')->group(function () {
+        Route::get('/', [PromotionSettingController::class, 'show']);
+        Route::put('/', [PromotionSettingController::class, 'update']);
+    });
+
+    Route::get('pos/promotions/active', [PosPromotionController::class, 'active'])
+        ->name('pos.promotions.active');
+
     Route::prefix('chart-of-accounts')->group(function () {
         Route::get('/', [CoaController::class, 'index']);
         Route::post('/', [CoaController::class, 'store']);
@@ -206,6 +237,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::prefix('day-closings')->name('day-closings.')->group(function () {
+        Route::get('/', [DayClosingController::class, 'index'])->name('index');
+        Route::get('/today', [DayClosingController::class, 'todayStats'])->name('today');
+        Route::get('/check', [DayClosingController::class, 'check'])->name('check');
+        Route::post('/close', [DayClosingController::class, 'close'])->name('close');
+        Route::get('/{id}', [DayClosingController::class, 'show'])->name('show');
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // MONTH CLOSINGS
+    // ═══════════════════════════════════════════════════════════
+    Route::prefix('month-closings')->name('month-closings.')->group(function () {
+        Route::get('/', [MonthClosingController::class, 'index'])->name('index');
+        Route::get('/check', [MonthClosingController::class, 'check'])->name('check');
+        Route::post('/close', [MonthClosingController::class, 'close'])->name('close');
+        Route::get('/{year}/{month}', [MonthClosingController::class, 'show'])->name('show');
+    });
 });
 
 require __DIR__ . '/auth.php';

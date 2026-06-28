@@ -4,19 +4,22 @@ namespace App\Enums\POS;
 
 enum SessionStatus: string
 {
-    case OPEN   = 'OPEN';
+    case OPEN = 'OPEN';
     case CLOSED = 'CLOSED';
 
     public function label(): string
     {
         return match ($this) {
-            self::OPEN   => 'Open',
-            self::CLOSED => 'Closed',
+            self::OPEN => 'Buka',
+            self::CLOSED => 'Tutup',
         };
     }
 
-    public function isActive(): bool
+    public function color(): string
     {
-        return $this === self::OPEN;
+        return match ($this) {
+            self::OPEN => 'green',
+            self::CLOSED => 'gray',
+        };
     }
 }

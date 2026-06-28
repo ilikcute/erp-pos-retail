@@ -53,6 +53,11 @@ class SalesTransaction extends Model
         'voided_at'       => 'datetime',
     ];
 
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(CashierSession::class, 'cashier_session_id');
+    }
+
     public function salesSession(): BelongsTo
     {
         return $this->belongsTo(SalesSession::class);

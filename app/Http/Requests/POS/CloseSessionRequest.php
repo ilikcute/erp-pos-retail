@@ -8,14 +8,22 @@ class CloseSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('pos.session.close');
+        return true;
     }
 
     public function rules(): array
     {
         return [
             'closing_cash' => 'required|numeric|min:0',
-            'notes'        => 'nullable|string|max:500',
+            'notes' => 'nullable|string|max:500',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'closing_cash.required' => 'Uang tutup wajib diisi',
+            'closing_cash.min' => 'Uang tutup tidak boleh negatif',
         ];
     }
 }

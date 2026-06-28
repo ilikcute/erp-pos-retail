@@ -51,4 +51,27 @@ class SalesTransactionController extends Controller
             'transaction' => $transaction,
         ]);
     }
+
+    public function shiftsList(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $shifts = $this->shiftRepository->findActive();
+
+        $data = $shifts->map(function ($shift) {
+            return [
+                'id'          => $shift->id,
+                'shift_code'  => $shift->shift_code,
+                'shift_name'  => $shift->shift_name,
+                'name'        => $shift->shift_name, // fallback for ShiftOpener.vue
+                'start_time'  => $shift->start_time?->format('H:i') ?? $shift->start_time,
+                'end_time'    => $shift->end_time?->format('H:i') ?? $shift->end_time,
+                'is_active'   => $shift->is_active,
+                'description' => $shift->description,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+        ]);
+    }
 }

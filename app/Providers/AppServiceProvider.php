@@ -63,6 +63,29 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\Accounting\PaymentMethodRepositoryInterface::class,
             \App\Repositories\Eloquent\Accounting\PaymentMethodRepository::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Promotion\PromotionRepositoryInterface::class,
+            \App\Repositories\Eloquent\Promotion\PromotionRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\POS\SessionRepositoryInterface::class,
+            \App\Repositories\Eloquent\POS\SessionRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\POS\DayClosingRepositoryInterface::class,
+            \App\Repositories\Eloquent\POS\DayClosingRepository::class
+        );
+
+        // ═══════════════════════════════════════════════════════════
+        // MONTH CLOSING
+        // ═══════════════════════════════════════════════════════════
+        $this->app->bind(
+            \App\Repositories\Contracts\POS\MonthClosingRepositoryInterface::class,
+            \App\Repositories\Eloquent\POS\MonthClosingRepository::class
+        );
     }
 
     /**

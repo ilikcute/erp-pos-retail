@@ -50,6 +50,10 @@ use App\Repositories\Eloquent\Pricing\EloquentPriceHistoryRepository;
 use App\Repositories\Eloquent\Pricing\EloquentPriceListItemRepository;
 use App\Repositories\Eloquent\Pricing\EloquentPriceListRepository;
 // ── POS ───────────────────────────────────────────────────────
+use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
+use App\Repositories\Contracts\Loyalty\TierRepositoryInterface;
+use App\Repositories\Eloquent\Loyalty\AccountRepository;
+use App\Repositories\Eloquent\Loyalty\TierRepository;
 use App\Repositories\Eloquent\Product\EloquentProductBrandRepository;
 use App\Repositories\Eloquent\Product\EloquentProductCategoryRepository;
 use App\Repositories\Eloquent\Product\EloquentProductRepository;
@@ -97,6 +101,10 @@ class RepositoryServiceProvider extends ServiceProvider
         SalesSessionRepositoryInterface::class => EloquentSalesSessionRepository::class,
         SalesTransactionRepositoryInterface::class => EloquentSalesTransactionRepository::class,
         SalesHoldRepositoryInterface::class => EloquentSalesHoldRepository::class,
+
+        // Loyalty
+        AccountRepositoryInterface::class => AccountRepository::class,
+        TierRepositoryInterface::class => TierRepository::class,
     ];
 
     public function register(): void

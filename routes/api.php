@@ -12,6 +12,12 @@ use App\Http\Controllers\Api\MasterData\CustomerController;
 use App\Http\Controllers\Api\MasterData\CustomerCategoryController;
 use App\Http\Controllers\Api\MasterData\UnitController;
 use App\Http\Controllers\Api\MasterData\TaxController;
+use App\Http\Controllers\Api\Reporting\{
+    SalesReportController,
+    InventoryReportController,
+    FinancialReportController,
+    PurchaseReportController,
+};
 
 
 // Phase 2 — Product & Pricing
@@ -101,14 +107,41 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Phase 2: Product & Pricing ───────────────────────────────
-        require __DIR__.'/product.php';
-        require __DIR__.'/pricing.php';
+        require __DIR__ . '/product.php';
+        require __DIR__ . '/pricing.php';
 
         // ── Phase 3: POS ────────────────────────────────────────────
-        require __DIR__.'/pos.php';
+        require __DIR__ . '/pos.php';
 
         // ── Reporting ───────────────────────────────────────────────
         Route::get('dashboard', [\App\Http\Controllers\Api\System\DashboardController::class, '__invoke']);
-        require __DIR__.'/reporting.php';
+        // Sales Reports
+        Route::prefix('sales')->group(function () {
+            Route::get('/', [SalesReportController::class, 'index']);
+            Route::get('/top-products', [SalesReportController::class, 'topProducts']);
+            Route::get('/hourly-pattern', [SalesReportController::class, 'hourlyPattern']);
+        });
+
+        // Inventory Reports
+        Route::prefix('inventory')->group(function () {
+            Route::get('/stock-card', [InventoryReportController::class, 'stockCard']);
+            Route::get('/movement', [InventoryReportController::class, 'movement']);
+            Route::get('/valuation', [InventoryReportController::class, 'valuation']);
+            Route::get('/low-stock', [InventoryReportController::class, 'lowStock']);
+        });
+
+        // Financial Reports
+        Route::prefix('financial')->group(function () {
+            Route::post('/generate', [FinancialReportController::class, 'generate']);
+        });
+
+        // Purchase Reports
+        Route::prefix('purchasing')->group(function () {
+            Route::get('/orders', [PurchaseReportController::class, 'orders']);
+            Route::get('/payables', [PurchaseReportController::class, 'payables']);
+            Route::get('/supplier-performance', [PurchaseReportController::class, 'supplierPerformance']);
+        });
+
+        require __DIR__ . '/reporting.php';
     }); // end auth:sanctum
 }); // end v1
