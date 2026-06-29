@@ -24,6 +24,7 @@ const navigationGroups = [
         group: 'Overview', icon: 'layout',
         items: [
             { name: 'Dashboard', href: '/dashboard', icon: 'home' },
+            { name: 'Approvals', href: '/approvals', icon: 'check-circle', roles: ['superadmin', 'admin', 'manager'] },
             { name: 'Reporting', href: '/reporting', icon: 'trending-up', permission: 'pos.transaction.view' },
         ],
     },
@@ -47,8 +48,7 @@ const navigationGroups = [
     {
         group: 'Purchasing', icon: 'truck',
         items: [
-            { name: 'PO', href: '/purchasing/po', icon: 'file-text', roles: ['superadmin', 'admin', 'purchasing'] },
-            { name: 'Goods Receipt', href: '/purchasing/receipt', icon: 'inbox', roles: ['superadmin', 'admin', 'purchasing', 'gudang'] },
+            { name: 'Purchasing', href: '/purchasing', icon: 'file-text', roles: ['superadmin', 'admin', 'purchasing'] },
         ],
     },
     {
@@ -78,8 +78,7 @@ const navigationGroups = [
     {
         group: 'Accounting', icon: 'book',
         items: [
-            { name: 'Chart of Accounts', href: '/accounting/coa', icon: 'layout', roles: ['superadmin', 'admin', 'accounting'] },
-            { name: 'Journals', href: '/accounting/journals', icon: 'book', roles: ['superadmin', 'admin', 'accounting'] },
+            { name: 'Accounting', href: '/accounting', icon: 'book', roles: ['superadmin', 'admin', 'accounting'] },
         ],
     },
     {
@@ -88,6 +87,8 @@ const navigationGroups = [
             { name: 'Users', href: '/system/users', icon: 'users', permission: 'system.user.view' },
             { name: 'Roles', href: '/system/roles', icon: 'lock', permission: 'system.role.view' },
             { name: 'Settings', href: '/system', icon: 'settings', permission: 'system.setting.view' },
+            { name: 'Audit Logs', href: '/system/audit-logs', icon: 'clipboard', permission: 'system.audit.view' },
+            { name: 'Activity Logs', href: '/system/activity-logs', icon: 'activity', roles: ['superadmin', 'admin'] },
         ],
     },
 ];

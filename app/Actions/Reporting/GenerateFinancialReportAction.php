@@ -66,7 +66,7 @@ class GenerateFinancialReportAction
                 chart_of_accounts.id,
                 chart_of_accounts.account_code,
                 chart_of_accounts.account_name,
-                CAST(SUM(COALESCE(journal_entry_lines.debit, 0)) - SUM(COALESCE(journal_entry_lines.credit, 0)) AS DECIMAL(18,2)) as balance
+                CAST(SUM(CASE WHEN chart_of_accounts.normal_balance = \'CREDIT\' THEN COALESCE(journal_entry_lines.credit, 0) - COALESCE(journal_entry_lines.debit, 0) ELSE COALESCE(journal_entry_lines.debit, 0) - COALESCE(journal_entry_lines.credit, 0) END) AS DECIMAL(18,2)) as balance
             ')
             ->get();
     }

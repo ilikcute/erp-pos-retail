@@ -11,6 +11,7 @@ use App\Models\Loyalty\LoyaltyRewardCatalog;
 use App\Models\Loyalty\LoyaltyRedemption;
 use App\Models\Loyalty\LoyaltyAdjustment;
 use App\Models\MasterData\Customer;
+use App\Models\Product\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -26,8 +27,11 @@ class LoyaltyController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $membershipTiers = LoyaltyTier::orderBy('minimum_points')->get();
-        $rewards = LoyaltyRewardCatalog::where('is_active', true)->get();
+        $rewards = LoyaltyRewardCatalog::all(); // load all rewards for catalog management
         $customers = Customer::whereDoesntHave('loyaltyAccount')->get();
+        $loyaltyRedemptions = LoyaltyRedemption::with(['account.customer', 'reward'])->orderBy('created_at', 'desc')->get();
+        $loyaltyConfiguration = LoyaltyConfiguration::first();
+        $products = Product::orderBy('product_name')->get();
 
         return Inertia::render('Loyalty/Index', [
             'loyaltyAccounts' => $loyaltyAccounts,
@@ -35,6 +39,9 @@ class LoyaltyController extends Controller
             'membershipTiers' => $membershipTiers,
             'rewards' => $rewards,
             'customers' => $customers,
+            'loyaltyRedemptions' => $loyaltyRedemptions,
+            'loyaltyConfiguration' => $loyaltyConfiguration,
+            'products' => $products,
         ]);
     }
 
@@ -108,30 +115,154 @@ class LoyaltyController extends Controller
             $account = LoyaltyAccount::findOrFail($request->loyalty_account_id);
             $reward = LoyaltyRewardCatalog::findOrFail($request->reward_id);
 
-            if ($account->current_points < $reward->points_required) {
+            if ($account->current_points < $reward->point_required) {
                 throw new \Exception('Poin tidak mencukupi untuk menukarkan hadiah ini.');
             }
 
-            $account->decrement('current_points', $reward->points_required);
+            // Decrement points immediately as reserved
+            $account->decrement('current_points', $reward->point_required);
+
+            $latest = LoyaltyRedemption::latest('id')->first();
+            $nextId = $latest ? $latest->id + 1 : 1;
+            $redemptionNo = 'LRD-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             LoyaltyRedemption::create([
+                'redemption_number' => $redemptionNo,
                 'loyalty_account_id' => $account->id,
-                'reward_id' => $reward->id,
-                'points_redeemed' => $reward->points_required,
-                'redemption_date' => now()->toDateString(),
-                'status' => 'COMPLETED',
+                'reward_catalog_id' => $reward->id,
+                'points_used' => $reward->point_required,
+                'status' => \App\Enums\Loyalty\RedemptionStatus::PENDING,
             ]);
 
             LoyaltyTransaction::create([
                 'loyalty_account_id' => $account->id,
-                'points' => $reward->points_required,
+                'points' => $reward->point_required,
                 'transaction_type' => 'REDEEM',
-                'reason' => 'Redeem Reward: ' . $reward->reward_name,
+                'reason' => 'Redeem Reward (Pending Approval): ' . $reward->reward_name,
                 'transaction_date' => now()->toDateString(),
             ]);
         });
 
-        return back()->with('success', 'Penukaran hadiah berhasil diproses.');
+        return back()->with('success', 'Pengajuan penukaran hadiah berhasil diajukan dan sedang menunggu persetujuan.');
+    }
+
+    public function approveRedemption(int $id): RedirectResponse
+    {
+        $redemption = LoyaltyRedemption::findOrFail($id);
+        if ($redemption->status !== \App\Enums\Loyalty\RedemptionStatus::PENDING) {
+            return back()->with('error', 'Hanya pengajuan PENDING yang dapat disetujui.');
+        }
+
+        DB::transaction(function () use ($redemption) {
+            $redemption->update([
+                'status' => \App\Enums\Loyalty\RedemptionStatus::APPROVED,
+                'approved_by' => auth()->id() ?? 1,
+                'approved_at' => now(),
+            ]);
+
+            // Increment redeemed quantity on catalog
+            $reward = $redemption->reward;
+            if ($reward) {
+                $reward->increment('redeemed_qty', 1);
+            }
+        });
+
+        return back()->with('success', 'Penukaran poin berhasil disetujui.');
+    }
+
+    public function rejectRedemption(Request $request, int $id): RedirectResponse
+    {
+        $request->validate(['rejection_notes' => 'required|string|max:255']);
+        $redemption = LoyaltyRedemption::findOrFail($id);
+        if ($redemption->status !== \App\Enums\Loyalty\RedemptionStatus::PENDING) {
+            return back()->with('error', 'Hanya pengajuan PENDING yang dapat ditolak.');
+        }
+        
+        DB::transaction(function() use ($redemption, $request) {
+            $redemption->update([
+                'status' => \App\Enums\Loyalty\RedemptionStatus::REJECTED,
+                'rejection_notes' => $request->rejection_notes,
+            ]);
+            // Refund points
+            $account = $redemption->account;
+            $account->increment('current_points', $redemption->points_used);
+            // Record refund transaction
+            LoyaltyTransaction::create([
+                'loyalty_account_id' => $account->id,
+                'points' => $redemption->points_used,
+                'transaction_type' => 'EARN',
+                'reason' => 'Pengembalian poin (Redemption ditolak): ' . ($redemption->reward->reward_name ?? 'Reward'),
+                'transaction_date' => now()->toDateString(),
+            ]);
+        });
+
+        return back()->with('success', 'Penukaran poin berhasil ditolak dan poin dikembalikan.');
+    }
+
+    public function updateConfiguration(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'point_expiry_months' => 'required|integer|min:1',
+            'minimum_redeem_points' => 'required|integer|min:0',
+            'point_value' => 'required|integer|min:1',
+            'earn_rate' => 'required|numeric|min:1',
+            'allow_negative_point' => 'boolean',
+            'is_enabled' => 'boolean',
+            'terms_and_conditions' => 'nullable|string',
+        ]);
+
+        $config = LoyaltyConfiguration::firstOrCreate([]);
+        $config->update($validated);
+
+        return back()->with('success', 'Konfigurasi loyalty berhasil diperbarui.');
+    }
+
+    public function storeReward(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reward_code' => 'required|string|max:50|unique:loyalty_reward_catalogs,reward_code',
+            'reward_name' => 'required|string|max:255',
+            'reward_type' => 'required|in:VOUCHER,PRODUCT,LUCKY_DRAW',
+            'point_required' => 'required|integer|min:1',
+            'voucher_amount' => 'nullable|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'product_id' => 'nullable|exists:products,id',
+            'stock_qty' => 'required|integer|min:0',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        LoyaltyRewardCatalog::create($validated);
+
+        return back()->with('success', 'Reward Catalog berhasil ditambahkan.');
+    }
+
+    public function updateReward(Request $request, int $id): RedirectResponse
+    {
+        $reward = LoyaltyRewardCatalog::findOrFail($id);
+        $validated = $request->validate([
+            'reward_code' => 'required|string|max:50|unique:loyalty_reward_catalogs,reward_code,' . $id,
+            'reward_name' => 'required|string|max:255',
+            'reward_type' => 'required|in:VOUCHER,PRODUCT,LUCKY_DRAW',
+            'point_required' => 'required|integer|min:1',
+            'voucher_amount' => 'nullable|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'product_id' => 'nullable|exists:products,id',
+            'stock_qty' => 'required|integer|min:0',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $reward->update($validated);
+
+        return back()->with('success', 'Reward Catalog berhasil diperbarui.');
+    }
+
+    public function destroyReward(int $id): RedirectResponse
+    {
+        $reward = LoyaltyRewardCatalog::findOrFail($id);
+        $reward->delete();
+        return back()->with('success', 'Reward Catalog berhasil dihapus.');
     }
 
     public function storeTier(Request $request): RedirectResponse
@@ -146,5 +277,25 @@ class LoyaltyController extends Controller
         LoyaltyTier::create($validated);
 
         return back()->with('success', 'Membership Tier berhasil dibuat.');
+    }
+
+    public function updateTier(Request $request, int $id): RedirectResponse
+    {
+        $tier = LoyaltyTier::findOrFail($id);
+        $validated = $request->validate([
+            'tier_name' => 'required|string|max:50|unique:loyalty_tiers,tier_name,' . $id,
+            'minimum_points' => 'required|integer|min:0',
+            'point_multiplier' => 'required|numeric|min:1',
+            'discount_percentage' => 'required|numeric|min:0|max:100',
+        ]);
+        $tier->update($validated);
+        return back()->with('success', 'Membership Tier berhasil diperbarui.');
+    }
+
+    public function destroyTier(int $id): RedirectResponse
+    {
+        $tier = LoyaltyTier::findOrFail($id);
+        $tier->delete();
+        return back()->with('success', 'Membership Tier berhasil dihapus.');
     }
 }

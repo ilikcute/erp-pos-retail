@@ -4,9 +4,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\System\SystemController;
 use App\Http\Controllers\System\UserController;
 use App\Http\Controllers\System\RoleController;
-use App\Http\Controllers\Api\System\ApprovalController;
-use App\Http\Controllers\Api\System\ActivityLogController;
-use App\Http\Controllers\Api\System\NotificationController;
+use App\Http\Controllers\System\ApprovalController;
+use App\Http\Controllers\System\ActivityLogController;
+use App\Http\Controllers\System\NotificationController;
+use App\Http\Controllers\System\AuditLogController;
 use App\Http\Controllers\Api\System\DocumentSequenceController;
 
 // System pages
@@ -26,20 +27,22 @@ Route::delete('/system/roles/{id}', [RoleController::class, 'destroy'])->name('s
 
 // Approvals
 Route::prefix('approvals')->group(function () {
-    Route::get('pending', [ApprovalController::class, 'pending']);
-    Route::get('{id}', [ApprovalController::class, 'show']);
-    Route::post('{id}/approve', [ApprovalController::class, 'approve']);
-    Route::post('{id}/reject', [ApprovalController::class, 'reject']);
+    Route::get('/', [ApprovalController::class, 'index'])->name('system.approvals.index');
+    Route::post('{id}/approve', [ApprovalController::class, 'approve'])->name('system.approvals.approve');
+    Route::post('{id}/reject', [ApprovalController::class, 'reject'])->name('system.approvals.reject');
 });
 
 // Activity logs
-Route::get('activity-logs', [ActivityLogController::class, 'index']);
+Route::get('/system/activity-logs', [ActivityLogController::class, 'index'])->name('system.activity-logs.index');
+
+// Audit logs
+Route::get('/system/audit-logs', [AuditLogController::class, 'index'])->name('system.audit-logs.index');
 
 // Notifications
 Route::prefix('notifications')->group(function () {
-    Route::get('/', [NotificationController::class, 'index']);
-    Route::post('{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::post('read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::get('/', [NotificationController::class, 'index'])->name('system.notifications.index');
+    Route::post('{id}/read', [NotificationController::class, 'markAsRead'])->name('system.notifications.read');
+    Route::post('read-all', [NotificationController::class, 'markAllAsRead'])->name('system.notifications.read-all');
 });
 
 // Document Sequences

@@ -3,7 +3,7 @@
 namespace App\Models\POS;
 
 use App\Enums\POS\SessionStatus;
-use App\Models\MasterData\User;
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,7 +49,7 @@ class CashierSession extends Model
 
     public function shift(): BelongsTo
     {
-        return $this->belongsTo(CashierShift::class, 'shift_id');
+        return $this->belongsTo(Shift::class, 'shift_id');
     }
 
     public function location(): BelongsTo
@@ -64,7 +64,7 @@ class CashierSession extends Model
 
     public function transactions(): HasMany
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(SalesTransaction::class, 'cashier_session_id');
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -103,10 +103,17 @@ class CashierSession extends Model
      */
     public function calculateExpectedCash(): float
     {
-        return (float) $this->transactions()
-            ->where('payment_method', 'cash')
-            ->where('pay_later', false)
-            ->sum('cash');
+        $opening = (float) $this->opening_cash;
+        
+        $transactionIds = $this->transactions()->pluck('id');
+        
+        $cashPayments = \App\Models\POS\SalesPayment::whereIn('sales_transaction_id', $transactionIds)
+            ->whereHas('paymentMethod', function($query) {
+                $query->where('method_type', 'CASH');
+            })
+            ->sum('amount');
+            
+        return $opening + (float) $cashPayments;
     }
 
     /**

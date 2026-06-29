@@ -59,7 +59,7 @@ class PromotionApplier
             $totalDiscount += $discount;
             $itemDiscounts[] = [
                 'item_id' => $item['id'] ?? null,
-                'product_id' => $item['product_id'],
+                'product_id' => $item['product_id'] ?? null,
                 'discount' => $discount,
             ];
         }
@@ -100,7 +100,7 @@ class PromotionApplier
                 $totalDiscount += $discount;
                 $itemDiscounts[] = [
                     'item_id' => $item['id'] ?? null,
-                    'product_id' => $item['product_id'],
+                    'product_id' => $item['product_id'] ?? null,
                     'discount' => $discount,
                     'new_price' => $specialPrice,
                 ];

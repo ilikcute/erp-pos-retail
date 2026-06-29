@@ -2,59 +2,76 @@
 
 namespace App\Actions\POS;
 
-use App\Enums\DocumentStatus;
-use App\Models\POS\SalesSession;
+use App\Enums\POS\SessionStatus;
+use App\Models\POS\CashierSession;
 use App\Models\POS\Shift;
-use App\Repositories\Contracts\POS\SalesSessionRepositoryInterface;
+use App\Models\System\User;
+use App\Notifications\POS\SessionOpenedNotification;
+use App\Repositories\Contracts\POS\SessionRepositoryInterface;
 use App\Support\AuditService;
-use App\Support\DocumentNumberService;
 use Illuminate\Support\Facades\DB;
 
 class OpenSalesSessionAction
 {
     public function __construct(
-        private readonly SalesSessionRepositoryInterface $sessionRepository,
-        private readonly DocumentNumberService $documentNumberService,
+        private readonly SessionRepositoryInterface $sessionRepository,
         private readonly AuditService $auditService,
     ) {}
 
-    public function execute(int $shiftId, array $data): SalesSession
+    public function execute(int $userId, int $shiftId, array $data): CashierSession
     {
-        return DB::transaction(function () use ($shiftId, $data) {
+        return DB::transaction(function () use ($userId, $shiftId, $data) {
             $shift = Shift::findOrFail($shiftId);
 
-            if ($shift->status !== 'OPEN') {
-                throw new \RuntimeException('Shift is not open.');
+            if (!$shift->is_active) {
+                throw new \DomainException('Shift tidak aktif.');
             }
 
-            $sessionNo = $this->documentNumberService->generate('SALES_SESSION');
+            $sessionNo = $this->sessionRepository->generateSessionNo();
 
+            /** @var CashierSession $session */
             $session = $this->sessionRepository->create([
-                'session_no'        => $sessionNo,
-                'shift_id'          => $shiftId,
-                'cashier_id'        => auth()->id(),
-                'session_date'      => now()->toDateString(),
-                'opening_time'      => now(),
-                'opening_balance'   => $data['opening_balance'] ?? 0,
-                'status'            => 'OPEN',
-                'total_sales'       => 0,
-                'transaction_count' => 0,
-                'created_by'        => auth()->id(),
-                'updated_by'        => auth()->id(),
+                'session_no'         => $sessionNo,
+                'shift_id'           => $shiftId,
+                'user_id'            => $userId,
+                'location_id'        => $data['location_id'] ?? null,
+                'opening_cash'       => $data['opening_cash'] ?? 0,
+                'expected_cash'      => 0,
+                'total_sales'        => 0,
+                'total_transactions' => 0,
+                'status'             => SessionStatus::OPEN,
+                'notes'              => $data['notes'] ?? null,
+                'opened_at'          => now(),
             ]);
 
             $this->auditService->log(
                 module: 'POS',
-                action: 'OPEN_SALES_SESSION',
-                tableName: 'sales_sessions',
+                action: 'OPEN_CASHIER_SESSION',
+                tableName: 'cashier_sessions',
                 recordId: $session->id,
                 documentNo: $sessionNo,
+                statusAfter: SessionStatus::OPEN->value,
                 newValues: [
-                    'shift_id'        => $shiftId,
-                    'cashier_id'      => auth()->id(),
-                    'opening_balance' => $data['opening_balance'] ?? 0,
+                    'session_no'   => $sessionNo,
+                    'user_id'      => $userId,
+                    'shift_id'     => $shiftId,
+                    'location_id'  => $data['location_id'] ?? null,
+                    'opening_cash' => $data['opening_cash'] ?? 0,
+                    'status'       => SessionStatus::OPEN->value,
                 ],
             );
+
+            $this->auditService->activity(
+                activity: 'OPEN_SESSION',
+                module: 'POS',
+                description: "Membuka sesi kasir {$sessionNo} dengan modal awal Rp " . number_format($data['opening_cash'] ?? 0, 0, ',', '.'),
+            );
+
+            // ─── Notifikasi ke User ───────────────────────────────────
+            $user = User::find($userId);
+            if ($user) {
+                $user->notify(new SessionOpenedNotification($session));
+            }
 
             return $session;
         });

@@ -7,9 +7,13 @@ import { formatPrice } from "@/Utils/formatPrice";
 const props = defineProps({
     errors: { type: Object, default: () => ({}) },
     canOpenSession: { type: Boolean, default: true },
+    isManagerMode: { type: Boolean, default: false },
+    locations: { type: Array, default: () => [] },
+    users: { type: Array, default: () => [] },
+    currentLocationId: { type: [Number, null], default: null },
 });
 
-const emit = defineEmits(["opened"]);
+const emit = defineEmits(["opened", "close"]);
 
 // ═══════════════════════════════════════════════════════════
 // STATE
@@ -20,6 +24,9 @@ const openingCash = ref("");
 const notes = ref("");
 const isLoading = ref(false);
 const isFetchingShifts = ref(true);
+
+const selectedUserId = ref("");
+const selectedLocationId = ref("");
 
 // Quick cash amounts untuk modal awal
 const quickAmounts = [100000, 200000, 300000, 500000, 750000, 1000000];
@@ -36,7 +43,7 @@ const canSubmit = computed(() => {
 });
 
 const formattedOpeningCash = computed(() => {
-    const num = Number(openingCash.value) || 0;
+    const num = parseRupiahInput(openingCash.value);
     return num > 0 ? formatPrice(num) : "Rp 0";
 });
 
@@ -45,6 +52,21 @@ const formattedOpeningCash = computed(() => {
 // ═══════════════════════════════════════════════════════════
 onMounted(async () => {
     await fetchShifts();
+    if (props.isManagerMode) {
+        if (props.locations && props.locations.length > 0) {
+            // Default to first stock bearing or first location
+            const stockBearing = props.locations.find(l => l.is_stock_bearing);
+            selectedLocationId.value = stockBearing ? stockBearing.id : props.locations[0].id;
+        }
+        if (props.users && props.users.length > 0) {
+            selectedUserId.value = props.users[0].id;
+        }
+    } else {
+        // Mode kasir biasa: gunakan currentLocationId dari prop
+        if (props.currentLocationId) {
+            selectedLocationId.value = props.currentLocationId;
+        }
+    }
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -53,9 +75,7 @@ onMounted(async () => {
 const fetchShifts = async () => {
     isFetchingShifts.value = true;
     try {
-        // Coba fetch dari API shifts
         const { data } = await axios.get(route("pos.shifts.list")).catch(() => {
-            // Fallback: jika route tidak ada, gunakan data statis
             return {
                 data: {
                     data: [
@@ -63,15 +83,15 @@ const fetchShifts = async () => {
                             id: 1,
                             name: "Shift Pagi",
                             shift_name: "Shift Pagi",
-                            start_time: "08:00",
-                            end_time: "16:00",
+                            start_time: "07:00",
+                            end_time: "15:00",
                         },
                         {
                             id: 2,
                             name: "Shift Sore",
                             shift_name: "Shift Sore",
-                            start_time: "16:00",
-                            end_time: "00:00",
+                            start_time: "15:00",
+                            end_time: "23:00",
                         },
                     ],
                 },
@@ -80,7 +100,6 @@ const fetchShifts = async () => {
 
         shifts.value = data?.data || data || [];
 
-        // Auto-select shift pertama
         if (shifts.value.length > 0 && !selectedShiftId.value) {
             selectedShiftId.value = shifts.value[0].id;
         }
@@ -92,8 +111,21 @@ const fetchShifts = async () => {
     }
 };
 
+const formatRupiahInput = (value) => {
+    if (value === null || value === undefined || value === "") return "";
+    const numberString = String(value).replace(/[^0-9]/g, "");
+    if (!numberString) return "";
+    return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const parseRupiahInput = (formattedValue) => {
+    if (!formattedValue) return 0;
+    const cleanString = String(formattedValue).replace(/[^0-9]/g, "");
+    return Number(cleanString) || 0;
+};
+
 const setQuickAmount = (amount) => {
-    openingCash.value = String(amount);
+    openingCash.value = formatRupiahInput(amount);
 };
 
 const handleOpen = async () => {
@@ -106,11 +138,19 @@ const handleOpen = async () => {
     isLoading.value = true;
 
     try {
-        const { data } = await axios.post(route("pos.sessions.open"), {
+        const payload = {
             shift_id: selectedShiftId.value,
-            opening_cash: Number(openingCash.value) || 0,
+            opening_cash: parseRupiahInput(openingCash.value),
             notes: notes.value || null,
-        });
+            // Selalu kirim location_id: dari dropdown (manager) atau dari prop (kasir biasa)
+            location_id: selectedLocationId.value ? Number(selectedLocationId.value) : null,
+        };
+
+        if (props.isManagerMode) {
+            payload.user_id = selectedUserId.value ? Number(selectedUserId.value) : null;
+        }
+
+        const { data } = await axios.post(route("pos.sessions.open"), payload);
 
         if (data?.success !== false) {
             toast.success("Sesi kasir berhasil dibuka");
@@ -143,16 +183,13 @@ const getShiftTime = (shift) => {
 </script>
 
 <template>
-    <div
-        class="min-h-screen flex items-center justify-center bg-surface-main p-4"
-    >
-        <div
-            class="w-full max-w-md rounded-2xl border border-border-soft bg-surface-card shadow-2xl overflow-hidden"
-        >
+    <div :class="!isManagerMode ? 'min-h-screen flex items-center justify-center bg-surface-main p-4' : ''">
+        <div :class="!isManagerMode ? 'w-full max-w-md rounded-2xl border border-border-soft bg-surface-card shadow-2xl overflow-hidden' : ''">
             <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- HEADER -->
+            <!-- HEADER (Only Cashier Mode) -->
             <!-- ═══════════════════════════════════════════════════════ -->
             <div
+                v-if="!isManagerMode"
                 class="bg-gradient-to-r from-brand to-brand-hover px-6 py-5 text-white"
             >
                 <div class="flex items-center gap-3">
@@ -173,13 +210,29 @@ const getShiftTime = (shift) => {
             <!-- ═══════════════════════════════════════════════════════ -->
             <!-- FORM BODY -->
             <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="p-6 space-y-5">
+            <div :class="!isManagerMode ? 'p-6 space-y-5' : 'space-y-5'">
+                
+                <!-- Pilih Kasir (User) (Manager Mode Only) -->
+                <div v-if="isManagerMode">
+                    <label class="block text-sm font-semibold text-ink-primary mb-2">
+                        Pilih Kasir (User) <span class="text-semantic-danger">*</span>
+                    </label>
+                    <select
+                        v-model="selectedUserId"
+                        class="w-full h-12 rounded-xl border border-border-soft bg-surface-main px-4 text-sm text-ink-primary focus:ring-2 focus:ring-brand focus:border-brand outline-none transition"
+                        required
+                    >
+                        <option value="" disabled>-- Pilih Kasir --</option>
+                        <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.email }})</option>
+                    </select>
+                </div>
+
                 <!-- Pilih Shift -->
                 <div>
                     <label
                         class="block text-sm font-semibold text-ink-primary mb-2"
                     >
-                        Shift <span class="text-semantic-danger">*</span>
+                        Pilih Shift <span class="text-semantic-danger">*</span>
                     </label>
 
                     <!-- Loading state -->
@@ -226,12 +279,27 @@ const getShiftTime = (shift) => {
                     </p>
                 </div>
 
+                <!-- Lokasi Gudang / POS (Manager Mode Only) -->
+                <div v-if="isManagerMode">
+                    <label class="block text-sm font-semibold text-ink-primary mb-2">
+                        Lokasi Gudang / POS <span class="text-semantic-danger">*</span>
+                    </label>
+                    <select
+                        v-model="selectedLocationId"
+                        class="w-full h-12 rounded-xl border border-border-soft bg-surface-main px-4 text-sm text-ink-primary focus:ring-2 focus:ring-brand focus:border-brand outline-none transition"
+                        required
+                    >
+                        <option value="" disabled>-- Pilih Lokasi --</option>
+                        <option v-for="l in locations.filter(loc => loc.is_stock_bearing)" :key="l.id" :value="l.id">{{ l.name }}</option>
+                    </select>
+                </div>
+
                 <!-- Modal Awal -->
                 <div>
                     <label
                         class="block text-sm font-semibold text-ink-primary mb-2"
                     >
-                        Modal Awal (Uang di Laci)
+                        Modal Awal (Uang di Laci) *
                     </label>
 
                     <div class="relative">
@@ -245,9 +313,8 @@ const getShiftTime = (shift) => {
                             type="text"
                             inputmode="numeric"
                             @input="
-                                openingCash = $event.target.value.replace(
-                                    /[^\d]/g,
-                                    '',
+                                openingCash = formatRupiahInput(
+                                    $event.target.value,
                                 )
                             "
                             class="w-full h-12 rounded-xl border border-border-soft bg-surface-main pl-12 pr-4 text-base font-semibold text-ink-primary focus:ring-2 focus:ring-brand focus:border-brand outline-none transition tabular-nums"
@@ -271,12 +338,12 @@ const getShiftTime = (shift) => {
                             type="button"
                             :class="[
                                 'py-2 px-2 rounded-lg text-xs font-semibold transition',
-                                Number(openingCash) === amt
+                                parseRupiahInput(openingCash) === amt
                                     ? 'bg-brand text-white shadow-sm'
                                     : 'bg-surface-muted text-ink-secondary hover:bg-border-soft border border-border-soft',
                             ]"
                         >
-                            {{ formatPrice(amt) }}
+                            Rp {{ amt.toLocaleString('id-ID') }}
                         </button>
                     </div>
                 </div>
@@ -318,17 +385,27 @@ const getShiftTime = (shift) => {
             <!-- ═══════════════════════════════════════════════════════ -->
             <!-- FOOTER / SUBMIT -->
             <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="px-6 pb-6">
+            <div :class="!isManagerMode ? 'p-6' : 'pt-md border-t border-border-soft flex justify-end gap-sm'">
+                <button
+                    v-if="isManagerMode"
+                    type="button"
+                    class="px-5 h-12 rounded-xl text-sm font-bold bg-surface-muted text-ink-secondary border border-border-soft transition hover:bg-border-soft cursor-pointer"
+                    @click="$emit('close')"
+                >
+                    Batal
+                </button>
+                
                 <button
                     @click="handleOpen"
                     :disabled="!canSubmit"
                     type="button"
-                    class="w-full h-12 rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    :class="
+                    class="h-12 rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    :class="[
                         canSubmit
                             ? 'bg-brand hover:bg-brand-hover shadow-lg shadow-brand/30 active:scale-[0.98]'
-                            : 'bg-surface-muted text-ink-muted'
-                    "
+                            : 'bg-surface-muted text-ink-muted',
+                        isManagerMode ? 'px-6' : 'w-full'
+                    ]"
                 >
                     <!-- Spinner -->
                     <svg
@@ -356,20 +433,9 @@ const getShiftTime = (shift) => {
                     <span v-else class="text-base">💰</span>
 
                     <span>
-                        {{ isLoading ? "Membuka Sesi..." : "Buka Sesi Kasir" }}
+                        {{ isLoading ? "Membuka Sesi..." : "Buka Sesi Sekarang" }}
                     </span>
                 </button>
-
-                <!-- Summary preview -->
-                <div
-                    v-if="Number(openingCash) > 0"
-                    class="mt-3 text-center text-xs text-ink-muted"
-                >
-                    Modal awal:
-                    <span class="font-bold text-ink-primary">
-                        {{ formattedOpeningCash }}
-                    </span>
-                </div>
             </div>
         </div>
     </div>

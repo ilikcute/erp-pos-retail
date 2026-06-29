@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import LoadingSkeleton from '@/Components/Feedback/LoadingSkeleton.vue';
 import EmptyState from '@/Components/Feedback/EmptyState.vue';
+import Pagination from '@/Components/Navigation/Pagination.vue';
 
 const props = defineProps({
     columns: { type: Array, required: true },
@@ -17,6 +18,7 @@ const props = defineProps({
     selectable: { type: Boolean, default: false },
     selectionMode: { type: String, default: 'single' }, // 'single' or 'multiple'
     responsive: { type: Boolean, default: true },
+    meta: { type: Object, default: () => null },
 });
 
 const emit = defineEmits(['sort', 'search', 'row-click', 'selection-change']);
@@ -170,9 +172,9 @@ watch(() => props.rows, () => {
                                 col.align === 'right' && 'text-right',
                                 col.align === 'center' && 'text-center'
                             ]">
-                                <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]" :rowIndex="filteredRows.indexOf(row) + 1">
+                                <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]" :rowIndex="meta && meta.from ? meta.from + idx : filteredRows.indexOf(row) + 1">
                                     <template v-if="col.key === 'index' || col.key === 'no' || col.key === 'row_num' || col.key === 'row_number'">
-                                        {{ filteredRows.indexOf(row) + 1 }}
+                                        {{ meta && meta.from ? meta.from + idx : filteredRows.indexOf(row) + 1 }}
                                     </template>
                                     <template v-else>
                                         {{ row[col.key] }}
@@ -186,39 +188,13 @@ watch(() => props.rows, () => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="paginated && totalPages > 1" class="flex items-center justify-between px-base py-md">
-            <span class="text-xs text-ink-muted">
-                {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, filteredRows.length) }} dari
-                {{ filteredRows.length }}
-            </span>
-
-            <div class="flex gap-sm">
-                <button @click="currentPage = Math.max(1, currentPage - 1)" :disabled="currentPage === 1"
-                    class="p-md rounded-md border border-border-soft text-ink-secondary hover:bg-surface-subtle disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-
-                <div class="flex items-center gap-xs">
-                    <button v-for="page in totalPages" :key="page" @click="currentPage = page" :class="[
-                        'px-md py-sm rounded-md text-xs font-medium transition-colors',
-                        currentPage === page
-                            ? 'bg-brand text-white'
-                            : 'border border-border-soft text-ink-secondary hover:bg-surface-subtle'
-                    ]">
-                        {{ page }}
-                    </button>
-                </div>
-
-                <button @click="currentPage = Math.min(totalPages, currentPage + 1)"
-                    :disabled="currentPage === totalPages"
-                    class="p-md rounded-md border border-border-soft text-ink-secondary hover:bg-surface-subtle disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+        <Pagination
+            v-if="paginated && totalPages > 1"
+            :is-client="true"
+            :total-items="filteredRows.length"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            @change-page="(p) => currentPage = p"
+        />
     </div>
 </template>

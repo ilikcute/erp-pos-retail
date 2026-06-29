@@ -7,6 +7,11 @@ use App\Models\Accounting\ChartOfAccount;
 use App\Models\Accounting\JournalEntry;
 use App\Models\Accounting\JournalEntryLine;
 use App\Models\Accounting\PaymentMethod;
+use App\Models\Accounting\FiscalPeriod;
+use App\Models\Accounting\TrialBalance;
+use App\Models\Accounting\JournalTemplate;
+use App\Models\Accounting\JournalTemplateLine;
+use App\Models\Accounting\AccountingRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -19,9 +24,24 @@ class AccountingController extends Controller
     {
         $chartOfAccounts = ChartOfAccount::orderBy('account_code')->get();
         
-        $journalEntries = JournalEntry::with('lines.account')
-            ->orderBy('journal_date', 'desc')
-            ->get()
+        // 1. Journal entries with filters
+        $journalQuery = JournalEntry::with('lines.account')
+            ->orderBy('journal_date', 'desc');
+
+        if ($request->filled('status')) {
+            $journalQuery->where('status', $request->status);
+        }
+        if ($request->filled('date_from')) {
+            $journalQuery->where('journal_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $journalQuery->where('journal_date', '<=', $request->date_to);
+        }
+        if ($request->filled('reference_type')) {
+            $journalQuery->where('source_type', $request->reference_type); // Mapping reference_type to source_type
+        }
+
+        $journalEntries = $journalQuery->get()
             ->map(function ($entry) {
                 $totalDebit = $entry->lines->sum('debit');
                 $totalCredit = $entry->lines->sum('credit');
@@ -32,7 +52,61 @@ class AccountingController extends Controller
                 ]);
             });
 
+        // 2. Payment methods
         $paymentMethods = PaymentMethod::all();
+
+        // 3. Fiscal Periods
+        $fiscalPeriods = FiscalPeriod::orderBy('start_date', 'desc')->get();
+
+        // 4. Trial Balance (dynamic calculation based on selected period)
+        $trialPeriodId = $request->query('trial_period_id');
+        $trialBalances = [];
+        if ($trialPeriodId) {
+            $period = FiscalPeriod::find($trialPeriodId);
+            if ($period) {
+                $trialBalances = ChartOfAccount::orderBy('account_code')->get()->map(function($acc) use ($period) {
+                    $lines = JournalEntryLine::where('account_id', $acc->id)
+                        ->whereHas('journal', function($q) use ($period) {
+                            $q->whereBetween('journal_date', [$period->start_date, $period->end_date])
+                              ->where('status', 'POSTED');
+                        })->get();
+                    return [
+                        'account_code' => $acc->account_code,
+                        'account_name' => $acc->account_name,
+                        'account_type' => $acc->account_type,
+                        'debit_balance' => $lines->sum('debit'),
+                        'credit_balance' => $lines->sum('credit'),
+                    ];
+                })->filter(fn($tb) => $tb['debit_balance'] > 0 || $tb['credit_balance'] > 0)->values()->all();
+            }
+        }
+
+        // 5. General Ledger (detailed account movements)
+        $ledgerAccountId = $request->query('ledger_account_id');
+        $ledgerLines = [];
+        if ($ledgerAccountId) {
+            $ledgerLines = JournalEntryLine::where('account_id', $ledgerAccountId)
+                ->whereHas('journal', function($q) use ($request) {
+                    if ($request->filled('date_from')) $q->where('journal_date', '>=', $request->date_from);
+                    if ($request->filled('date_to')) $q->where('journal_date', '<=', $request->date_to);
+                    $q->where('status', 'POSTED');
+                })
+                ->with('journal')
+                ->get()
+                ->map(function($line) {
+                    return [
+                        'date' => $line->journal->journal_date,
+                        'journal_number' => $line->journal->journal_number,
+                        'description' => $line->description ?: $line->journal->description,
+                        'debit' => $line->debit,
+                        'credit' => $line->credit,
+                    ];
+                });
+        }
+
+        // 6. Templates & Rules
+        $journalTemplates = JournalTemplate::with('lines.account')->get();
+        $accountingRules = AccountingRule::with('template')->get();
 
         $routeName = $request->route() ? $request->route()->getName() : null;
         $activeTab = $request->query('activeTab');
@@ -48,6 +122,11 @@ class AccountingController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'journalEntries' => $journalEntries,
             'paymentMethods' => $paymentMethods,
+            'fiscalPeriods' => $fiscalPeriods,
+            'trialBalances' => $trialBalances,
+            'ledgerLines' => $ledgerLines,
+            'journalTemplates' => $journalTemplates,
+            'accountingRules' => $accountingRules,
             'activeTab' => $activeTab,
         ]);
     }
@@ -197,5 +276,127 @@ class AccountingController extends Controller
         $method->delete();
 
         return back()->with('success', 'Metode Pembayaran berhasil dihapus.');
+    }
+
+    public function postJournal(int $id): RedirectResponse
+    {
+        $entry = JournalEntry::findOrFail($id);
+        $entry->update(['status' => 'POSTED', 'posted_at' => now()]);
+
+        return back()->with('success', 'Jurnal berhasil di-post.');
+    }
+
+    public function voidJournal(int $id): RedirectResponse
+    {
+        $entry = JournalEntry::findOrFail($id);
+        $entry->update(['status' => 'VOID']);
+
+        return back()->with('success', 'Jurnal berhasil di-void.');
+    }
+
+    public function storeFiscalPeriod(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'period_name' => 'required|string|max:50',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+        ]);
+
+        FiscalPeriod::create($validated);
+
+        return back()->with('success', 'Periode fiskal berhasil dibuat.');
+    }
+
+    public function closeFiscalPeriod(int $id): RedirectResponse
+    {
+        $period = FiscalPeriod::findOrFail($id);
+        $period->update([
+            'status' => 'CLOSED',
+            'closed_by' => auth()->id() ?? 1,
+            'closed_at' => now(),
+        ]);
+
+        // Compile trial balance snapshot
+        $accounts = ChartOfAccount::all();
+        foreach ($accounts as $acc) {
+            $lines = JournalEntryLine::where('account_id', $acc->id)
+                ->whereHas('journal', function($q) use ($period) {
+                    $q->whereBetween('journal_date', [$period->start_date, $period->end_date])
+                      ->where('status', 'POSTED');
+                })->get();
+            $debit = $lines->sum('debit');
+            $credit = $lines->sum('credit');
+
+            if ($debit > 0 || $credit > 0) {
+                TrialBalance::updateOrCreate([
+                    'fiscal_period_id' => $period->id,
+                    'account_id' => $acc->id,
+                ], [
+                    'debit_balance' => $debit,
+                    'credit_balance' => $credit,
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Periode fiskal berhasil ditutup.');
+    }
+
+    public function storeTemplate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'template_code' => 'required|string|max:50|unique:journal_templates,template_code',
+            'template_name' => 'required|string|max:255',
+            'event_type' => 'required|string',
+            'description' => 'nullable|string',
+            'lines' => 'required|array|min:1',
+            'lines.*.account_id' => 'required|exists:chart_of_accounts,id',
+            'lines.*.direction' => 'required|in:DEBIT,CREDIT',
+            'lines.*.formula' => 'nullable|string',
+            'lines.*.description' => 'nullable|string',
+        ]);
+
+        DB::transaction(function() use ($validated) {
+            $tmpl = JournalTemplate::create([
+                'template_code' => $validated['template_code'],
+                'template_name' => $validated['template_name'],
+                'event_type' => $validated['event_type'],
+                'description' => $validated['description'] ?? null,
+                'is_active' => true,
+            ]);
+
+            foreach ($validated['lines'] as $idx => $line) {
+                JournalTemplateLine::create([
+                    'journal_template_id' => $tmpl->id,
+                    'account_id' => $line['account_id'],
+                    'direction' => $line['direction'],
+                    'formula' => $line['formula'] ?? 'grand_total',
+                    'description' => $line['description'] ?? null,
+                    'sort_order' => $idx + 1,
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Template Jurnal berhasil dibuat.');
+    }
+
+    public function destroyTemplate(int $id): RedirectResponse
+    {
+        $tmpl = JournalTemplate::findOrFail($id);
+        $tmpl->delete();
+
+        return back()->with('success', 'Template Jurnal berhasil dihapus.');
+    }
+
+    public function storeRule(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rule_name' => 'required|string|max:255',
+            'event_type' => 'required|string',
+            'journal_template_id' => 'required|exists:journal_templates,id',
+        ]);
+
+        AccountingRule::create($validated);
+
+        return back()->with('success', 'Aturan akuntansi berhasil dibuat.');
     }
 }

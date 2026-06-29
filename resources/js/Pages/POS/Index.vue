@@ -120,6 +120,27 @@ const handleSessionOpened = (session) => {
     activeSession.value = session;
 };
 
+const formatRupiahInput = (value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const numberString = String(value).replace(/[^0-9]/g, '');
+    if (!numberString) return '';
+    return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const parseRupiahInput = (formattedValue) => {
+    if (!formattedValue) return 0;
+    const cleanString = String(formattedValue).replace(/[^0-9]/g, '');
+    return Number(cleanString) || 0;
+};
+
+const closingCashDisplay = ref('');
+
+const onClosingCashInput = (e) => {
+    const formatted = formatRupiahInput(e.target.value);
+    closingCashDisplay.value = formatted;
+    closeSessionForm.value.closing_cash = parseRupiahInput(formatted);
+};
+
 const showCloseSessionModal = ref(false);
 const isClosingSession = ref(false);
 const closeSessionForm = ref({
@@ -135,6 +156,7 @@ const handleCloseSession = () => {
         closing_cash: activeSession.value.expected_cash || 0,
         notes: "",
     };
+    closingCashDisplay.value = formatRupiahInput(activeSession.value.expected_cash || 0);
     showCloseSessionModal.value = true;
 };
 
@@ -478,6 +500,7 @@ const handleClearCart = () => {
         @opened="onShiftOpened"
         :errors="errors"
         :can-open-shift="canOpenShift"
+        :current-location-id="props.currentLocationId"
     />
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -487,6 +510,7 @@ const handleClearCart = () => {
         v-else-if="viewState === 'session'"
         @opened="handleSessionOpened"
         :errors="errors"
+        :current-location-id="props.currentLocationId"
     />
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -735,13 +759,12 @@ const handleClearCart = () => {
             </div>
 
             <FormInput
-                v-model="closeSessionForm.closing_cash"
-                type="number"
+                :model-value="closingCashDisplay"
+                @input="onClosingCashInput"
+                type="text"
                 label="Uang Kasir Aktual (Tunai Aktual)"
                 required
-                min="0"
-                step="0.01"
-                placeholder="E.g. 1250000"
+                placeholder="E.g. 1.250.000"
             />
 
             <FormTextarea

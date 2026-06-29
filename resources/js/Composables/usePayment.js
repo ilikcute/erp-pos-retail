@@ -28,6 +28,10 @@ export function usePayment({ defaultGateway = "cash", gateways = [] }) {
         ];
     });
 
+    // Placeholder — akan di-inject dari parent
+    const payableAmount = ref(0);
+    const setPayableAmount = (v) => (payableAmount.value = v);
+
     // Auto-set cash input untuk non-cash
     watch(
         [() => paymentMethod.value, () => payableAmount.value, () => payLater.value],
@@ -87,9 +91,7 @@ export function usePayment({ defaultGateway = "cash", gateways = [] }) {
         () => splitRemaining.value === 0 && paymentSplits.value.length > 0,
     );
 
-    // Placeholder — akan di-inject dari parent
-    const payableAmount = ref(0);
-    const setPayableAmount = (v) => (payableAmount.value = v);
+
 
     const reset = () => {
         paymentMode.value = "single";

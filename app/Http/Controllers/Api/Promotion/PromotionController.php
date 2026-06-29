@@ -61,9 +61,48 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $promotion,
+            'data'    => $promotion,
             'message' => 'Promosi berhasil dibuat',
         ], 201);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $this->authorizePromotionManage();
+
+        $validated = $request->validate([
+            'promotion_code'           => "required|string|unique:promotions,promotion_code,{$id}",
+            'promotion_name'           => 'required|string|max:255',
+            'description'              => 'nullable|string',
+            'priority'                 => 'integer|min:0',
+            'stackable'                => 'boolean',
+            'valid_from'               => 'required|date',
+            'valid_until'              => 'required|date|after:valid_from',
+            'earn_point_allowed'       => 'boolean',
+            'redeem_point_allowed'     => 'boolean',
+            'conditions'               => 'array',
+            'conditions.*.condition_type'  => 'required|in:MIN_AMOUNT,MIN_QTY,DAY_OF_WEEK,CUSTOMER_CATEGORY,PRODUCT,CATEGORY',
+            'conditions.*.operator'        => 'string',
+            'conditions.*.condition_value' => 'required',
+            'rewards'                  => 'required|array|min:1',
+            'rewards.*.reward_type'    => 'required|in:PERCENTAGE,FIXED_AMOUNT,FREE_PRODUCT,SPECIAL_PRICE',
+            'rewards.*.reward_value'   => 'required|numeric|min:0',
+            'rewards.*.max_discount'   => 'nullable|numeric|min:0',
+            'targets'                  => 'required|array|min:1',
+            'targets.*.target_type'    => 'required|in:ALL_PRODUCT,PRODUCT,CATEGORY',
+            'targets.*.target_id'      => 'nullable|integer',
+            'limits'                   => 'nullable|array',
+            'limits.max_usage'             => 'integer|min:0',
+            'limits.max_usage_per_customer' => 'integer|min:0',
+        ]);
+
+        $promotion = $this->promoService->update($id, $validated);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $promotion,
+            'message' => 'Promosi berhasil diperbarui',
+        ]);
     }
 
     public function show(int $id)

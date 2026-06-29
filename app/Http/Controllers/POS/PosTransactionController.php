@@ -706,12 +706,12 @@ class PosTransactionController extends Controller
             return (int) $locationId;
         }
 
-        $shift = \App\Models\POS\CashierShift::where('user_id', $user->id)
-            ->where('status', 'open')
+        $session = \App\Models\POS\CashierSession::where('user_id', $user->id)
+            ->where('status', 'OPEN')
             ->first();
 
-        if ($shift && $shift->location_id) {
-            return (int) $shift->location_id;
+        if ($session && $session->location_id) {
+            return (int) $session->location_id;
         }
 
         if (isset($user->default_location_id)) {

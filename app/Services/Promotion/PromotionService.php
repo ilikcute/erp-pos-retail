@@ -157,6 +157,67 @@ class PromotionService
     }
 
     /**
+     * Update promotion dengan semua relasi (sync)
+     */
+    public function update(int $id, array $data): Promotion
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $promotion = Promotion::findOrFail($id);
+
+            $promotion->update([
+                'promotion_code'       => $data['promotion_code'],
+                'promotion_name'       => $data['promotion_name'],
+                'description'          => $data['description'] ?? null,
+                'priority'             => $data['priority'] ?? 0,
+                'stackable'            => $data['stackable'] ?? false,
+                'valid_from'           => $data['valid_from'],
+                'valid_until'          => $data['valid_until'],
+                'earn_point_allowed'   => $data['earn_point_allowed'] ?? true,
+                'redeem_point_allowed' => $data['redeem_point_allowed'] ?? true,
+                'limits'               => $data['limits'] ?? null,
+            ]);
+
+            // Sync conditions
+            $promotion->conditions()->delete();
+            foreach ($data['conditions'] ?? [] as $condition) {
+                PromotionCondition::create([
+                    'promotion_id'    => $promotion->id,
+                    'condition_type'  => $condition['condition_type'],
+                    'operator'        => $condition['operator'] ?? '>=',
+                    'condition_value' => is_array($condition['condition_value'])
+                        ? json_encode($condition['condition_value'])
+                        : $condition['condition_value'],
+                ]);
+            }
+
+            // Sync rewards
+            $promotion->rewards()->delete();
+            foreach ($data['rewards'] ?? [] as $reward) {
+                PromotionReward::create([
+                    'promotion_id'    => $promotion->id,
+                    'reward_type'     => $reward['reward_type'],
+                    'reward_value'    => $reward['reward_value'],
+                    'max_discount'    => $reward['max_discount'] ?? null,
+                    'free_product_id' => $reward['free_product_id'] ?? null,
+                    'free_product_qty'=> $reward['free_product_qty'] ?? 1,
+                ]);
+            }
+
+            // Sync targets
+            $promotion->targets()->delete();
+            foreach ($data['targets'] ?? [] as $target) {
+                PromotionTarget::create([
+                    'promotion_id' => $promotion->id,
+                    'target_type'  => $target['target_type'],
+                    'target_id'    => $target['target_id'] ?? null,
+                ]);
+            }
+
+            return $promotion->load(['conditions', 'rewards', 'targets']);
+        });
+    }
+
+    /**
      * Activate promotion
      */
     public function activate(int $id): Promotion

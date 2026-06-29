@@ -13,30 +13,28 @@ Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory
 Route::get('/inventory/transfer', [InventoryController::class, 'index'])->name('inventory.transfer');
 
 Route::prefix('inventory')->group(function () {
-    // === 7.2 Stok ===
-    Route::get('balances', [BalanceController::class, 'index']);
-    Route::get('ledgers', [LedgerController::class, 'index']);
+    // Locations
+    Route::post('locations', [InventoryController::class, 'storeLocation'])->name('inventory.locations.store');
+    Route::put('locations/{id}', [InventoryController::class, 'updateLocation'])->name('inventory.locations.update');
 
-    // === 7.3 Transfer ===
-    Route::get('transfers', [TransferController::class, 'index']);
-    Route::post('transfers', [TransferController::class, 'store']);
-    Route::get('transfers/{id}', [TransferController::class, 'show']);
-    Route::post('transfers/{id}/post', [TransferController::class, 'post']);
-    Route::post('transfers/{id}/cancel', [TransferController::class, 'cancel']);
+    // Transfers
+    Route::post('transfers', [InventoryController::class, 'storeTransfer'])->name('inventory.transfers.store');
+    Route::post('transfers/{id}/post', [InventoryController::class, 'postTransfer'])->name('inventory.transfers.post');
+    Route::post('transfers/{id}/cancel', [InventoryController::class, 'cancelTransfer'])->name('inventory.transfers.cancel');
 
-    // === 7.4 Adjustment ===
-    Route::get('adjustments', [AdjustmentController::class, 'index']);
-    Route::post('adjustments', [AdjustmentController::class, 'store']);
-    Route::post('adjustments/{id}/approve', [AdjustmentController::class, 'approve']);
-    Route::post('adjustments/{id}/reject', [AdjustmentController::class, 'reject']);
+    // Adjustments
+    Route::post('adjustments', [InventoryController::class, 'storeAdjustment'])->name('inventory.adjustments.store');
+    Route::post('adjustments/{id}/approve', [InventoryController::class, 'approveAdjustment'])->name('inventory.adjustments.approve');
+    Route::post('adjustments/{id}/reject', [InventoryController::class, 'rejectAdjustment'])->name('inventory.adjustments.reject');
 
-    // === 7.5 Stock Opname ===
-    Route::get('opnames', [OpnameController::class, 'index']);
-    Route::post('opnames', [OpnameController::class, 'store']);
-    Route::put('opnames/{id}/count', [OpnameController::class, 'count']);
-    Route::post('opnames/{id}/approve', [OpnameController::class, 'approve']);
-    Route::post('opnames/{id}/post', [OpnameController::class, 'post']);
+    // Opnames
+    Route::post('opnames', [InventoryController::class, 'storeOpname'])->name('inventory.opnames.store');
+    Route::put('opnames/{id}/count', [InventoryController::class, 'countOpname'])->name('inventory.opnames.count');
+    Route::post('opnames/{id}/approve', [InventoryController::class, 'approveOpname'])->name('inventory.opnames.approve');
+    Route::post('opnames/{id}/post', [InventoryController::class, 'postOpname'])->name('inventory.opnames.post');
 
-    // === 7.6 Planogram ===
-    Route::apiResource('planograms', PlanogramController::class);
+    // Planograms
+    Route::post('planograms', [InventoryController::class, 'storePlanogram'])->name('inventory.planograms.store');
+    Route::put('planograms/{id}', [InventoryController::class, 'updatePlanogram'])->name('inventory.planograms.update');
+    Route::delete('planograms/{id}', [InventoryController::class, 'destroyPlanogram'])->name('inventory.planograms.destroy');
 });

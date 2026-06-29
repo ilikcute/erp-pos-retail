@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\POS;
 
+use App\Actions\POS\CloseSalesSessionAction;
+use App\Actions\POS\OpenSalesSessionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\POS\CloseSessionRequest;
 use App\Http\Requests\POS\OpenSessionRequest;
@@ -16,6 +18,8 @@ class CashierSessionController extends Controller
     public function __construct(
         private readonly SessionService $sessionService,
         private readonly SessionRepositoryInterface $sessionRepo,
+        private readonly OpenSalesSessionAction $openAction,
+        private readonly CloseSalesSessionAction $closeAction,
     ) {}
 
     /**
@@ -24,13 +28,13 @@ class CashierSessionController extends Controller
      */
     public function active()
     {
-        $user = Auth::user();
+        $user    = Auth::user();
         $session = $this->sessionService->getActiveSession($user->id);
 
         if (!$session) {
             return response()->json([
                 'success' => true,
-                'data' => null,
+                'data'    => null,
                 'message' => 'Tidak ada sesi aktif',
             ]);
         }
@@ -48,19 +52,22 @@ class CashierSessionController extends Controller
      */
     public function open(OpenSessionRequest $request)
     {
-        $user = Auth::user();
+        $user   = Auth::user();
+        $userId = $request->input('user_id', $user->id);
 
         try {
-            $session = $this->sessionService->openSession(
-                userId: $user->id,
+            $session = $this->openAction->execute(
+                userId:  $userId,
                 shiftId: $request->shift_id,
-                openingCash: (float) $request->opening_cash,
-                locationId: $request->location_id,
-                notes: $request->notes
+                data: [
+                    'opening_cash' => (float) $request->opening_cash,
+                    'location_id'  => $request->location_id,
+                    'notes'        => $request->notes,
+                ],
             );
 
             // Simpan session_id di session Laravel untuk POS
-            session(['pos_session_id' => $session->id]);
+            session(['pos_session_id'  => $session->id]);
             session(['pos_location_id' => $session->location_id]);
 
             return (new CashierSessionResource($session))
@@ -82,8 +89,6 @@ class CashierSessionController extends Controller
      */
     public function close(CloseSessionRequest $request, int $id)
     {
-        $user = Auth::user();
-
         $session = $this->sessionRepo->findById($id);
 
         if (!$session) {
@@ -96,11 +101,12 @@ class CashierSessionController extends Controller
         $this->authorize('close', $session);
 
         try {
-            $session = $this->sessionService->closeSession(
-                sessionId: $id,
-                closingCash: (float) $request->closing_cash,
-                closedBy: $user->id,
-                notes: $request->notes
+            $session = $this->closeAction->execute(
+                session: $session,
+                data: [
+                    'closing_cash' => (float) $request->closing_cash,
+                    'notes'        => $request->notes,
+                ],
             );
 
             // Clear session
@@ -130,7 +136,7 @@ class CashierSessionController extends Controller
             'user_id',
             'status',
             'date_from',
-            'date_to'
+            'date_to',
         ]);
 
         $sessions = $this->sessionRepo->getAll($filters);

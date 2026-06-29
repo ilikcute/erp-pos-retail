@@ -7,6 +7,7 @@ Route::prefix('reports')->group(function () {
     Route::get('sales', [ReportingController::class, 'salesReport']);
     Route::get('inventory-valuation', [ReportingController::class, 'inventoryReport']);
     Route::get('financial', [ReportingController::class, 'financialReport']);
+    Route::get('purchasing/orders', [ReportingController::class, 'purchaseReport']);
     
     // Exports
     Route::post('sales/export', [ReportingController::class, 'exportSales']);

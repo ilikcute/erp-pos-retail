@@ -16,8 +16,12 @@ class InventoryLocation extends Model
         'code',
         'name',
         'type',
+        'is_stock_bearing',
+        'is_external',
         'parent_id',
         'address',
+        'valid_from',
+        'valid_to',
         'city',
         'phone',
         'manager_id',
@@ -26,6 +30,10 @@ class InventoryLocation extends Model
 
     protected $casts = [
         'type' => LocationType::class,
+        'is_stock_bearing' => 'boolean',
+        'is_external' => 'boolean',
+        'valid_from' => 'date',
+        'valid_to' => 'date',
         'is_active' => 'boolean',
     ];
 
@@ -46,6 +54,6 @@ class InventoryLocation extends Model
 
     public function isStockBearing(): bool
     {
-        return $this->type->isStockBearing();
+        return $this->is_stock_bearing ?? $this->type->isStockBearing();
     }
 }

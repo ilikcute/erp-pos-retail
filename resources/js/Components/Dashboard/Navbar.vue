@@ -31,10 +31,12 @@ const user = page.props.auth.user;
 
         <div class="flex items-center gap-sm">
             <!-- Notifications -->
-            <button type="button" class="relative w-10 h-10 rounded-pill flex items-center justify-center text-ink-secondary hover:bg-surface-muted hover:text-ink-primary transition">
+            <Link :href="route('system.notifications.index')" class="relative w-10 h-10 rounded-pill flex items-center justify-center text-ink-secondary hover:bg-surface-muted hover:text-ink-primary transition">
                 <Icon name="bell" size="5" />
-                <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent-coral"></span>
-            </button>
+                <span v-if="page.props.auth.unread_notifications_count > 0" class="absolute top-2 right-2 flex h-3 w-3 items-center justify-center rounded-full bg-accent-coral text-[8px] text-white font-bold">
+                    {{ page.props.auth.unread_notifications_count > 9 ? '9+' : page.props.auth.unread_notifications_count }}
+                </span>
+            </Link>
             <!-- User -->
             <div class="flex items-center gap-sm pl-sm">
                 <div class="w-9 h-9 rounded-full bg-sunset-gradient flex items-center justify-center text-sm font-bold text-white uppercase">{{ user.name?.charAt(0) }}</div>

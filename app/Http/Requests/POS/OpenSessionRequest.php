@@ -14,9 +14,10 @@ class OpenSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shift_id' => 'required|integer|exists:cashier_shifts,id',
+            'shift_id' => 'required|integer|exists:shifts,id',
             'opening_cash' => 'required|numeric|min:0',
             'location_id' => 'nullable|integer|exists:inventory_locations,id',
+            'user_id' => 'nullable|integer|exists:users,id',
             'notes' => 'nullable|string|max:500',
         ];
     }

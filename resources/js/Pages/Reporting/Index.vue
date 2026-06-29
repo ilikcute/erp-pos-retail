@@ -14,48 +14,15 @@ const activeTab = ref('sales');
 const dateFrom = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
 const dateTo = ref(new Date().toISOString().split('T')[0]);
 
-// Report state data
-
-// --- Data contoh (fallback bila API belum tersedia) ---
-const MOCK_SALES = {
-    total_sales: 18450000, total_transactions: 312, average_sale: 59134, total_items_sold: 874,
-    payment_summary: { Tunai: 9200000, QRIS: 5100000, Kartu: 3150000, Transfer: 1000000 },
-    transactions: [
-        { no: 1, transaction_no: 'TRX-1001', cashier: 'Kasir 01', customer: 'Umum',      grand_total: 'Rp 125.000', transaction_date: '2026-06-25 09:12' },
-        { no: 2, transaction_no: 'TRX-1002', cashier: 'Kasir 01', customer: 'Budi S.',    grand_total: 'Rp 78.000',  transaction_date: '2026-06-25 09:31' },
-        { no: 3, transaction_no: 'TRX-1003', cashier: 'Kasir 02', customer: 'Umum',      grand_total: 'Rp 240.000', transaction_date: '2026-06-25 10:05' },
-        { no: 4, transaction_no: 'TRX-1004', cashier: 'Kasir 02', customer: 'Sari D.',    grand_total: 'Rp 56.000',  transaction_date: '2026-06-25 10:48' },
-    ],
-};
-const MOCK_INVENTORY = {
-    total_items: 1245, total_value: 312500000,
-    low_stock_items: [
-        { no: 1, product: 'Kopi Susu Gula Aren', location: 'Gudang A', quantity_on_hand: 5,  reorder_level: 20, balance_value: 'Rp 110.000' },
-        { no: 2, product: 'Air Mineral 600ml',   location: 'Gudang A', quantity_on_hand: 8,  reorder_level: 50, balance_value: 'Rp 48.000' },
-        { no: 3, product: 'Donat Gula',          location: 'Gudang B', quantity_on_hand: 3,  reorder_level: 15, balance_value: 'Rp 36.000' },
-    ],
-};
-const MOCK_FINANCIAL = {
-    summary: { total_assets: 312500000, total_revenue: 184500000, net_income: 42300000 },
-    income_statement: {
-        revenue:  [{ account_code: '4-100', account_name: 'Pendapatan Penjualan', balance: 184500000 }],
-        expenses: [{ account_code: '5-100', account_name: 'Harga Pokok Penjualan', balance: 106000000 }, { account_code: '6-100', account_name: 'Beban Operasional', balance: 36200000 }],
-        total_revenue: 184500000, total_expenses: 142200000, net_income: 42300000,
-    },
-    balance_sheet: {
-        assets:      [{ account_code: '1-100', account_name: 'Kas & Bank', balance: 95000000 }, { account_code: '1-200', account_name: 'Persediaan', balance: 217500000 }],
-        liabilities: [{ account_code: '2-100', account_name: 'Hutang Usaha', balance: 78000000 }],
-        equity:      [{ account_code: '3-100', account_name: 'Modal Pemilik', balance: 234500000 }],
-        total_assets: 312500000, total_liabilities: 78000000, total_equity: 234500000,
-    },
-};
-const salesReport = ref(MOCK_SALES);
-const inventoryReport = ref(MOCK_INVENTORY);
-const financialReport = ref(MOCK_FINANCIAL);
+const salesReport = ref(null);
+const inventoryReport = ref(null);
+const financialReport = ref(null);
+const purchaseReport = ref(null);
 
 const loadingSales = ref(false);
 const loadingInventory = ref(false);
 const loadingFinancial = ref(false);
+const loadingPurchase = ref(false);
 
 // Formatters imported from @/Utils/formatters
 
@@ -118,6 +85,25 @@ const fetchFinancialReport = async () => {
     }
 };
 
+const fetchPurchaseReport = async () => {
+    loadingPurchase.value = true;
+    try {
+        const response = await axios.get('/api/v1/reports/purchasing/orders', {
+            params: {
+                date_from: dateFrom.value,
+                date_to: dateTo.value,
+            }
+        });
+        if (response.data.success) {
+            purchaseReport.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Error loading purchase report:', error);
+    } finally {
+        loadingPurchase.value = false;
+    }
+};
+
 // Export Handlers
 const handleExport = async (type) => {
     try {
@@ -136,6 +122,7 @@ onMounted(() => {
     fetchSalesReport();
     fetchInventoryReport();
     fetchFinancialReport();
+    fetchPurchaseReport();
 });
 
 // Table columns setup
@@ -155,6 +142,15 @@ const lowStockColumns = [
     { key: 'quantity_on_hand', label: 'Stok Saat Ini', align: 'right' },
     { key: 'reorder_level', label: 'Min Reorder', align: 'right' },
     { key: 'balance_value', label: 'Nilai Aset', align: 'right' },
+];
+
+const poColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'po_number', label: 'Nomor PO' },
+    { key: 'supplier', label: 'Pemasok' },
+    { key: 'status', label: 'Status', align: 'center' },
+    { key: 'total_amount', label: 'Total', align: 'right' },
+    { key: 'date', label: 'Tanggal' },
 ];
 </script>
 
@@ -182,6 +178,7 @@ const lowStockColumns = [
             <button @click="activeTab = 'sales'; fetchSalesReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='sales' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🛒 Penjualan</button>
             <button @click="activeTab = 'inventory'; fetchInventoryReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='inventory' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📦 Persediaan</button>
             <button @click="activeTab = 'financial'; fetchFinancialReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='financial' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">💰 Keuangan</button>
+            <button @click="activeTab = 'purchasing'; fetchPurchaseReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='purchasing' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🛍️ Pembelian</button>
         </div>
 
         <!-- ===== SALES ===== -->
@@ -202,7 +199,14 @@ const lowStockColumns = [
             </div>
             <div class="card-friendly p-lg">
                 <h2 class="text-section-title font-bold text-ink-primary mb-base">Daftar Transaksi 🧾</h2>
-                <DataTable :columns="txColumns" :rows="salesReport.transactions" :loading="loadingSales" />
+                <DataTable :columns="txColumns" :rows="salesReport.transactions" :loading="loadingSales">
+                    <template #cell-cashier="{ value }">
+                        <span>{{ value?.name || 'Unknown' }}</span>
+                    </template>
+                    <template #cell-customer="{ value }">
+                        <span>{{ value?.name || 'Umum' }}</span>
+                    </template>
+                </DataTable>
             </div>
         </template>
 
@@ -251,6 +255,26 @@ const lowStockColumns = [
                     <div v-for="q in financialReport.balance_sheet.equity" :key="q.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ q.account_name }}</span><span class="font-medium">{{ formatCurrency(q.balance) }}</span></div>
                     <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-brand-soft px-md text-brand"><span>Total Ekuitas</span><span>{{ formatCurrency(financialReport.balance_sheet.total_equity) }}</span></div>
                 </div>
+            </div>
+        </template>
+
+        <!-- ===== PURCHASING ===== -->
+        <template v-if="activeTab === 'purchasing' && purchaseReport">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
+                <KPICard label="Total Pembelian" :value="formatCurrency(purchaseReport.total_purchases)" icon="shopping-bag" color="brand" />
+                <KPICard label="Total Pesanan (PO)" :value="purchaseReport.total_orders" icon="file-text" color="mint" />
+                <KPICard label="Hutang Belum Dibayar" :value="formatCurrency(purchaseReport.pending_payables)" icon="alert-circle" color="coral" />
+            </div>
+            <div class="card-friendly p-lg">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Daftar Pesanan Pembelian 📦</h2>
+                <DataTable :columns="poColumns" :rows="purchaseReport.orders" :loading="loadingPurchase">
+                    <template #cell-total_amount="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-status="{ value }">
+                        <span :class="['px-2 py-0.5 rounded text-xs font-semibold', value === 'COMPLETED' ? 'bg-accent-mint-soft text-accent-mint' : (value === 'PENDING' ? 'bg-accent-sunny-soft text-accent-sunny' : 'bg-surface-subtle text-ink-secondary')]">{{ value }}</span>
+                    </template>
+                </DataTable>
             </div>
         </template>
     </DashboardLayout>

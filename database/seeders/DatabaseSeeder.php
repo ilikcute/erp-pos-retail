@@ -80,6 +80,8 @@ class DatabaseSeeder extends Seeder
             BulkProductSeeder::class,
             BulkSalesTransactionSeeder::class,
             BulkAuditLogSeeder::class,
+            ReportMockDataSeeder::class,
+            PurchasingMockDataSeeder::class,
         ]);
 
         $this->command->info('');

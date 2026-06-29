@@ -28,9 +28,19 @@ class SalesTransactionController extends Controller
     public function shifts(Request $request): Response
     {
         $shifts = $this->shiftRepository->paginate($request->only('search'), 50);
+        
+        $sessions = \App\Models\POS\CashierSession::with(['user', 'shift', 'location'])
+            ->orderBy('opened_at', 'desc')
+            ->get();
+
+        $locations = \App\Models\Inventory\InventoryLocation::where('is_active', true)->get();
+        $users = \App\Models\System\User::all();
 
         return Inertia::render('POS/Shifts/Index', [
             'shifts' => $shifts,
+            'sessions' => $sessions,
+            'locations' => $locations,
+            'users' => $users,
             'filters' => $request->only('search'),
         ]);
     }

@@ -35,7 +35,7 @@ class SystemController extends Controller
 
         $documentTypes = DocumentType::query()
             ->orderBy('name')
-            ->get();
+            ->paginate(15, ['*'], 'doc_page');
 
         $businessProfile = BusinessProfile::first();
 

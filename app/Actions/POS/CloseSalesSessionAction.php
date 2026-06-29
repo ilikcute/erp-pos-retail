@@ -2,60 +2,67 @@
 
 namespace App\Actions\POS;
 
-use App\Enums\DocumentStatus;
-use App\Models\POS\SalesSession;
-use App\Repositories\Contracts\POS\SalesSessionRepositoryInterface;
+use App\Enums\POS\SessionStatus;
+use App\Models\POS\CashierSession;
 use App\Support\AuditService;
 use Illuminate\Support\Facades\DB;
 
 class CloseSalesSessionAction
 {
     public function __construct(
-        private readonly SalesSessionRepositoryInterface $sessionRepository,
         private readonly AuditService $auditService,
     ) {}
 
-    public function execute(SalesSession $session, array $data): SalesSession
+    public function execute(CashierSession $session, array $data): CashierSession
     {
         return DB::transaction(function () use ($session, $data) {
-            if ($session->status !== 'OPEN') {
-                throw new \RuntimeException('Only open sessions can be closed.');
+            if ($session->isClosed()) {
+                throw new \DomainException('Sesi sudah ditutup.');
             }
 
-            $postedTransactions = $session->transactions()
-                ->where('status', DocumentStatus::POSTED->value)
-                ->get();
-
-            $totalSales = $postedTransactions->sum('grand_total');
-            $expectedCash = $session->opening_balance + $totalSales;
-            $variance = $data['closing_balance'] - $expectedCash;
+            // Hitung dari transaksi aktual
+            $expectedCash      = $session->calculateExpectedCash();
+            $totalSales        = $session->calculateTotalSales();
+            $totalTransactions = $session->calculateTotalTransactions();
+            $closingCash       = $data['closing_cash'] ?? 0;
+            $cashDifference    = $closingCash - ($session->opening_cash + $expectedCash);
 
             $session->update([
-                'closing_time'      => now(),
-                'closing_balance'   => $data['closing_balance'],
-                'total_sales'       => $totalSales,
-                'transaction_count' => $postedTransactions->count(),
-                'variance_amount'   => $variance,
-                'status'            => 'CLOSED',
-                'closed_by'         => auth()->id(),
-                'closed_at'         => now(),
-                'notes'             => $data['notes'] ?? null,
-                'updated_by'        => auth()->id(),
+                'closing_cash'       => $closingCash,
+                'expected_cash'      => $expectedCash,
+                'total_sales'        => $totalSales,
+                'total_transactions' => $totalTransactions,
+                'cash_difference'    => $cashDifference,
+                'status'             => SessionStatus::CLOSED,
+                'closed_at'          => now(),
+                'closed_by'          => auth()->id(),
+                'notes'              => isset($data['notes'])
+                    ? trim($session->notes . "\n" . $data['notes'])
+                    : $session->notes,
             ]);
 
             $this->auditService->log(
                 module: 'POS',
-                action: 'CLOSE_SALES_SESSION',
-                tableName: 'sales_sessions',
+                action: 'CLOSE_CASHIER_SESSION',
+                tableName: 'cashier_sessions',
                 recordId: $session->id,
                 documentNo: $session->session_no,
+                statusBefore: SessionStatus::OPEN->value,
+                statusAfter: SessionStatus::CLOSED->value,
                 newValues: [
-                    'closing_balance'   => $data['closing_balance'],
-                    'total_sales'       => $totalSales,
-                    'transaction_count' => $postedTransactions->count(),
-                    'variance_amount'   => $variance,
-                    'status'            => 'CLOSED',
+                    'closing_cash'       => $closingCash,
+                    'expected_cash'      => $expectedCash,
+                    'total_sales'        => $totalSales,
+                    'total_transactions' => $totalTransactions,
+                    'cash_difference'    => $cashDifference,
+                    'status'             => SessionStatus::CLOSED->value,
                 ],
+            );
+
+            $this->auditService->activity(
+                activity: 'CLOSE_SESSION',
+                module: 'POS',
+                description: "Menutup sesi kasir {$session->session_no}. Total penjualan: Rp " . number_format($totalSales, 0, ',', '.') . ", {$totalTransactions} transaksi.",
             );
 
             return $session->fresh();

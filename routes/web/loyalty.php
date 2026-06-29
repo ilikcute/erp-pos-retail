@@ -13,7 +13,17 @@ Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index
 Route::post('/loyalty/accounts', [LoyaltyController::class, 'storeAccount'])->name('loyalty.accounts.store');
 Route::post('/loyalty/adjustments', [LoyaltyController::class, 'storeAdjustment'])->name('loyalty.adjustments.store');
 Route::post('/loyalty/redeem', [LoyaltyController::class, 'storeRedemption'])->name('loyalty.redeem.store');
+Route::post('/loyalty/redemptions/{id}/approve', [LoyaltyController::class, 'approveRedemption'])->name('loyalty.redemptions.approve');
+Route::post('/loyalty/redemptions/{id}/reject', [LoyaltyController::class, 'rejectRedemption'])->name('loyalty.redemptions.reject');
+Route::post('/loyalty/configuration', [LoyaltyController::class, 'updateConfiguration'])->name('loyalty.configuration.update');
+
+Route::post('/loyalty/rewards', [LoyaltyController::class, 'storeReward'])->name('loyalty.rewards.store');
+Route::put('/loyalty/rewards/{id}', [LoyaltyController::class, 'updateReward'])->name('loyalty.rewards.update');
+Route::delete('/loyalty/rewards/{id}', [LoyaltyController::class, 'destroyReward'])->name('loyalty.rewards.destroy');
+
 Route::post('/loyalty/tiers', [LoyaltyController::class, 'storeTier'])->name('loyalty.tiers.store');
+Route::put('/loyalty/tiers/{id}', [LoyaltyController::class, 'updateTier'])->name('loyalty.tiers.update');
+Route::delete('/loyalty/tiers/{id}', [LoyaltyController::class, 'destroyTier'])->name('loyalty.tiers.destroy');
 
 Route::prefix('loyalty')->name('loyalty.')->group(function () {
     // Akun & Riwayat

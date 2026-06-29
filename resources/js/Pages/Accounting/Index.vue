@@ -8,11 +8,17 @@ import BaseModal from '@/Components/Modal/BaseModal.vue';
 import FormInput from '@/Components/Form/FormInput.vue';
 import FormSelect from '@/Components/Form/FormSelect.vue';
 import FormTextarea from '@/Components/Form/FormTextarea.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
 
 const props = defineProps({
     chartOfAccounts: { type: Array, default: () => [] },
     journalEntries: { type: Array, default: () => [] },
     paymentMethods: { type: Array, default: () => [] },
+    fiscalPeriods: { type: Array, default: () => [] },
+    trialBalances: { type: Array, default: () => [] },
+    ledgerLines: { type: Array, default: () => [] },
+    journalTemplates: { type: Array, default: () => [] },
+    accountingRules: { type: Array, default: () => [] },
     activeTab: { type: String, default: 'coa' },
 });
 
@@ -170,6 +176,7 @@ const coaColumns = [
     { key: 'account_name', label: 'Account Name' },
     { key: 'account_type', label: 'Type' },
     { key: 'balance', label: 'Balance', align: 'right' },
+    { key: 'is_active', label: 'Status', align: 'center' },
     { key: 'actions', label: 'Actions', align: 'center' },
 ];
 
@@ -205,15 +212,184 @@ const formatDate = (date) => {
     return new Date(date).toLocaleDateString('id-ID');
 };
 
-const getStatusClass = (status) => {
-    const classes = {
-        DRAFT: 'bg-surface-subtle text-ink-muted border border-border-soft',
-        PENDING: 'bg-semantic-warning-soft text-semantic-warning',
-        APPROVED: 'bg-brand-soft text-brand',
-        POSTED: 'bg-semantic-success-soft text-semantic-success',
-    };
-    return classes[status] || 'bg-surface-subtle text-ink-muted';
-};
+// Journal Actions
+function postJournalEntry(id) {
+    if (confirm('Post jurnal ini ke buku besar?')) {
+        router.post(`/accounting/journals/${id}/post`);
+    }
+}
+
+function voidJournalEntry(id) {
+    if (confirm('Void/batalkan jurnal ini?')) {
+        router.post(`/accounting/journals/${id}/void`);
+    }
+}
+
+// Journal Entry Filters
+const urlParams = new URLSearchParams(window.location.search);
+const filterStatus = ref(urlParams.get('status') || '');
+const filterDateFrom = ref(urlParams.get('date_from') || '');
+const filterDateTo = ref(urlParams.get('date_to') || '');
+const filterRefType = ref(urlParams.get('reference_type') || '');
+
+function applyJournalFilters() {
+    router.get('/accounting', {
+        activeTab: 'journals',
+        status: filterStatus.value,
+        date_from: filterDateFrom.value,
+        date_to: filterDateTo.value,
+        reference_type: filterRefType.value
+    }, { preserveState: true });
+}
+
+// General Ledger Filter State
+const ledgerAccountId = ref(urlParams.get('ledger_account_id') || '');
+const ledgerDateFrom = ref(urlParams.get('date_from') || '');
+const ledgerDateTo = ref(urlParams.get('date_to') || '');
+
+function applyLedgerFilters() {
+    router.get('/accounting', {
+        activeTab: 'ledger',
+        ledger_account_id: ledgerAccountId.value,
+        date_from: ledgerDateFrom.value,
+        date_to: ledgerDateTo.value
+    }, { preserveState: true });
+}
+
+// Trial Balance Filter State
+const trialPeriodId = ref(urlParams.get('trial_period_id') || '');
+
+function applyTrialFilters() {
+    router.get('/accounting', {
+        activeTab: 'trial',
+        trial_period_id: trialPeriodId.value
+    }, { preserveState: true });
+}
+
+// Fiscal Period Modal & Form
+const showPeriodModal = ref(false);
+const periodForm = useForm({
+    period_name: '',
+    start_date: '',
+    end_date: '',
+});
+
+function openCreatePeriod() {
+    periodForm.reset();
+    periodForm.clearErrors();
+    showPeriodModal.value = true;
+}
+
+function submitPeriod() {
+    periodForm.post('/accounting/fiscal-periods', {
+        onSuccess: () => showPeriodModal.value = false
+    });
+}
+
+function closePeriod(id) {
+    if (confirm('Apakah Anda yakin ingin menutup periode fiskal ini? Transaksi baru tidak dapat dibuat di periode ini.')) {
+        router.post(`/accounting/fiscal-periods/${id}/close`);
+    }
+}
+
+// Journal Templates Modal & Form
+const showTemplateModal = ref(false);
+const templateForm = useForm({
+    template_code: '',
+    template_name: '',
+    event_type: 'SALE',
+    description: '',
+    lines: [
+        { account_id: '', direction: 'DEBIT', formula: 'grand_total', description: '' },
+        { account_id: '', direction: 'CREDIT', formula: 'grand_total', description: '' },
+    ]
+});
+
+function openCreateTemplate() {
+    templateForm.reset();
+    templateForm.clearErrors();
+    showTemplateModal.value = true;
+}
+
+function addTemplateLine() {
+    templateForm.lines.push({ account_id: '', direction: 'DEBIT', formula: 'grand_total', description: '' });
+}
+
+function removeTemplateLine(idx) {
+    templateForm.lines.splice(idx, 1);
+}
+
+function submitTemplate() {
+    templateForm.post('/accounting/journal-templates', {
+        onSuccess: () => showTemplateModal.value = false
+    });
+}
+
+function deleteTemplate(id) {
+    if (confirm('Hapus template jurnal ini?')) {
+        router.delete(`/accounting/journal-templates/${id}`);
+    }
+}
+
+// Accounting Rules Modal & Form
+const showRuleModal = ref(false);
+const ruleForm = useForm({
+    rule_name: '',
+    event_type: 'SALE',
+    journal_template_id: '',
+});
+
+function openCreateRule() {
+    ruleForm.reset();
+    ruleForm.clearErrors();
+    showRuleModal.value = true;
+}
+
+function submitRule() {
+    ruleForm.post('/accounting/rules', {
+        onSuccess: () => showRuleModal.value = false
+    });
+}
+
+// Additional columns configurations
+const ledgerColumns = [
+    { key: 'date', label: 'Tanggal' },
+    { key: 'journal_number', label: 'No Jurnal' },
+    { key: 'description', label: 'Keterangan' },
+    { key: 'debit', label: 'Debit', align: 'right' },
+    { key: 'credit', label: 'Kredit', align: 'right' },
+];
+
+const periodColumns = [
+    { key: 'period_name', label: 'Nama Periode' },
+    { key: 'start_date', label: 'Mulai' },
+    { key: 'end_date', label: 'Selesai' },
+    { key: 'status', label: 'Status', align: 'center' },
+    { key: 'actions', label: 'Tindakan', align: 'center' },
+];
+
+const trialColumns = [
+    { key: 'account_code', label: 'Kode Akun' },
+    { key: 'account_name', label: 'Nama Akun' },
+    { key: 'account_type', label: 'Tipe' },
+    { key: 'debit_balance', label: 'Saldo Debit', align: 'right' },
+    { key: 'credit_balance', label: 'Saldo Kredit', align: 'right' },
+];
+
+const templateColumns = [
+    { key: 'template_code', label: 'Kode Template' },
+    { key: 'template_name', label: 'Nama Template' },
+    { key: 'event_type', label: 'Tipe Event' },
+    { key: 'description', label: 'Keterangan' },
+    { key: 'actions', label: 'Tindakan', align: 'center' },
+];
+
+const ruleColumns = [
+    { key: 'rule_name', label: 'Nama Aturan' },
+    { key: 'event_type', label: 'Event' },
+    { key: 'template', label: 'Template Jurnal' },
+    { key: 'status', label: 'Status', align: 'center' },
+];
 </script>
 
 <template>
@@ -236,10 +412,18 @@ const getStatusClass = (status) => {
                 <BaseButton v-if="activeTab === 'methods'" @click="openCreateMethod">
                     💳 New Method
                 </BaseButton>
+                <BaseButton v-if="activeTab === 'periods'" @click="openCreatePeriod">
+                    📅 New Fiscal Period
+                </BaseButton>
+                <BaseButton v-if="activeTab === 'templates'" @click="openCreateTemplate">
+                    📋 New Template
+                </BaseButton>
+                <BaseButton v-if="activeTab === 'rules'" @click="openCreateRule">
+                    ⚙️ New Rule
+                </BaseButton>
             </div>
         </div>
 
-        <!-- Tabs -->
         <div class="flex space-x-1 mb-6 border-b border-border-soft overflow-x-auto whitespace-nowrap scrollbar-none">
             <button
                 @click="activeTab = 'coa'"
@@ -262,6 +446,41 @@ const getStatusClass = (status) => {
             >
                 Payment Methods 💳
             </button>
+            <button
+                @click="activeTab = 'ledger'"
+                :class="activeTab === 'ledger' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
+                class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
+            >
+                General Ledger 📖
+            </button>
+            <button
+                @click="activeTab = 'periods'"
+                :class="activeTab === 'periods' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
+                class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
+            >
+                Fiscal Periods 📅
+            </button>
+            <button
+                @click="activeTab = 'trial'"
+                :class="activeTab === 'trial' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
+                class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
+            >
+                Trial Balance ⚖️
+            </button>
+            <button
+                @click="activeTab = 'templates'"
+                :class="activeTab === 'templates' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
+                class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
+            >
+                Journal Templates 📋
+            </button>
+            <button
+                @click="activeTab = 'rules'"
+                :class="activeTab === 'rules' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
+                class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
+            >
+                Accounting Rules ⚙️
+            </button>
         </div>
 
         <!-- Chart of Accounts Tab -->
@@ -278,6 +497,9 @@ const getStatusClass = (status) => {
                 <template #cell-balance="{ value }">
                     <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
                 </template>
+                <template #cell-is_active="{ row }">
+                    <StatusBadge :status="row.is_active ? 'ACTIVE' : 'INACTIVE'" size="sm" variant="soft" />
+                </template>
                 <template #cell-actions="{ row }">
                     <div class="flex gap-md justify-center">
                         <button @click="openEditCoa(row)" class="text-brand hover:underline text-sm font-semibold">Edit</button>
@@ -289,7 +511,25 @@ const getStatusClass = (status) => {
 
         <!-- Journal Entries Tab -->
         <div v-if="activeTab === 'journals'">
-            <DataTable :columns="journalColumns" :rows="journalEntries">
+            <!-- Journal filters -->
+            <div class="grid grid-cols-4 gap-md mb-base p-md bg-surface-subtle border border-border-soft rounded-lg">
+                <FormSelect label="Status" v-model="filterStatus" @change="applyJournalFilters">
+                    <option value="">Semua Status</option>
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="POSTED">POSTED</option>
+                    <option value="VOID">VOID</option>
+                </FormSelect>
+                <FormInput type="date" label="Mulai Tanggal" v-model="filterDateFrom" @change="applyJournalFilters" />
+                <FormInput type="date" label="Sampai Tanggal" v-model="filterDateTo" @change="applyJournalFilters" />
+                <FormSelect label="Jenis Referensi" v-model="filterRefType" @change="applyJournalFilters">
+                    <option value="">Semua Jenis</option>
+                    <option value="manual">Manual</option>
+                    <option value="POS_TRANSACTION">POS</option>
+                    <option value="PURCHASE">Pembelian</option>
+                </FormSelect>
+            </div>
+
+            <DataTable :columns="[...journalColumns, { key: 'actions', label: 'Tindakan', align: 'center' }]" :rows="journalEntries">
                 <template #cell-journal_number="{ value }">
                     <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
                 </template>
@@ -303,9 +543,14 @@ const getStatusClass = (status) => {
                     <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
                 </template>
                 <template #cell-status="{ value }">
-                    <span :class="getStatusClass(value)" class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase">
-                        {{ value }}
-                    </span>
+                    <StatusBadge :status="value" size="sm" variant="soft" />
+                </template>
+                <template #cell-actions="{ row }">
+                    <div class="flex gap-md justify-center">
+                        <button v-if="row.status === 'DRAFT'" @click="postJournalEntry(row.id)" class="text-brand hover:underline text-xs font-bold">POST</button>
+                        <button v-if="row.status === 'POSTED'" @click="voidJournalEntry(row.id)" class="text-semantic-danger hover:underline text-xs font-bold">VOID</button>
+                        <span v-else class="text-ink-muted text-xs">-</span>
+                    </div>
                 </template>
             </DataTable>
         </div>
@@ -322,15 +567,109 @@ const getStatusClass = (status) => {
                     <span class="text-sm font-semibold">{{ row.account?.account_name }} ({{ row.account?.account_code }})</span>
                 </template>
                 <template #cell-status="{ row }">
-                    <span :class="row.is_active ? 'bg-semantic-success-soft text-semantic-success' : 'bg-surface-subtle text-ink-muted'" class="px-2 py-0.5 rounded text-xs font-semibold">
-                        {{ row.is_active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <StatusBadge :status="row.is_active ? 'ACTIVE' : 'INACTIVE'" size="sm" variant="soft" />
                 </template>
                 <template #cell-actions="{ row }">
                     <div class="flex gap-md justify-center">
                         <button @click="openEditMethod(row)" class="text-brand hover:underline text-sm font-semibold">Edit</button>
                         <button @click="deleteMethod(row)" class="text-semantic-danger hover:underline text-sm font-semibold">Delete</button>
                     </div>
+                </template>
+            </DataTable>
+        </div>
+
+        <!-- General Ledger Tab -->
+        <div v-if="activeTab === 'ledger'">
+            <div class="grid grid-cols-3 gap-md mb-base p-md bg-surface-subtle border border-border-soft rounded-lg">
+                <FormSelect label="Pilih Akun Buku Besar" v-model="ledgerAccountId" @change="applyLedgerFilters">
+                    <option value="">-- Pilih Akun --</option>
+                    <option v-for="c in chartOfAccounts" :key="c.id" :value="c.id">{{ c.account_name }} ({{ c.account_code }})</option>
+                </FormSelect>
+                <FormInput type="date" label="Mulai Tanggal" v-model="ledgerDateFrom" @change="applyLedgerFilters" />
+                <FormInput type="date" label="Sampai Tanggal" v-model="ledgerDateTo" @change="applyLedgerFilters" />
+            </div>
+
+            <DataTable :columns="ledgerColumns" :rows="ledgerLines">
+                <template #cell-date="{ value }">
+                    <span>{{ formatDate(value) }}</span>
+                </template>
+                <template #cell-journal_number="{ value }">
+                    <span class="font-mono font-semibold text-ink-primary">{{ value }}</span>
+                </template>
+                <template #cell-debit="{ value }">
+                    <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
+                </template>
+                <template #cell-credit="{ value }">
+                    <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
+                </template>
+            </DataTable>
+        </div>
+
+        <!-- Fiscal Periods Tab -->
+        <div v-if="activeTab === 'periods'">
+            <DataTable :columns="periodColumns" :rows="fiscalPeriods">
+                <template #cell-start_date="{ value }">
+                    <span>{{ formatDate(value) }}</span>
+                </template>
+                <template #cell-end_date="{ value }">
+                    <span>{{ formatDate(value) }}</span>
+                </template>
+                <template #cell-status="{ value }">
+                    <StatusBadge :status="value" size="sm" variant="soft" />
+                </template>
+                <template #cell-actions="{ row }">
+                    <div class="flex gap-md justify-center">
+                        <button v-if="row.status === 'OPEN'" @click="closePeriod(row.id)" class="text-semantic-danger hover:underline text-xs font-bold">CLOSE PERIOD</button>
+                        <span v-else class="text-ink-muted text-xs">Closed</span>
+                    </div>
+                </template>
+            </DataTable>
+        </div>
+
+        <!-- Trial Balance Tab -->
+        <div v-if="activeTab === 'trial'">
+            <div class="mb-base p-md bg-surface-subtle border border-border-soft rounded-lg">
+                <FormSelect label="Periode Fiskal" v-model="trialPeriodId" @change="applyTrialFilters">
+                    <option value="">-- Pilih Periode --</option>
+                    <option v-for="p in fiscalPeriods" :key="p.id" :value="p.id">{{ p.period_name }} ({{ formatDate(p.start_date) }} s/d {{ formatDate(p.end_date) }})</option>
+                </FormSelect>
+            </div>
+
+            <DataTable :columns="trialColumns" :rows="trialBalances">
+                <template #cell-account_code="{ value }">
+                    <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
+                </template>
+                <template #cell-debit_balance="{ value }">
+                    <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
+                </template>
+                <template #cell-credit_balance="{ value }">
+                    <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
+                </template>
+            </DataTable>
+        </div>
+
+        <!-- Journal Templates Tab -->
+        <div v-if="activeTab === 'templates'">
+            <DataTable :columns="templateColumns" :rows="journalTemplates">
+                <template #cell-template_code="{ value }">
+                    <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
+                </template>
+                <template #cell-actions="{ row }">
+                    <div class="flex gap-md justify-center">
+                        <button @click="deleteTemplate(row.id)" class="text-semantic-danger hover:underline text-xs font-bold">DELETE</button>
+                    </div>
+                </template>
+            </DataTable>
+        </div>
+
+        <!-- Accounting Rules Tab -->
+        <div v-if="activeTab === 'rules'">
+            <DataTable :columns="ruleColumns" :rows="accountingRules">
+                <template #cell-template="{ row }">
+                    <span>{{ row.template?.template_name }} ({{ row.template?.template_code }})</span>
+                </template>
+                <template #cell-status="{ row }">
+                    <StatusBadge :status="row.is_active ? 'ACTIVE' : 'INACTIVE'" size="sm" variant="soft" />
                 </template>
             </DataTable>
         </div>
@@ -485,10 +824,115 @@ const getStatusClass = (status) => {
                         <span class="text-sm text-ink-primary">Active</span>
                     </label>
                 </div>
-
+ 
                 <div class="flex justify-end gap-md pt-md border-t border-border-soft">
                     <BaseButton type="button" variant="secondary" @click="showMethodModal = false">Cancel</BaseButton>
                     <BaseButton type="submit" :loading="methodForm.processing">Save Method</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Fiscal Period Create Modal -->
+        <BaseModal :show="showPeriodModal" @close="showPeriodModal = false" title="New Fiscal Period">
+            <form @submit.prevent="submitPeriod" class="space-y-md">
+                <FormInput label="Nama Periode" v-model="periodForm.period_name" :error="periodForm.errors.period_name" required placeholder="Agustus 2024" />
+                <div class="grid grid-cols-2 gap-md">
+                    <FormInput type="date" label="Tanggal Mulai" v-model="periodForm.start_date" :error="periodForm.errors.start_date" required />
+                    <FormInput type="date" label="Tanggal Selesai" v-model="periodForm.end_date" :error="periodForm.errors.end_date" required />
+                </div>
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showPeriodModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="periodForm.processing">Simpan Periode</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Journal Template Create Modal -->
+        <BaseModal :show="showTemplateModal" @close="showTemplateModal = false" title="New Journal Template" class="max-w-4xl">
+            <form @submit.prevent="submitTemplate" class="space-y-md">
+                <div class="grid grid-cols-3 gap-md">
+                    <FormInput label="Kode Template" v-model="templateForm.template_code" :error="templateForm.errors.template_code" required placeholder="TMPL-SALE" />
+                    <FormInput label="Nama Template" v-model="templateForm.template_name" :error="templateForm.errors.template_name" required placeholder="Template Penjualan" />
+                    <FormSelect label="Tipe Event" v-model="templateForm.event_type" :error="templateForm.errors.event_type" required>
+                        <option value="SALE">SALE</option>
+                        <option value="PURCHASE">PURCHASE</option>
+                        <option value="ADJUSTMENT">ADJUSTMENT</option>
+                    </FormSelect>
+                </div>
+                <FormInput label="Keterangan" v-model="templateForm.description" :error="templateForm.errors.description" placeholder="Catatan kegunaan template..." />
+
+                <div class="space-y-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-ink-primary">Baris Aturan Jurnal</span>
+                        <BaseButton type="button" variant="secondary" size="sm" @click="addTemplateLine">➕ Add Row</BaseButton>
+                    </div>
+                    <table class="w-full text-sm text-left border border-border-soft rounded-lg overflow-hidden">
+                        <thead class="bg-surface-subtle text-xs uppercase text-ink-secondary">
+                            <tr>
+                                <th class="p-sm">Akun COA</th>
+                                <th class="p-sm w-36">Posisi</th>
+                                <th class="p-sm w-36">Rumus Nilai</th>
+                                <th class="p-sm">Memo</th>
+                                <th class="p-sm w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(line, idx) in templateForm.lines" :key="idx">
+                                <td class="p-sm">
+                                    <FormSelect v-model="line.account_id" required>
+                                        <option value="">Pilih Akun</option>
+                                        <option v-for="c in chartOfAccounts" :key="c.id" :value="c.id">{{ c.account_name }} ({{ c.account_code }})</option>
+                                    </FormSelect>
+                                </td>
+                                <td class="p-sm">
+                                    <FormSelect v-model="line.direction" required>
+                                        <option value="DEBIT">DEBIT</option>
+                                        <option value="CREDIT">CREDIT</option>
+                                    </FormSelect>
+                                </td>
+                                <td class="p-sm">
+                                    <FormSelect v-model="line.formula" required>
+                                        <option value="grand_total">Grand Total</option>
+                                        <option value="subtotal">Subtotal</option>
+                                        <option value="tax_amount">Total Pajak</option>
+                                    </FormSelect>
+                                </td>
+                                <td class="p-sm">
+                                    <FormInput v-model="line.description" placeholder="Memo..." />
+                                </td>
+                                <td class="p-sm text-center">
+                                    <button type="button" @click="removeTemplateLine(idx)" class="text-semantic-danger">✕</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showTemplateModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="templateForm.processing">Simpan Template</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Accounting Rule Create Modal -->
+        <BaseModal :show="showRuleModal" @close="showRuleModal = false" title="New Accounting Rule">
+            <form @submit.prevent="submitRule" class="space-y-md">
+                <FormInput label="Nama Aturan" v-model="ruleForm.rule_name" :error="ruleForm.errors.rule_name" required placeholder="Auto Journal Penjualan POS" />
+                <div class="grid grid-cols-2 gap-md">
+                    <FormSelect label="Tipe Event" v-model="ruleForm.event_type" :error="ruleForm.errors.event_type" required>
+                        <option value="SALE">SALE</option>
+                        <option value="PURCHASE">PURCHASE</option>
+                        <option value="ADJUSTMENT">ADJUSTMENT</option>
+                    </FormSelect>
+                    <FormSelect label="Pilih Template Jurnal" v-model="ruleForm.journal_template_id" :error="ruleForm.errors.journal_template_id" required>
+                        <option value="">-- Pilih Template --</option>
+                        <option v-for="t in journalTemplates" :key="t.id" :value="t.id">{{ t.template_name }} ({{ t.template_code }})</option>
+                    </FormSelect>
+                </div>
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showRuleModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="ruleForm.processing">Simpan Aturan</BaseButton>
                 </div>
             </form>
         </BaseModal>
