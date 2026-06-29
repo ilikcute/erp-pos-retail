@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Promotion\PromotionService;
 use App\Repositories\Contracts\Promotion\PromotionRepositoryInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PromotionController extends Controller
 {
@@ -16,6 +17,8 @@ class PromotionController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizePromotionView();
+
         $promotions = $this->promoRepo->getAll($request->only(['status', 'valid_date']));
 
         return response()->json([
@@ -26,6 +29,8 @@ class PromotionController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePromotionManage();
+
         $validated = $request->validate([
             'promotion_code' => 'required|string|unique:promotions,promotion_code',
             'promotion_name' => 'required|string|max:255',
@@ -63,6 +68,8 @@ class PromotionController extends Controller
 
     public function show(int $id)
     {
+        $this->authorizePromotionView();
+
         $promotion = $this->promoRepo->findById($id);
 
         if (!$promotion) {
@@ -80,6 +87,8 @@ class PromotionController extends Controller
 
     public function activate(int $id)
     {
+        $this->authorizePromotionManage();
+
         $promotion = $this->promoService->activate($id);
 
         return response()->json([
@@ -91,6 +100,8 @@ class PromotionController extends Controller
 
     public function deactivate(int $id)
     {
+        $this->authorizePromotionManage();
+
         $promotion = $this->promoService->deactivate($id);
 
         return response()->json([
@@ -102,6 +113,7 @@ class PromotionController extends Controller
 
     public function simulate(Request $request)
     {
+        // Kasir diperbolehkan melakukan simulasi transaksi di kasir
         $validated = $request->validate([
             'customer_id' => 'nullable|integer|exists:customers,id',
             'items' => 'required|array|min:1',
@@ -119,5 +131,21 @@ class PromotionController extends Controller
             'success' => true,
             'data' => $result,
         ]);
+    }
+
+    private function authorizePromotionView(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor', 'kasir'])) {
+            abort(403, 'Unauthorized');
+        }
+    }
+
+    private function authorizePromotionManage(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor'])) {
+            abort(403, 'Unauthorized');
+        }
     }
 }

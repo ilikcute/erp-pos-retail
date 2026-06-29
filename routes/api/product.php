@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\Product\ProductImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('product')->group(function () {
-
     // Brands
     Route::apiResource('brands', ProductBrandController::class);
 

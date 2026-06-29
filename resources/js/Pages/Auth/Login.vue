@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { ref, onMounted } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
@@ -20,6 +21,12 @@ const form = useForm({
     email: '',
     password: '',
     remember: false,
+});
+
+const emailInput = ref(null);
+
+onMounted(() => {
+    emailInput.value?.focus?.();
 });
 
 const submit = () => {
@@ -51,9 +58,9 @@ const submit = () => {
                     class="mt-1 block w-full"
                     v-model="form.email"
                     required
-                    autofocus
                     autocomplete="username"
                     placeholder="nama@perusahaan.com"
+                    ref="emailInput"
                 />
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>

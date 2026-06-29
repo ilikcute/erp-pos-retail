@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head } from '@inertiajs/vue3';
+import { formatCurrency, formatDate } from '@/Utils/formatters';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
 
 const props = defineProps({
     promotions: { type: Array, default: () => [] },
@@ -22,31 +24,7 @@ const filteredPromotions = computed(() => {
     });
 });
 
-const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
-};
-
-const getStatusClass = (status) => {
-    const classes = {
-        DRAFT: 'bg-surface-subtle text-ink-muted border border-border-soft',
-        ACTIVE: 'bg-semantic-success-soft text-semantic-success',
-        EXPIRED: 'bg-semantic-danger-soft text-semantic-danger',
-    };
-    return classes[status] || 'bg-surface-subtle text-ink-muted';
-};
+// Formatters imported from @/Utils/formatters
 
 const simulatePromotion = (promoId) => {
     // Return mock simulation calculation
@@ -140,12 +118,7 @@ const simulatePromotion = (promoId) => {
             >
                 <div>
                     <div class="flex justify-between items-start mb-md">
-                        <span
-                            :class="getStatusClass(promo.status)"
-                            class="px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                        >
-                            {{ promo.status }}
-                        </span>
+                        <StatusBadge :status="promo.status" variant="soft" size="sm" />
                         
                         <div class="text-xs text-ink-secondary">
                             Valid: {{ formatDate(promo.start_date) }} - {{ formatDate(promo.end_date) }}

@@ -3,7 +3,9 @@ import { ref } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { formatCurrency, formatDate } from '@/Utils/formatters';
 
 const props = defineProps({
     purchaseOrders: Array,
@@ -15,36 +17,15 @@ const purchaseOrders = ref(props.purchaseOrders || []);
 
 const poColumns = [
     { key: 'no', label: 'No' },
-    { key: 'purchase_order_no', label: 'PO No' },
+    { key: 'po_number', label: 'PO No' },
     { key: 'supplier', label: 'Supplier' },
-    { key: 'grand_total', label: 'Total', align: 'right' },
+    { key: 'total_amount', label: 'Total', align: 'right' },
     { key: 'status', label: 'Status', align: 'center' },
-    { key: 'po_date', label: 'Date' },
+    { key: 'order_date', label: 'Date' },
     { key: 'actions', label: 'Actions', align: 'center' },
 ];
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID');
-};
-
-const getStatusClass = (status) => {
-    const classes = {
-        DRAFT: 'bg-surface-subtle text-ink-muted border border-border-soft',
-        PENDING: 'bg-semantic-warning-soft text-semantic-warning',
-        APPROVED: 'bg-brand-soft text-brand',
-        POSTED: 'bg-semantic-success-soft text-semantic-success',
-        CANCELLED: 'bg-semantic-danger-soft text-semantic-danger',
-    };
-    return classes[status] || 'bg-surface-subtle text-ink-muted';
-};
+// Formatters imported from @/Utils/formatters
 </script>
 
 <template>
@@ -107,24 +88,19 @@ const getStatusClass = (status) => {
         <!-- Purchase Orders -->
         <div v-if="activeTab === 'orders'">
             <DataTable :columns="poColumns" :rows="purchaseOrders">
-                <template #cell-purchase_order_no="{ value }">
+                <template #cell-po_number="{ value }">
                     <span class="font-mono text-ink-primary font-semibold">{{ value }}</span>
                 </template>
                 <template #cell-supplier="{ row }">
                     <span>{{ row.supplier?.supplier_name || '-' }}</span>
                 </template>
-                <template #cell-grand_total="{ value }">
+                <template #cell-total_amount="{ value }">
                     <span class="font-mono text-ink-primary font-medium">{{ formatCurrency(value) }}</span>
                 </template>
                 <template #cell-status="{ value }">
-                    <span
-                        :class="getStatusClass(value)"
-                        class="px-2 py-1 rounded-full text-xs font-semibold border border-transparent"
-                    >
-                        {{ value }}
-                    </span>
+                    <StatusBadge :status="value" variant="soft" size="sm" />
                 </template>
-                <template #cell-po_date="{ value }">
+                <template #cell-order_date="{ value }">
                     <span>{{ formatDate(value) }}</span>
                 </template>
                 <template #cell-actions="{ row }">

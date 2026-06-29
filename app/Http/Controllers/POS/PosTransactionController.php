@@ -11,6 +11,8 @@ use App\Models\MasterData\Customer;
 use App\Models\POS\Cart;
 use App\Models\POS\CartVoidLog;
 use App\Models\POS\HeldCart;
+use App\Services\POS\CartService;
+use App\Models\POS\SalesTransaction;
 use App\Models\Product\Product;
 use App\Models\Product\ProductCategory as Category;
 use App\Models\Product\ProductVariant;
@@ -19,7 +21,6 @@ use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
 use App\Services\Accounting\JournalService;
 use App\Services\Inventory\StockMovementService;
 use App\Services\Loyalty\LoyaltyService;
-use App\Services\POS\CartService;
 use App\Services\Pricing\PricingService;
 use App\Services\Promotion\PromotionService;
 use Illuminate\Http\Request;
@@ -395,6 +396,7 @@ class PosTransactionController extends Controller
         $user = Auth::user();
         $locationId = $request->location_id ?? $this->getCurrentLocationId($user);
         $transactionDate = now();
+        
 
         // ═══════════════════════════════════════════════════════════
         // ✅ VALIDASI 1: Cek apakah hari sudah ditutup
@@ -577,6 +579,8 @@ class PosTransactionController extends Controller
 
                 return $transaction;
             });
+
+            event(new \App\Events\TransactionCreated($transaction));
 
             return redirect()
                 ->route('pos.sales.show', $transaction->id)

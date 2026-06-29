@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
+import { formatDate } from '@/Utils/formatters';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
 
 const props = defineProps({
     priceLists: { type: Array, default: () => [] },
@@ -32,25 +34,7 @@ const requestColumns = [
     { key: 'actions', label: 'Actions', align: 'right' },
 ];
 
-const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
-
-const getStatusClass = (status) => {
-    const classes = {
-        DRAFT: 'bg-surface-subtle text-ink-muted border border-border-soft',
-        PENDING: 'bg-semantic-warning-soft text-semantic-warning',
-        APPROVED: 'bg-brand-soft text-brand',
-        POSTED: 'bg-semantic-success-soft text-semantic-success',
-        REJECTED: 'bg-semantic-danger-soft text-semantic-danger',
-    };
-    return classes[status] || 'bg-surface-subtle text-ink-muted';
-};
+// Formatters imported from @/Utils/formatters
 </script>
 
 <template>
@@ -123,12 +107,7 @@ const getStatusClass = (status) => {
                     <span class="text-ink-secondary text-sm font-medium">{{ row.items?.length || 0 }} items</span>
                 </template>
                 <template #cell-status="{ row }">
-                    <span
-                        :class="row.is_active ? 'bg-semantic-success-soft text-semantic-success' : 'bg-surface-subtle text-ink-muted'"
-                        class="px-2 py-0.5 rounded text-xs font-semibold"
-                    >
-                        {{ row.is_active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <StatusBadge :status="row.is_active ? 'ACTIVE' : 'INACTIVE'" variant="soft" size="sm" />
                 </template>
                 <template #cell-actions>
                     <button class="text-brand hover:underline font-medium text-sm">Edit</button>
@@ -149,12 +128,7 @@ const getStatusClass = (status) => {
                     <span class="text-ink-secondary text-sm">{{ formatDate(value) }}</span>
                 </template>
                 <template #cell-status="{ value }">
-                    <span
-                        :class="getStatusClass(value)"
-                        class="px-2.5 py-0.5 rounded-full text-xs font-semibold border border-transparent"
-                    >
-                        {{ value }}
-                    </span>
+                    <StatusBadge :status="value" variant="soft" size="sm" />
                 </template>
                 <template #cell-actions="{ row }">
                     <div class="flex gap-sm justify-end">

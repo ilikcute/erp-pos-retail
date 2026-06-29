@@ -71,4 +71,36 @@ class UserController extends Controller
                 ->withErrors(['delete' => $e->getMessage()]);
         }
     }
+
+    // Tambahkan method ini di UserController
+
+    public function assignRole(Request $request, int $userId)
+    {
+        $validated = $request->validate([
+            'roles' => 'required|array',
+            'roles.*' => 'string|exists:roles,name',
+        ]);
+
+        $user = User::findOrFail($userId);
+        $user->syncRoles($validated['roles']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Roles berhasil diassign ke user',
+            'data' => $user->load('roles'),
+        ]);
+    }
+
+    public function removeRole(int $userId, int $roleId)
+    {
+        $user = User::findOrFail($userId);
+        $role = Role::findOrFail($roleId);
+
+        $user->removeRole($role);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Role berhasil dicabut dari user',
+        ]);
+    }
 }

@@ -21,6 +21,9 @@ class EloquentSalesTransactionRepository implements SalesTransactionRepositoryIn
             ->when($filters['customer_id'] ?? null, fn($q, $customerId) => $q->where('customer_id', $customerId))
             ->when($filters['date_from'] ?? null, fn($q, $date) => $q->where('transaction_date', '>=', $date))
             ->when($filters['date_to'] ?? null, fn($q, $date) => $q->where('transaction_date', '<=', $date))
+            ->when($filters['location_id'] ?? null, function ($q, $locationId) {
+                $q->whereHas('session', fn($q) => $q->where('location_id', $locationId));
+            })
             ->latest()
             ->paginate($perPage);
     }

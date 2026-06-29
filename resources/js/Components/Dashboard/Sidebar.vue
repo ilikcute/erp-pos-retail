@@ -33,6 +33,8 @@ const navigationGroups = [
             { name: 'POS', href: '/pos', icon: 'shopping-cart', permission: 'pos.session.view' },
             { name: 'Orders', href: '/pos/sales', icon: 'list', permission: 'pos.transaction.view' },
             { name: 'Shifts', href: '/pos/shifts', icon: 'clock', permission: 'pos.shift.view' },
+            { name: 'Tutup Harian', href: '/pos/day-closing', icon: 'lock', permission: 'pos.day-closing.manage' },
+            { name: 'Tutup Bulanan', href: '/pos/month-closing', icon: 'shield', permission: 'pos.month-closing.manage' },
         ],
     },
     {

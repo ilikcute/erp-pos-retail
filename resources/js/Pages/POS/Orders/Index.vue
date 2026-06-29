@@ -4,7 +4,9 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import Pagination from "@/Components/Navigation/Pagination.vue";
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { formatCurrency, formatDate } from '@/Utils/formatters';
 
 const props = defineProps({
     transactions: Object,
@@ -22,26 +24,7 @@ const columns = [
     { key: 'actions', label: 'Actions', align: 'center' },
 ];
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID');
-};
-
-const getStatusClass = (status) => {
-    const classes = {
-        DRAFT: 'bg-surface-subtle text-ink-muted border border-border-soft',
-        POSTED: 'bg-semantic-success-soft text-semantic-success',
-        VOID: 'bg-semantic-danger-soft text-semantic-danger',
-    };
-    return classes[status] || 'bg-surface-subtle text-ink-muted';
-};
+// Formatters imported from @/Utils/formatters
 </script>
 
 <template>
@@ -85,12 +68,7 @@ const getStatusClass = (status) => {
                     <span class="font-mono text-ink-primary font-semibold">{{ formatCurrency(value) }}</span>
                 </template>
                 <template #cell-status="{ value }">
-                    <span
-                        :class="getStatusClass(value)"
-                        class="px-2 py-1 rounded-full text-xs font-semibold border border-transparent"
-                    >
-                        {{ value }}
-                    </span>
+                    <StatusBadge :status="value" variant="soft" size="sm" />
                 </template>
                 <template #cell-transaction_date="{ value }">
                     <span>{{ formatDate(value) }}</span>

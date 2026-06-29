@@ -4,37 +4,63 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import KPICard from '@/Components/Dashboard/KPICard.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
-import { Head } from '@inertiajs/vue3';
+import BaseModal from '@/Components/Modal/BaseModal.vue';
+import FormInput from '@/Components/Form/FormInput.vue';
+import FormSelect from '@/Components/Form/FormSelect.vue';
+import FormTextarea from '@/Components/Form/FormTextarea.vue';
+import StatusBadge from '@/Components/DataDisplay/StatusBadge.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { formatCurrency, formatDate } from '@/Utils/formatters';
 
 const props = defineProps({
-    inventoryBalance: Array,
-    movements: Array,
+    inventoryBalance: { type: Array, default: () => [] },
+    movements: { type: Array, default: () => [] },
+    locations: { type: Array, default: () => [] },
+    variants: { type: Array, default: () => [] },
+    planograms: { type: Array, default: () => [] },
+    transfers: { type: Array, default: () => [] },
     activeTab: { type: String, default: 'balance' },
 });
 
 const activeTab = ref(props.activeTab || 'balance');
 
-// --- Data contoh (fallback bila props kosong) ---
-const MOCK_BALANCE = [
-    { no: 1, product: { name: 'Kopi Susu Gula Aren' }, location: { name: 'Gudang A' }, quantity_on_hand: 5,  reorder_level: 20, balance_value: 110000 },
-    { no: 2, product: { name: 'Nasi Goreng Spesial' }, location: { name: 'Gudang A' }, quantity_on_hand: 32, reorder_level: 10, balance_value: 1120000 },
-    { no: 3, product: { name: 'Air Mineral 600ml' },   location: { name: 'Gudang A' }, quantity_on_hand: 8,  reorder_level: 50, balance_value: 48000 },
-    { no: 4, product: { name: 'Donat Gula' },          location: { name: 'Gudang B' }, quantity_on_hand: 3,  reorder_level: 15, balance_value: 36000 },
-    { no: 5, product: { name: 'Burger Daging' },       location: { name: 'Gudang B' }, quantity_on_hand: 24, reorder_level: 8,  balance_value: 912000 },
-];
-const MOCK_MOVEMENTS = [
-    { no: 1, product: { name: 'Kopi Susu Gula Aren' }, document_no: 'GR-2001', reference_date: '2026-06-24', movement_type: 'IN',  quantity: 50 },
-    { no: 2, product: { name: 'Donat Gula' },          document_no: 'SO-1003', reference_date: '2026-06-24', movement_type: 'OUT', quantity: 12 },
-    { no: 3, product: { name: 'Burger Daging' },       document_no: 'GR-2002', reference_date: '2026-06-25', movement_type: 'IN',  quantity: 30 },
-    { no: 4, product: { name: 'Air Mineral 600ml' },   document_no: 'SO-1004', reference_date: '2026-06-25', movement_type: 'OUT', quantity: 18 },
-];
+// Planogram Modal State
+const showPlanogramModal = ref(false);
+const planogramForm = ref({
+    product_variant_id: '',
+    location_id: '',
+    position_code: '',
+    notes: '',
+    is_active: true,
+});
 
-// Ringkasan (fungsi biasa agar tidak perlu import computed)
-const sumValue = () => inventoryBalance.value.reduce((s, r) => s + (r.balance_value || 0), 0);
-const lowStockCount = () => inventoryBalance.value.filter(r => r.quantity_on_hand <= r.reorder_level).length;
-const totalSku = () => inventoryBalance.value.length;
-const inventoryBalance = ref(props.inventoryBalance && props.inventoryBalance.length ? props.inventoryBalance : MOCK_BALANCE);
-const movements = ref(props.movements && props.movements.length ? props.movements : MOCK_MOVEMENTS);
+function openCreatePlanogram() {
+    planogramForm.value = {
+        product_variant_id: '',
+        location_id: '',
+        position_code: '',
+        notes: '',
+        is_active: true,
+    };
+    showPlanogramModal.value = true;
+}
+
+function submitPlanogram() {
+    router.post('/inventory/planograms', planogramForm.value, {
+        onSuccess: () => showPlanogramModal.value = false
+    });
+}
+
+function deletePlanogram(row) {
+    if (confirm(`Hapus planogram "${row.position_code}"?`)) {
+        router.delete(`/inventory/planograms/${row.id}`);
+    }
+}
+
+// KPI aggregations
+const sumValue = () => props.inventoryBalance.reduce((s, r) => s + parseFloat(r.balance_value || 0), 0);
+const lowStockCount = () => props.inventoryBalance.filter(r => r.quantity_on_hand <= r.reorder_level).length;
+const totalSku = () => props.inventoryBalance.length;
 
 const balanceColumns = [
     { key: 'no', label: 'No' },
@@ -55,17 +81,25 @@ const movementColumns = [
     { key: 'quantity', label: 'Quantity', align: 'right' },
 ];
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
-};
+const planogramColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'position_code', label: 'Position Code' },
+    { key: 'location', label: 'Location' },
+    { key: 'product', label: 'Product / Variant' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'actions', label: 'Actions', align: 'center' },
+];
 
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID');
-};
+const transferColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'transfer_no', label: 'Transfer No' },
+    { key: 'source', label: 'Source Location' },
+    { key: 'destination', label: 'Destination Location' },
+    { key: 'transfer_date', label: 'Date' },
+    { key: 'status', label: 'Status', align: 'center' },
+];
+
+// Formatters imported from @/Utils/formatters
 </script>
 
 <template>
@@ -75,11 +109,10 @@ const formatDate = (date) => {
         <div class="rounded-card bg-mint-gradient text-white p-xl mb-xl shadow-mint-glow flex items-center justify-between flex-wrap gap-base">
             <div>
                 <h1 class="text-page-title font-extrabold">Inventory 📦</h1>
-                <p class="text-white/85 mt-xs text-base">Kelola stok barang, mutasi, dan transfer antar lokasi.</p>
+                <p class="text-white/85 mt-xs text-base">Kelola stok barang, mutasi, transfer antar lokasi, dan planogram rak.</p>
             </div>
             <div class="flex gap-sm">
-                <BaseButton v-if="activeTab === 'balance'" variant="soft" size="sm">➕ Adjustment</BaseButton>
-                <BaseButton v-if="activeTab === 'transfers'" variant="soft" size="sm">🔁 New Transfer</BaseButton>
+                <BaseButton v-if="activeTab === 'planograms'" @click="openCreatePlanogram" variant="soft" size="sm">➕ New Planogram</BaseButton>
             </div>
         </div>
 
@@ -94,13 +127,14 @@ const formatDate = (date) => {
         <div class="flex gap-sm mb-xl overflow-x-auto scroll-soft pb-xs">
             <button @click="activeTab = 'balance'" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='balance' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📊 Stock Balance</button>
             <button @click="activeTab = 'movements'" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='movements' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🔄 Movements</button>
-            <button @click="activeTab = 'transfers'" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='transfers' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🚚 Transfers</button>
+            <button @click="activeTab = 'planograms'" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='planograms' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📐 Planograms</button>
+            <button @click="activeTab = 'transfers'" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='transfers' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📦 Transfers</button>
         </div>
 
         <!-- Stock Balance Tab -->
         <div v-if="activeTab === 'balance'" class="card-friendly p-lg">
             <DataTable :columns="balanceColumns" :rows="inventoryBalance">
-                <template #cell-product="{ row }"><span class="font-semibold text-ink-primary">{{ row.product?.name || '-' }}</span></template>
+                <template #cell-product="{ row }"><span class="font-semibold text-ink-primary">{{ row.product_variant?.product?.product_name || '-' }}</span></template>
                 <template #cell-location="{ row }"><span class="chip bg-accent-sky-soft text-accent-sky px-md py-0.5 text-xs">{{ row.location?.name || '-' }}</span></template>
                 <template #cell-quantity_on_hand="{ value }"><span class="font-mono font-semibold">{{ value }}</span></template>
                 <template #cell-reorder_level="{ value }"><span class="font-mono text-ink-muted">{{ value }}</span></template>
@@ -115,7 +149,7 @@ const formatDate = (date) => {
         <!-- Movements Tab -->
         <div v-if="activeTab === 'movements'" class="card-friendly p-lg">
             <DataTable :columns="movementColumns" :rows="movements">
-                <template #cell-product="{ row }"><span class="font-semibold text-ink-primary">{{ row.product?.name || '-' }}</span></template>
+                <template #cell-product="{ row }"><span class="font-semibold text-ink-primary">{{ row.product_variant?.product?.product_name || '-' }}</span></template>
                 <template #cell-document_no="{ value }"><span class="font-mono text-ink-muted">{{ value }}</span></template>
                 <template #cell-reference_date="{ value }"><span>{{ formatDate(value) }}</span></template>
                 <template #cell-movement_type="{ value }">
@@ -127,11 +161,75 @@ const formatDate = (date) => {
             </DataTable>
         </div>
 
-        <!-- Transfers Tab -->
-        <div v-if="activeTab === 'transfers'" class="card-friendly p-2xl text-center">
-            <p class="text-5xl mb-base">🚚</p>
-            <p class="text-card-title font-semibold text-ink-primary">Belum ada transfer stok</p>
-            <p class="text-sm text-ink-muted mt-xs">Buat transfer baru untuk memindahkan stok antar lokasi.</p>
+        <!-- Planograms Tab -->
+        <div v-if="activeTab === 'planograms'" class="card-friendly p-lg">
+            <DataTable :columns="planogramColumns" :rows="planograms">
+                <template #cell-position_code="{ value }">
+                    <span class="font-mono font-bold text-brand">{{ value }}</span>
+                </template>
+                <template #cell-location="{ row }">
+                    <span>{{ row.location?.name || '-' }}</span>
+                </template>
+                <template #cell-product="{ row }">
+                    <span class="font-semibold text-ink-primary">{{ row.variant?.product?.product_name }} - {{ row.variant?.variant_name || 'Default' }}</span>
+                </template>
+                <template #cell-notes="{ value }">
+                    <span class="text-xs text-ink-secondary">{{ value || '-' }}</span>
+                </template>
+                <template #cell-actions="{ row }">
+                    <button @click="deletePlanogram(row)" class="text-semantic-danger hover:underline text-sm font-semibold">Delete</button>
+                </template>
+            </DataTable>
+            <div v-if="planograms.length === 0" class="text-center text-ink-secondary py-xl">
+                Belum ada planogram rak terdaftar.
+            </div>
         </div>
+
+        <!-- Stock Transfers Tab -->
+        <div v-if="activeTab === 'transfers'" class="card-friendly p-lg">
+            <DataTable :columns="transferColumns" :rows="transfers">
+                <template #cell-transfer_no="{ value }">
+                    <span class="font-mono font-bold text-ink-primary">{{ value }}</span>
+                </template>
+                <template #cell-source="{ row }">
+                    <span>{{ row.source?.name || '-' }}</span>
+                </template>
+                <template #cell-destination="{ row }">
+                    <span>{{ row.destination?.name || '-' }}</span>
+                </template>
+                <template #cell-transfer_date="{ value }">
+                    <span>{{ formatDate(value) }}</span>
+                </template>
+                <template #cell-status="{ value }">
+                    <StatusBadge :status="value" variant="soft" size="sm" />
+                </template>
+            </DataTable>
+            <div v-if="transfers.length === 0" class="text-center text-ink-secondary py-xl">
+                Belum ada transaksi transfer stok.
+            </div>
+        </div>
+
+        <!-- New Planogram Modal -->
+        <BaseModal :show="showPlanogramModal" @close="showPlanogramModal = false" title="New Shelf Planogram">
+            <form @submit.prevent="submitPlanogram" class="space-y-md">
+                <div class="grid grid-cols-2 gap-md">
+                    <FormSelect label="Warehouse Location" v-model="planogramForm.location_id" required>
+                        <option value="">Pilih Gudang</option>
+                        <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                    </FormSelect>
+                    <FormInput label="Position Code (Rack/Shelf)" v-model="planogramForm.position_code" required placeholder="A-01-C" />
+                </div>
+                <FormSelect label="Product Variant" v-model="planogramForm.product_variant_id" required>
+                    <option value="">Pilih Produk/Varian</option>
+                    <option v-for="v in variants" :key="v.id" :value="v.id">{{ v.product?.product_name }} - {{ v.variant_name || 'Default' }} ({{ v.sku }})</option>
+                </FormSelect>
+                <FormTextarea label="Notes" v-model="planogramForm.notes" placeholder="Catatan rak..." rows="2" />
+                
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showPlanogramModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" variant="primary">Save Planogram</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
     </DashboardLayout>
 </template>

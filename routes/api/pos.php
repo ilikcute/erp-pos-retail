@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\POS\SalesTransactionController;
 use App\Http\Controllers\Api\POS\SalesHoldController;
 
 Route::prefix('pos')->group(function () {
-
     // ── Shifts ──────────────────────────────────────────────
     Route::apiResource('shifts', ShiftController::class);
     Route::get('shifts-active', [ShiftController::class, 'active']);

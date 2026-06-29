@@ -2,8 +2,8 @@
 
 namespace App\Actions\Reporting;
 
-use App\Models\Accounting\GeneralLedger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 
 class GenerateFinancialReportAction
 {
@@ -50,21 +50,23 @@ class GenerateFinancialReportAction
         ];
     }
 
-    private function getAccountsByType(string $type, array $filters): \Illuminate\Database\Eloquent\Collection
+    private function getAccountsByType(string $type, array $filters): Collection
     {
         return DB::table('chart_of_accounts')
-            ->join('general_ledgers', 'chart_of_accounts.id', '=', 'general_ledgers.account_id')
+            ->join('journal_entry_lines', 'chart_of_accounts.id', '=', 'journal_entry_lines.account_id')
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_entry_lines.journal_entry_id')
             ->where('chart_of_accounts.account_type', $type)
-            ->whereBetween('general_ledgers.reference_date', [
+            ->where('journal_entries.status', 'POSTED')
+            ->whereBetween('journal_entries.journal_date', [
                 $filters['date_from'] ?? now()->startOfMonth()->toDateString(),
                 $filters['date_to'] ?? now()->toDateString(),
             ])
-            ->groupBy('chart_of_accounts.id')
+            ->groupBy('chart_of_accounts.id', 'chart_of_accounts.account_code', 'chart_of_accounts.account_name')
             ->selectRaw('
                 chart_of_accounts.id,
                 chart_of_accounts.account_code,
                 chart_of_accounts.account_name,
-                SUM(COALESCE(general_ledgers.debit_amount, 0)) - SUM(COALESCE(general_ledgers.credit_amount, 0)) as balance
+                CAST(SUM(COALESCE(journal_entry_lines.debit, 0)) - SUM(COALESCE(journal_entry_lines.credit, 0)) AS DECIMAL(18,2)) as balance
             ')
             ->get();
     }

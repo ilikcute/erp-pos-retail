@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('document_sequences', function (Blueprint $table) {
             $table->id();
+            $table->string('document_code')->nullable()->unique();
+            $table->string('document_name')->nullable();
+            $table->string('prefix')->nullable();
+            $table->string('reset_period')->default('NONE'); // NONE, DAILY, MONTHLY, YEARLY
             $table->unsignedBigInteger('document_type_id');
+            $table->unsignedInteger('current_number')->default(0);
+            $table->date('last_reset_at')->nullable();
             $table->string('period', 20);                   // e.g. 20260621
             $table->unsignedBigInteger('last_sequence')->default(0);
             $table->timestamps();

@@ -84,6 +84,17 @@ class CashierSessionController extends Controller
     {
         $user = Auth::user();
 
+        $session = $this->sessionRepo->findById($id);
+
+        if (!$session) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi tidak ditemukan',
+            ], 404);
+        }
+
+        $this->authorize('close', $session);
+
         try {
             $session = $this->sessionService->closeSession(
                 sessionId: $id,

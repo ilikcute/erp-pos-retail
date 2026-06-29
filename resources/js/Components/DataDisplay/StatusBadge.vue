@@ -45,34 +45,34 @@ const statusConfig = {
 
 const colorClasses = {
     gray: {
-        solid: 'bg-gray-100 text-gray-800',
-        outlined: 'border border-gray-300 text-gray-800',
-        soft: 'bg-gray-50 text-gray-700',
+        solid: 'bg-surface-muted text-ink-primary',
+        outlined: 'border border-border-strong text-ink-secondary',
+        soft: 'bg-surface-subtle text-ink-muted border border-border-soft',
     },
     blue: {
-        solid: 'bg-blue-100 text-blue-800',
-        outlined: 'border border-blue-300 text-blue-800',
-        soft: 'bg-blue-50 text-blue-700',
+        solid: 'bg-brand text-white',
+        outlined: 'border border-brand-border text-brand',
+        soft: 'bg-brand-soft text-brand',
     },
     green: {
-        solid: 'bg-green-100 text-green-800',
-        outlined: 'border border-green-300 text-green-800',
-        soft: 'bg-green-50 text-green-700',
+        solid: 'bg-semantic-success text-white',
+        outlined: 'border border-semantic-success/30 text-semantic-success',
+        soft: 'bg-semantic-success-soft text-semantic-success',
     },
     red: {
-        solid: 'bg-red-100 text-red-800',
-        outlined: 'border border-red-300 text-red-800',
-        soft: 'bg-red-50 text-red-700',
+        solid: 'bg-semantic-danger text-white',
+        outlined: 'border border-semantic-danger/30 text-semantic-danger',
+        soft: 'bg-semantic-danger-soft text-semantic-danger',
     },
     yellow: {
-        solid: 'bg-yellow-100 text-yellow-800',
-        outlined: 'border border-yellow-300 text-yellow-800',
-        soft: 'bg-yellow-50 text-yellow-700',
+        solid: 'bg-semantic-warning text-white',
+        outlined: 'border border-semantic-warning/30 text-semantic-warning',
+        soft: 'bg-semantic-warning-soft text-semantic-warning',
     },
     orange: {
-        solid: 'bg-orange-100 text-orange-800',
-        outlined: 'border border-orange-300 text-orange-800',
-        soft: 'bg-orange-50 text-orange-700',
+        solid: 'bg-accent-coral text-white',
+        outlined: 'border border-accent-coral/30 text-accent-coral',
+        soft: 'bg-accent-coral-soft text-accent-coral',
     },
 };
 

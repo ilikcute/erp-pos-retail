@@ -9,7 +9,8 @@ use App\Models\System\User;
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        //
+        \App\Models\POS\CashierSession::class => \App\Policies\CashierSessionPolicy::class,
+        \App\Models\POS\SalesTransaction::class => \App\Policies\SalesTransactionPolicy::class,
     ];
 
     public function boot(): void

@@ -49,6 +49,30 @@ class MonthClosingController extends Controller
     {
         $user = Auth::user();
 
+        // Jika kasir biasa (tidak memiliki role admin/supervisor/manager/owner), wajib memvalidasi kredensial supervisor
+        if (!$user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$user->hasPermission('pos.month-closing.manage')) {
+            $supervisor = \App\Models\System\User::where('email', $request->supervisor_email)->first();
+
+            if (!$supervisor || !\Illuminate\Support\Facades\Hash::check($request->supervisor_password, $supervisor->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kredensial supervisor salah atau tidak ditemukan.',
+                ], 422);
+            }
+
+            if (!$supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$supervisor->hasPermission('pos.month-closing.manage')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User supervisor yang dimasukkan tidak memiliki wewenang tutup buku.',
+                ], 403);
+            }
+
+            // Gabungkan catatan jika supervisor mengoverride
+            $request->merge([
+                'notes' => trim(($request->notes ?? '') . "\nDiotorisasi oleh supervisor: " . $supervisor->name)
+            ]);
+        }
+
         try {
             $closing = $this->monthClosingService->closeMonth(
                 year: $request->closing_year,

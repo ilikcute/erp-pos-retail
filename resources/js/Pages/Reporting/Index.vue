@@ -5,6 +5,7 @@ import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
 import KPICard from '@/Components/Dashboard/KPICard.vue';
 import { Head } from '@inertiajs/vue3';
+import { formatCurrency, formatDate } from '@/Utils/formatters';
 import axios from 'axios';
 
 const activeTab = ref('sales');
@@ -56,17 +57,7 @@ const loadingSales = ref(false);
 const loadingInventory = ref(false);
 const loadingFinancial = ref(false);
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value || 0);
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID');
-};
+// Formatters imported from @/Utils/formatters
 
 // ── API Fetchers ───────────────────────────────────────────────
 

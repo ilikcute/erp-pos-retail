@@ -21,6 +21,8 @@ class ProductCategoryController extends Controller
 
     public function index(): Response
     {
+        $this->authorize('product.category.view');
+
         $categories = $this->categoryRepository->getTree();
         $flatCategories = $this->categoryRepository->getFlatList();
 
@@ -49,10 +51,29 @@ class ProductCategoryController extends Controller
             ->with('success', 'Category updated successfully.');
     }
 
-    public function destroy(int $id, DeleteProductCategoryAction $action): RedirectResponse
+    public function destroy(\Illuminate\Http\Request $request, int $id, DeleteProductCategoryAction $action): RedirectResponse
     {
+        $user = auth()->user();
         $category = $this->categoryRepository->findById($id);
         if (!$category) abort(404);
+
+        // Jika bukan level tinggi atau tidak memiliki permission manage, wajib memvalidasi kredensial supervisor
+        if (!$user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$user->hasPermission('product.category.manage')) {
+            $request->validate([
+                'supervisor_email' => 'required|email|exists:users,email',
+                'supervisor_password' => 'required|string',
+            ]);
+
+            $supervisor = \App\Models\System\User::where('email', $request->supervisor_email)->first();
+
+            if (!$supervisor || !\Illuminate\Support\Facades\Hash::check($request->supervisor_password, $supervisor->password)) {
+                return redirect()->back()->withErrors(['delete' => 'Kredensial supervisor salah atau tidak ditemukan.']);
+            }
+
+            if (!$supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$supervisor->hasPermission('product.category.manage')) {
+                return redirect()->back()->withErrors(['delete' => 'User supervisor yang dimasukkan tidak memiliki wewenang menghapus kategori.']);
+            }
+        }
 
         try {
             $action->execute($category);

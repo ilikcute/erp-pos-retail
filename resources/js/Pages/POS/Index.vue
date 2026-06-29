@@ -22,6 +22,10 @@ import ShiftOpener from "./Components/ShiftOpener.vue";
 import SessionOpener from "./Components/SessionOpener.vue";
 import NumpadModal from "./Components/NumpadModal.vue";
 import PromoBanner from "./Components/PromoBanner.vue";
+import BaseModal from "@/Components/Modal/BaseModal.vue";
+import FormInput from "@/Components/Form/FormInput.vue";
+import FormTextarea from "@/Components/Form/FormTextarea.vue";
+import BaseButton from "@/Components/Base/BaseButton.vue";
 
 // Composables
 import { useBarcodeScanner } from "@/Composables/useBarcodeScanner";
@@ -116,22 +120,43 @@ const handleSessionOpened = (session) => {
     activeSession.value = session;
 };
 
-const handleCloseSession = async () => {
+const showCloseSessionModal = ref(false);
+const isClosingSession = ref(false);
+const closeSessionForm = ref({
+    closing_cash: 0,
+    notes: "",
+});
+
+const handleCloseSession = () => {
     if (!activeSession.value) return;
+    
+    // Set default closing cash to expected cash
+    closeSessionForm.value = {
+        closing_cash: activeSession.value.expected_cash || 0,
+        notes: "",
+    };
+    showCloseSessionModal.value = true;
+};
 
-    if (!confirm("Yakin ingin menutup sesi kasir?")) return;
+const submitCloseSession = async () => {
+    if (closeSessionForm.value.closing_cash < 0) {
+        toast.error("Uang tutup tidak boleh negatif");
+        return;
+    }
 
-    const closingCash = prompt("Masukkan uang tunai di laci kasir:");
-    if (closingCash === null) return;
-
+    isClosingSession.value = true;
     try {
         const { data } = await axios.post(
             route("pos.sessions.close", activeSession.value.id),
-            { closing_cash: Number(closingCash) || 0 },
+            {
+                closing_cash: Number(closeSessionForm.value.closing_cash) || 0,
+                notes: closeSessionForm.value.notes,
+            },
         );
 
         if (data?.success !== false) {
             toast.success("Sesi kasir berhasil ditutup");
+            showCloseSessionModal.value = false;
             activeSession.value = null;
             router.reload();
         } else {
@@ -141,6 +166,8 @@ const handleCloseSession = async () => {
         toast.error(
             error.response?.data?.message || "Gagal menutup sesi kasir",
         );
+    } finally {
+        isClosingSession.value = false;
     }
 };
 
@@ -200,14 +227,6 @@ const {
     gateways: props.paymentGateways,
 });
 
-// Sync payable to usePayment's payableAmount
-watch(payable, (newVal) => {
-    setPayableAmount(newVal);
-}, { immediate: true });
-
-// ═══════════════════════════════════════════════════════════
-// COMPUTED
-// ═══════════════════════════════════════════════════════════
 const cartCount = computed(() =>
     props.carts.reduce((t, i) => t + Number(i.qty), 0),
 );
@@ -230,6 +249,11 @@ const loyaltyDiscount = computed(() =>
 
 const taxTotal = computed(() => Number(summary.value?.tax_total ?? 0));
 const payable = computed(() => Number(summary.value?.grand_total ?? 0));
+
+// Sync payable to usePayment's payableAmount
+watch(payable, (newVal) => {
+    setPayableAmount(newVal);
+}, { immediate: true });
 
 const allProducts = computed(() =>
     props.products.filter((p) => {
@@ -675,4 +699,65 @@ const handleClearCart = () => {
         @confirm="handleNumpadConfirm"
         @close="numpadOpen = false"
     />
+
+    <!-- Close Cashier Session Modal (Tutup Shift) -->
+    <BaseModal :show="showCloseSessionModal" @close="showCloseSessionModal = false" title="🔒 Tutup Sesi Kasir & Shift">
+        <form @submit.prevent="submitCloseSession" class="space-y-md">
+            <div class="bg-surface-main p-lg rounded-xl border border-border-soft space-y-sm text-sm">
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Kode / No Sesi:</span>
+                    <span class="font-bold text-ink-primary font-mono">{{ activeSession?.session_no }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Nama Shift:</span>
+                    <span class="font-bold text-ink-primary">{{ activeSession?.shift_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Waktu Buka Sesi:</span>
+                    <span class="font-medium text-ink-secondary">{{ activeSession?.opened_at }}</span>
+                </div>
+                <div class="border-t border-border-soft my-sm pt-sm flex justify-between">
+                    <span class="text-ink-muted">Modal Awal Kas:</span>
+                    <span class="font-semibold text-ink-primary font-mono">{{ formatPrice(activeSession?.opening_cash || 0) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Total Penjualan:</span>
+                    <span class="font-semibold text-brand font-mono">{{ formatPrice(activeSession?.total_sales || 0) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Jumlah Transaksi:</span>
+                    <span class="font-semibold text-ink-primary font-mono">{{ activeSession?.total_transactions || 0 }}</span>
+                </div>
+                <div class="border-t border-brand/20 bg-brand-soft/20 p-sm rounded-lg flex justify-between items-center mt-xs">
+                    <span class="font-bold text-brand">Estimasi Uang Tunai di Laci:</span>
+                    <span class="font-extrabold text-brand text-lg font-mono">{{ formatPrice(activeSession?.expected_cash || 0) }}</span>
+                </div>
+            </div>
+
+            <FormInput
+                v-model="closeSessionForm.closing_cash"
+                type="number"
+                label="Uang Kasir Aktual (Tunai Aktual)"
+                required
+                min="0"
+                step="0.01"
+                placeholder="E.g. 1250000"
+            />
+
+            <FormTextarea
+                v-model="closeSessionForm.notes"
+                label="Catatan & Selisih Kas"
+                placeholder="Catatan penutupan sesi / alasan selisih uang (opsional)"
+                rows="3"
+            />
+
+            <div class="flex justify-end gap-sm pt-md border-t border-border-soft">
+                <BaseButton type="button" variant="secondary" @click="showCloseSessionModal = false">Batal</BaseButton>
+                <BaseButton type="submit" variant="primary" :disabled="isClosingSession">
+                    <span v-if="isClosingSession">Memproses...</span>
+                    <span v-else>🔒 Tutup Sesi & Shift</span>
+                </BaseButton>
+            </div>
+        </form>
+    </BaseModal>
 </template>

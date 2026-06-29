@@ -5,7 +5,13 @@ namespace App\Http\Controllers\POS;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
 use App\Repositories\Contracts\POS\ShiftRepositoryInterface;
+use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
+use App\Repositories\Contracts\POS\MonthClosingRepositoryInterface;
+use App\Services\POS\ShiftService;
+use App\Http\Requests\POS\StoreShiftRequest;
+use App\Http\Requests\POS\UpdateShiftRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -13,7 +19,10 @@ class SalesTransactionController extends Controller
 {
     public function __construct(
         private readonly SalesTransactionRepositoryInterface $transactionRepository,
-        private readonly ShiftRepositoryInterface $shiftRepository
+        private readonly ShiftRepositoryInterface $shiftRepository,
+        private readonly ShiftService $shiftService,
+        private readonly DayClosingRepositoryInterface $dayClosingRepo,
+        private readonly MonthClosingRepositoryInterface $monthClosingRepo,
     ) {}
 
     public function shifts(Request $request): Response
@@ -28,8 +37,16 @@ class SalesTransactionController extends Controller
 
     public function index(Request $request): Response
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $filters = $request->only(['search', 'status']);
+
+        // Kasir biasa hanya boleh melihat transaksi dari lokasinya sendiri
+        if (!$user->hasAnyRole(['admin', 'supervisor'])) {
+            $filters['location_id'] = session('pos_location_id');
+        }
+
         $transactions = $this->transactionRepository->paginate(
-            $request->only(['search', 'status']),
+            $filters,
             $request->integer('per_page', 15)
         );
 
@@ -46,6 +63,8 @@ class SalesTransactionController extends Controller
         if (! $transaction) {
             abort(404);
         }
+
+        $this->authorize('view', $transaction);
 
         return Inertia::render('POS/Orders/Show', [
             'transaction' => $transaction,
@@ -72,6 +91,54 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $data,
+        ]);
+    }
+
+    public function storeShift(StoreShiftRequest $request): RedirectResponse
+    {
+        $this->shiftService->create($request->validated());
+        return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil dibuat.');
+    }
+
+    public function updateShift(UpdateShiftRequest $request, int $id): RedirectResponse
+    {
+        $shift = $this->shiftService->findById($id);
+        if (!$shift) {
+            abort(404);
+        }
+        $this->shiftService->update($shift, $request->validated());
+        return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil diperbarui.');
+    }
+
+    public function destroyShift(int $id): RedirectResponse
+    {
+        $shift = $this->shiftService->findById($id);
+        if (!$shift) {
+            abort(404);
+        }
+        $this->shiftService->delete($shift);
+        return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil dihapus.');
+    }
+
+    public function dayClosingView(Request $request): Response
+    {
+        $filters = $request->only(['date_from', 'date_to', 'status', 'location_id']);
+        $dayClosings = $this->dayClosingRepo->getAll($filters);
+
+        return Inertia::render('POS/DayClosing', [
+            'dayClosings' => $dayClosings,
+            'filters' => $filters,
+        ]);
+    }
+
+    public function monthClosingView(Request $request): Response
+    {
+        $filters = $request->only(['year', 'status', 'location_id']);
+        $monthClosings = $this->monthClosingRepo->getAll($filters);
+
+        return Inertia::render('POS/MonthClosing', [
+            'monthClosings' => $monthClosings,
+            'filters' => $filters,
         ]);
     }
 }

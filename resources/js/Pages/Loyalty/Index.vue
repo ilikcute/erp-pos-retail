@@ -1,20 +1,100 @@
 <script setup>
 import { ref } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
+import BaseModal from '@/Components/Modal/BaseModal.vue';
+import FormSelect from '@/Components/Form/FormSelect.vue';
+import FormInput from '@/Components/Form/FormInput.vue';
 
 const props = defineProps({
     loyaltyAccounts: { type: Array, default: () => [] },
     loyaltyTransactions: { type: Array, default: () => [] },
     membershipTiers: { type: Array, default: () => [] },
+    rewards: { type: Array, default: () => [] },
+    customers: { type: Array, default: () => [] },
 });
 
 const activeTab = ref('accounts');
-const loyaltyAccounts = ref(props.loyaltyAccounts);
-const loyaltyTransactions = ref(props.loyaltyTransactions);
-const membershipTiers = ref(props.membershipTiers);
+
+// Modals State
+const showAccountModal = ref(false);
+const showAdjustmentModal = ref(false);
+const showRedeemModal = ref(false);
+const showTierModal = ref(false);
+
+// Forms
+const accountForm = useForm({
+    customer_id: '',
+});
+
+const adjustmentForm = useForm({
+    loyalty_account_id: '',
+    points: 0,
+    adjustment_type: 'ADD',
+    remarks: '',
+});
+
+const redeemForm = useForm({
+    loyalty_account_id: '',
+    reward_id: '',
+});
+
+const tierForm = useForm({
+    tier_name: '',
+    minimum_points: 0,
+    point_multiplier: 1.0,
+    discount_percentage: 0,
+});
+
+function openCreateAccount() {
+    accountForm.reset();
+    accountForm.clearErrors();
+    showAccountModal.value = true;
+}
+
+function submitAccount() {
+    accountForm.post('/loyalty/accounts', {
+        onSuccess: () => showAccountModal.value = false
+    });
+}
+
+function openCreateAdjustment() {
+    adjustmentForm.reset();
+    adjustmentForm.clearErrors();
+    showAdjustmentModal.value = true;
+}
+
+function submitAdjustment() {
+    adjustmentForm.post('/loyalty/adjustments', {
+        onSuccess: () => showAdjustmentModal.value = false
+    });
+}
+
+function openCreateRedeem() {
+    redeemForm.reset();
+    redeemForm.clearErrors();
+    showRedeemModal.value = true;
+}
+
+function submitRedeem() {
+    redeemForm.post('/loyalty/redeem', {
+        onSuccess: () => showRedeemModal.value = false
+    });
+}
+
+function openCreateTier() {
+    tierForm.reset();
+    tierForm.clearErrors();
+    showTierModal.value = true;
+}
+
+function submitTier() {
+    tierForm.post('/loyalty/tiers', {
+        onSuccess: () => showTierModal.value = false
+    });
+}
 
 const accountColumns = [
     { key: 'no', label: 'No' },
@@ -39,22 +119,28 @@ const formatDate = (dateString) => {
     <Head title="Loyalty Program Management" />
 
     <DashboardLayout>
-        <div class="mb-6 flex justify-between items-center">
+        <div class="mb-6 flex justify-between items-center flex-wrap gap-md">
             <div>
-                <h1 class="text-2xl font-bold text-ink-primary">
-                    Loyalty Program
-                </h1>
+                <h1 class="text-2xl font-bold text-ink-primary">Loyalty Program 🏆</h1>
                 <p class="text-ink-secondary text-sm">
                     Kelola akun poin pelanggan, riwayat penukaran poin, dan tingkatan keanggotaan (Membership Tiers).
                 </p>
             </div>
 
-            <BaseButton v-if="activeTab === 'accounts'">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                New Account
-            </BaseButton>
+            <div class="flex gap-md">
+                <BaseButton v-if="activeTab === 'accounts'" @click="openCreateAccount">
+                    ➕ New Account
+                </BaseButton>
+                <BaseButton v-if="activeTab === 'accounts'" @click="openCreateAdjustment" variant="secondary">
+                    ⚙️ Point Adjustment
+                </BaseButton>
+                <BaseButton v-if="activeTab === 'accounts'" @click="openCreateRedeem" variant="secondary">
+                    🎁 Redeem Reward
+                </BaseButton>
+                <BaseButton v-if="activeTab === 'tiers'" @click="openCreateTier">
+                    ➕ New Tier
+                </BaseButton>
+            </div>
         </div>
 
         <!-- Navigation Tabs -->
@@ -64,21 +150,21 @@ const formatDate = (dateString) => {
                 :class="activeTab === 'accounts' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
                 class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
             >
-                Loyalty Accounts
+                Loyalty Accounts 👥
             </button>
             <button
                 @click="activeTab = 'transactions'"
                 :class="activeTab === 'transactions' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
                 class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
             >
-                Points Transactions
+                Points Transactions 🔄
             </button>
             <button
                 @click="activeTab = 'tiers'"
                 :class="activeTab === 'tiers' ? 'border-b-2 border-brand text-brand font-semibold' : 'text-ink-secondary hover:text-ink-primary'"
                 class="py-3 px-6 font-medium transition-colors duration-200 cursor-pointer text-sm"
             >
-                Membership Tiers
+                Membership Tiers 👑
             </button>
         </div>
 
@@ -132,11 +218,14 @@ const formatDate = (dateString) => {
                 <div class="text-right">
                     <span
                         :class="txn.transaction_type === 'EARN' ? 'text-semantic-success bg-semantic-success-soft' : 'text-semantic-danger bg-semantic-danger-soft'"
-                        class="px-3 py-1 rounded-full text-sm font-bold border border-transparent"
+                        class="px-3 py-1 rounded-full text-sm font-bold border border-transparent animate-pulse"
                     >
                         {{ txn.transaction_type === 'EARN' ? '+' : '-' }}{{ txn.points }} points
                     </span>
                 </div>
+            </div>
+            <div v-if="loyaltyTransactions.length === 0" class="text-center text-ink-secondary py-xl">
+                Belum ada transaksi poin.
             </div>
         </div>
 
@@ -183,5 +272,79 @@ const formatDate = (dateString) => {
                 </div>
             </div>
         </div>
+
+        <!-- Modals -->
+        <!-- New Account Modal -->
+        <BaseModal :show="showAccountModal" @close="showAccountModal = false" title="Register New Loyalty Account">
+            <form @submit.prevent="submitAccount" class="space-y-md">
+                <FormSelect label="Select Customer" v-model="accountForm.customer_id" :error="accountForm.errors.customer_id" required>
+                    <option value="">Pilih Pelanggan</option>
+                    <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.customer_name }} ({{ c.phone || 'No phone' }})</option>
+                </FormSelect>
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showAccountModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="accountForm.processing">Register Account</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Point Adjustment Modal -->
+        <BaseModal :show="showAdjustmentModal" @close="showAdjustmentModal = false" title="Point Adjustment">
+            <form @submit.prevent="submitAdjustment" class="space-y-md">
+                <FormSelect label="Select Loyalty Account" v-model="adjustmentForm.loyalty_account_id" :error="adjustmentForm.errors.loyalty_account_id" required>
+                    <option value="">Pilih Akun</option>
+                    <option v-for="a in loyaltyAccounts" :key="a.id" :value="a.id">{{ a.customer?.customer_name }} ({{ a.account_number }})</option>
+                </FormSelect>
+                <div class="grid grid-cols-2 gap-md">
+                    <FormSelect label="Adjustment Type" v-model="adjustmentForm.adjustment_type" required>
+                        <option value="ADD">➕ Add Points</option>
+                        <option value="SUBTRACT">➖ Subtract Points</option>
+                    </FormSelect>
+                    <FormInput type="number" label="Points" v-model="adjustmentForm.points" :error="adjustmentForm.errors.points" required />
+                </div>
+                <FormInput label="Reason / Remarks" v-model="adjustmentForm.remarks" :error="adjustmentForm.errors.remarks" required placeholder="Bonus pendaftaran, koreksi manual..." />
+                
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showAdjustmentModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="adjustmentForm.processing">Save Adjustment</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Redeem Reward Modal -->
+        <BaseModal :show="showRedeemModal" @close="showRedeemModal = false" title="Redeem Point Reward">
+            <form @submit.prevent="submitRedeem" class="space-y-md">
+                <FormSelect label="Select Loyalty Account" v-model="redeemForm.loyalty_account_id" :error="redeemForm.errors.loyalty_account_id" required>
+                    <option value="">Pilih Akun</option>
+                    <option v-for="a in loyaltyAccounts" :key="a.id" :value="a.id">{{ a.customer?.customer_name }} ({{ a.account_number }} - {{ a.current_points }} pts)</option>
+                </FormSelect>
+                <FormSelect label="Select Reward" v-model="redeemForm.reward_id" :error="redeemForm.errors.reward_id" required>
+                    <option value="">Pilih Hadiah</option>
+                    <option v-for="r in rewards" :key="r.id" :value="r.id">{{ r.reward_name }} ({{ r.points_required }} pts)</option>
+                </FormSelect>
+                
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showRedeemModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="redeemForm.processing">Process Redemption</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- New Tier Modal -->
+        <BaseModal :show="showTierModal" @close="showTierModal = false" title="Create Membership Tier">
+            <form @submit.prevent="submitTier" class="space-y-md">
+                <FormInput label="Tier Name" v-model="tierForm.tier_name" :error="tierForm.errors.tier_name" required placeholder="Silver / Gold" />
+                <div class="grid grid-cols-3 gap-md">
+                    <FormInput type="number" label="Min Points" v-model="tierForm.minimum_points" :error="tierForm.errors.minimum_points" required />
+                    <FormInput type="number" step="0.1" label="Point Multiplier" v-model="tierForm.point_multiplier" :error="tierForm.errors.point_multiplier" required />
+                    <FormInput type="number" step="0.1" label="Discount %" v-model="tierForm.discount_percentage" :error="tierForm.errors.discount_percentage" required />
+                </div>
+                
+                <div class="flex justify-end gap-md pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showTierModal = false">Cancel</BaseButton>
+                    <BaseButton type="submit" :loading="tierForm.processing">Save Tier</BaseButton>
+                </div>
+            </form>
+        </BaseModal>
     </DashboardLayout>
 </template>
