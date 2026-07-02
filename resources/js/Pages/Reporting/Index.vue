@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import DataTable from '@/Components/Table/DataTable.vue';
 import BaseButton from '@/Components/Base/BaseButton.vue';
@@ -18,13 +18,17 @@ const salesReport = ref(null);
 const inventoryReport = ref(null);
 const financialReport = ref(null);
 const purchaseReport = ref(null);
+const marginReport = ref(null);
 
 const loadingSales = ref(false);
 const loadingInventory = ref(false);
 const loadingFinancial = ref(false);
 const loadingPurchase = ref(false);
+const loadingMargin = ref(false);
+
 
 // Formatters imported from @/Utils/formatters
+
 
 // ── API Fetchers ───────────────────────────────────────────────
 
@@ -104,18 +108,49 @@ const fetchPurchaseReport = async () => {
     }
 };
 
-// Export Handlers
-const handleExport = async (type) => {
+const fetchMarginReport = async () => {
+    loadingMargin.value = true;
     try {
-        const response = await axios.post(`/api/v1/reports/${type}/export`, {
-            date_from: dateFrom.value,
-            date_to: dateTo.value,
+        const response = await axios.get('/api/v1/reports/margin', {
+            params: {
+                date_from: dateFrom.value,
+                date_to: dateTo.value,
+            }
         });
-        alert(`📥 ${response.data.message || 'Export berhasil dimulai.'}`);
+        if (response.data.success) {
+            marginReport.value = response.data.data;
+        }
     } catch (error) {
-        alert('❌ Gagal melakukan export data.');
+        console.error('Error loading margin report:', error);
+    } finally {
+        loadingMargin.value = false;
     }
 };
+
+// Export Handlers — buka URL langsung agar browser trigger download file
+const handleExport = (type) => {
+    const routeMap = {
+        sales: '/api/v1/reports/sales/export',
+        inventory: '/api/v1/reports/inventory-valuation/export',
+        financial: '/api/v1/reports/financial/export',
+        margin: '/api/v1/reports/margin/export',
+    };
+
+    const url = routeMap[type];
+    if (!url) {
+        alert('⚠️ Export tidak tersedia untuk tab ini.');
+        return;
+    }
+
+    const params = new URLSearchParams({
+        date_from: dateFrom.value,
+        date_to: dateTo.value,
+    });
+
+    // Buka di tab baru agar tidak navigasi halaman saat ini
+    window.open(`${url}?${params.toString()}`, '_blank');
+};
+
 
 // Load initial tab data
 onMounted(() => {
@@ -123,6 +158,15 @@ onMounted(() => {
     fetchInventoryReport();
     fetchFinancialReport();
     fetchPurchaseReport();
+    fetchMarginReport();
+});
+
+watch([dateFrom, dateTo], () => {
+    fetchSalesReport();
+    fetchInventoryReport();
+    fetchFinancialReport();
+    fetchPurchaseReport();
+    fetchMarginReport();
 });
 
 // Table columns setup
@@ -137,11 +181,13 @@ const txColumns = [
 
 const lowStockColumns = [
     { key: 'no', label: 'No' },
-    { key: 'product', label: 'Product' },
-    { key: 'location', label: 'Location' },
-    { key: 'quantity_on_hand', label: 'Stok Saat Ini', align: 'right' },
+    { key: 'sku', label: 'SKU' },
+    { key: 'variant_name', label: 'Produk / Varian' },
+    { key: 'location_name', label: 'Lokasi' },
+    { key: 'quantity_on_hand', label: 'Stok', align: 'right' },
     { key: 'reorder_level', label: 'Min Reorder', align: 'right' },
-    { key: 'balance_value', label: 'Nilai Aset', align: 'right' },
+    { key: 'purchase_price', label: 'Harga Beli', align: 'right' },
+    { key: 'balance_value', label: 'Nilai (Rp)', align: 'right' },
 ];
 
 const poColumns = [
@@ -152,7 +198,45 @@ const poColumns = [
     { key: 'total_amount', label: 'Total', align: 'right' },
     { key: 'date', label: 'Tanggal' },
 ];
+
+const productMarginColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'sku', label: 'SKU' },
+    { key: 'item_name', label: 'Nama Produk' },
+    { key: 'category_name', label: 'Kategori' },
+    { key: 'qty_sold', label: 'Qty Terjual', align: 'right' },
+    { key: 'total_net_revenue', label: 'Revenue Bersih', align: 'right' },
+    { key: 'total_hpp', label: 'Total HPP', align: 'right' },
+    { key: 'net_margin_rp', label: 'Laba Bersih', align: 'right' },
+    { key: 'net_margin_percent', label: 'Margin (%)', align: 'right' },
+];
+
+const txMarginColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'transaction_no', label: 'No Transaksi' },
+    { key: 'customer_name', label: 'Pelanggan' },
+    { key: 'cashier_name', label: 'Kasir' },
+    { key: 'grand_total', label: 'Total Penjualan', align: 'right' },
+    { key: 'total_hpp', label: 'Total HPP', align: 'right' },
+    { key: 'net_margin_rp', label: 'Laba Bersih', align: 'right' },
+    { key: 'net_margin_percent', label: 'Margin (%)', align: 'right' },
+    { key: 'transaction_date', label: 'Tanggal' },
+];
+
+const allInventoryColumns = [
+    { key: 'no', label: 'No' },
+    { key: 'sku', label: 'SKU' },
+    { key: 'variant_name', label: 'Nama Produk / Varian' },
+    { key: 'location_name', label: 'Lokasi' },
+    { key: 'quantity_on_hand', label: 'Stok', align: 'right' },
+    { key: 'qty_available', label: 'Tersedia', align: 'right' },
+    { key: 'qty_reserved', label: 'Reserved', align: 'right' },
+    { key: 'purchase_price', label: 'Harga Beli', align: 'right' },
+    { key: 'balance_value', label: 'Nilai (Rp)', align: 'right' },
+    { key: 'is_low_stock', label: 'Status', align: 'center' },
+];
 </script>
+
 
 <template>
     <Head title="Reporting & Analytics" />
@@ -179,6 +263,7 @@ const poColumns = [
             <button @click="activeTab = 'inventory'; fetchInventoryReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='inventory' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📦 Persediaan</button>
             <button @click="activeTab = 'financial'; fetchFinancialReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='financial' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">💰 Keuangan</button>
             <button @click="activeTab = 'purchasing'; fetchPurchaseReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='purchasing' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">🛍️ Pembelian</button>
+            <button @click="activeTab = 'margin'; fetchMarginReport()" :class="['chip whitespace-nowrap px-lg py-sm', activeTab==='margin' ? 'bg-brand text-white shadow-brand-glow' : 'bg-surface-card text-ink-secondary border border-border-soft hover:border-brand-border']">📈 Laba & Margin</button>
         </div>
 
         <!-- ===== SALES ===== -->
@@ -212,14 +297,69 @@ const poColumns = [
 
         <!-- ===== INVENTORY ===== -->
         <template v-if="activeTab === 'inventory' && inventoryReport">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-base mb-xl">
-                <KPICard label="Total Item" :value="inventoryReport.total_items" icon="package" color="mint" />
-                <KPICard label="Total Nilai Aset" :value="formatCurrency(inventoryReport.total_value)" icon="dollar-sign" color="brand" />
-                <KPICard label="Stok Menipis" :value="inventoryReport.low_stock_items.length" icon="alert-triangle" color="sunny" />
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
+                <KPICard label="Total SKU / Varian" :value="inventoryReport.total_items" icon="package" color="brand" />
+                <KPICard label="Total Kuantitas Stok" :value="Number(inventoryReport.total_qty).toLocaleString('id-ID')" icon="layers" color="mint" />
+                <KPICard label="Total Nilai Persediaan" :value="formatCurrency(inventoryReport.total_value)" icon="dollar-sign" color="sunny" />
+                <KPICard label="Stok Perlu Reorder" :value="inventoryReport.low_stock_count" icon="alert-triangle" color="coral" />
             </div>
+
+            <!-- Category Breakdown -->
+            <div class="card-friendly p-lg mb-xl" v-if="inventoryReport.by_category && inventoryReport.by_category.length">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Persediaan per Kategori 🏷️</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-sm">
+                    <div
+                        v-for="cat in inventoryReport.by_category"
+                        :key="cat.category"
+                        class="rounded-xl bg-surface-subtle border border-border-soft p-md flex flex-col gap-xs"
+                    >
+                        <p class="text-xs font-bold text-ink-secondary uppercase tracking-wide truncate">{{ cat.category }}</p>
+                        <p class="text-card-title font-extrabold text-ink-primary">{{ Number(cat.total_qty).toLocaleString('id-ID') }} unit</p>
+                        <p class="text-xs text-ink-muted">{{ cat.total_items }} SKU &bull; {{ formatCurrency(cat.total_value) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="card-friendly p-lg mb-xl" v-if="inventoryReport.low_stock_items && inventoryReport.low_stock_items.length">
+                <h2 class="text-section-title font-bold text-semantic-danger mb-base">⚠️ Stok Perlu Reorder ({{ inventoryReport.low_stock_count }} item)</h2>
+                <DataTable :columns="lowStockColumns" :rows="inventoryReport.low_stock_items" :loading="loadingInventory">
+                    <template #cell-purchase_price="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-balance_value="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                </DataTable>
+            </div>
+            <div class="card-friendly p-lg mb-xl bg-accent-mint-soft border border-accent-mint/20" v-else>
+                <p class="text-accent-mint font-semibold text-sm">✅ Semua stok dalam kondisi aman — tidak ada item yang perlu reorder saat ini.</p>
+            </div>
+
+            <!-- All Inventory Table -->
             <div class="card-friendly p-lg">
-                <h2 class="text-section-title font-bold text-ink-primary mb-base">Produk Perlu Reorder 🔻</h2>
-                <DataTable :columns="lowStockColumns" :rows="inventoryReport.low_stock_items" :loading="loadingInventory" />
+                <div class="flex items-center justify-between mb-base">
+                    <h2 class="text-section-title font-bold text-ink-primary">Daftar Seluruh Persediaan 📋</h2>
+                    <span class="chip bg-brand-soft text-brand text-xs px-sm py-xs">{{ inventoryReport.total_items }} item</span>
+                </div>
+                <DataTable
+                    :columns="allInventoryColumns"
+                    :rows="inventoryReport.all_items"
+                    :loading="loadingInventory"
+                    :searchable="true"
+                    :searchableColumns="['sku', 'variant_name', 'product_name', 'category_name', 'location_name']"
+                >
+                    <template #cell-balance_value="{ value }">
+                        <span class="font-medium">{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-is_low_stock="{ value }">
+                        <span :class="['px-2 py-0.5 rounded text-xs font-semibold', value ? 'bg-semantic-danger/10 text-semantic-danger' : 'bg-accent-mint-soft text-accent-mint']">{{ value ? 'Reorder' : 'Aman' }}</span>
+                    </template>
+                    <template #cell-purchase_price="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                </DataTable>
             </div>
         </template>
 
@@ -241,19 +381,32 @@ const poColumns = [
                     <div v-for="e in financialReport.income_statement.expenses" :key="e.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ e.account_name }}</span><span class="font-medium">{{ formatCurrency(e.balance) }}</span></div>
                     <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Beban</span><span>{{ formatCurrency(financialReport.income_statement.total_expenses) }}</span></div>
                     <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-accent-mint-soft px-md text-accent-mint"><span>Laba Bersih</span><span>{{ formatCurrency(financialReport.income_statement.net_income) }}</span></div>
+
+                    <!-- Tax Collected Info -->
+                    <div class="flex justify-between text-xs py-sm border-t border-border-soft mt-base text-ink-secondary">
+                        <span>Pajak PPN Dipungut (Hutang Pajak):</span>
+                        <span class="font-bold text-accent-coral">{{ formatCurrency(financialReport.income_statement.tax_collected) }}</span>
+                    </div>
+                    <p class="text-[10px] text-ink-muted leading-tight mt-1">
+                        * PPN yang dipungut dari konsumen merupakan liabilitas/hutang pajak yang nantinya disetorkan ke kas negara.
+                    </p>
                 </div>
                 <!-- Balance sheet -->
                 <div class="card-friendly p-lg">
                     <h2 class="text-section-title font-bold text-ink-primary mb-base">Neraca ⚖️</h2>
-                    <p class="text-xs font-bold text-accent-sky uppercase tracking-wide mb-sm">Aset</p>
+                    <p class="text-xs font-bold text-accent-sky uppercase tracking-wide mb-sm">Aset (Aktiva)</p>
                     <div v-for="a in financialReport.balance_sheet.assets" :key="a.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ a.account_name }}</span><span class="font-medium">{{ formatCurrency(a.balance) }}</span></div>
-                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Aset</span><span>{{ formatCurrency(financialReport.balance_sheet.total_assets) }}</span></div>
-                    <p class="text-xs font-bold text-accent-coral uppercase tracking-wide mb-sm mt-base">Kewajiban</p>
+                    <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-accent-sky-soft px-md text-accent-sky mb-base"><span>Total Aktiva</span><span>{{ formatCurrency(financialReport.balance_sheet.total_assets) }}</span></div>
+
+                    <p class="text-xs font-bold text-accent-coral uppercase tracking-wide mb-sm">Kewajiban & Ekuitas (Pasiva)</p>
                     <div v-for="l in financialReport.balance_sheet.liabilities" :key="l.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ l.account_name }}</span><span class="font-medium">{{ formatCurrency(l.balance) }}</span></div>
-                    <div class="flex justify-between text-sm font-bold py-xs border-t border-border-soft mt-xs"><span>Total Kewajiban</span><span>{{ formatCurrency(financialReport.balance_sheet.total_liabilities) }}</span></div>
-                    <p class="text-xs font-bold text-accent-grape uppercase tracking-wide mb-sm mt-base">Ekuitas</p>
+                    <div class="flex justify-between text-xs font-bold text-ink-muted px-xs py-1"><span>Subtotal Kewajiban</span><span>{{ formatCurrency(financialReport.balance_sheet.total_liabilities) }}</span></div>
+
+                    <p class="text-xs font-bold text-accent-grape uppercase tracking-wide mb-sm mt-md">Ekuitas</p>
                     <div v-for="q in financialReport.balance_sheet.equity" :key="q.account_code" class="flex justify-between text-sm py-xs"><span class="text-ink-secondary">{{ q.account_name }}</span><span class="font-medium">{{ formatCurrency(q.balance) }}</span></div>
-                    <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-brand-soft px-md text-brand"><span>Total Ekuitas</span><span>{{ formatCurrency(financialReport.balance_sheet.total_equity) }}</span></div>
+                    <div class="flex justify-between text-xs font-bold text-ink-muted px-xs py-1 border-b border-border-soft pb-xs"><span>Subtotal Ekuitas</span><span>{{ formatCurrency(financialReport.balance_sheet.total_equity) }}</span></div>
+
+                    <div class="flex justify-between text-card-title font-extrabold py-md mt-sm rounded-lg bg-brand-soft px-md text-brand"><span>Total Pasiva</span><span>{{ formatCurrency(financialReport.balance_sheet.total_liabilities + financialReport.balance_sheet.total_equity) }}</span></div>
                 </div>
             </div>
         </template>
@@ -273,6 +426,55 @@ const poColumns = [
                     </template>
                     <template #cell-status="{ value }">
                         <span :class="['px-2 py-0.5 rounded text-xs font-semibold', value === 'COMPLETED' ? 'bg-accent-mint-soft text-accent-mint' : (value === 'PENDING' ? 'bg-accent-sunny-soft text-accent-sunny' : 'bg-surface-subtle text-ink-secondary')]">{{ value }}</span>
+                    </template>
+                </DataTable>
+            </div>
+        </template>
+
+        <!-- ===== LABA & MARGIN ===== -->
+        <template v-if="activeTab === 'margin' && marginReport">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-base mb-xl">
+                <KPICard label="Revenue Bersih" :value="formatCurrency(marginReport.summary.total_revenue)" icon="dollar-sign" color="brand" />
+                <KPICard label="Total HPP (Modal)" :value="formatCurrency(marginReport.summary.total_hpp)" icon="package" color="coral" />
+                <KPICard label="Laba Bersih (Margin)" :value="formatCurrency(marginReport.summary.net_margin_rp)" icon="trending-up" color="mint" />
+                <KPICard label="Persentase Margin" :value="marginReport.summary.net_margin_percent + '%'" icon="percent" color="grape" />
+            </div>
+
+            <div class="card-friendly p-lg mb-xl">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Analisa Margin per Produk 📦</h2>
+                <DataTable :columns="productMarginColumns" :rows="marginReport.products" :loading="loadingMargin">
+                    <template #cell-total_net_revenue="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-total_hpp="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-net_margin_rp="{ value }">
+                        <span class="font-bold text-accent-mint">{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-net_margin_percent="{ value }">
+                        <span class="font-semibold">{{ value }}%</span>
+                    </template>
+                </DataTable>
+            </div>
+
+            <div class="card-friendly p-lg">
+                <h2 class="text-section-title font-bold text-ink-primary mb-base">Margin per Transaksi Penjualan 🧾</h2>
+                <DataTable :columns="txMarginColumns" :rows="marginReport.transactions" :loading="loadingMargin">
+                    <template #cell-grand_total="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-total_hpp="{ value }">
+                        <span>{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-net_margin_rp="{ value }">
+                        <span class="font-bold text-accent-mint">{{ formatCurrency(value) }}</span>
+                    </template>
+                    <template #cell-net_margin_percent="{ value }">
+                        <span class="font-semibold">{{ value }}%</span>
+                    </template>
+                    <template #cell-transaction_date="{ value }">
+                        <span>{{ formatDate(value) }}</span>
                     </template>
                 </DataTable>
             </div>

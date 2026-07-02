@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\POS;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
-use App\Repositories\Contracts\POS\ShiftRepositoryInterface;
-use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
-use App\Repositories\Contracts\POS\MonthClosingRepositoryInterface;
-use App\Services\POS\ShiftService;
 use App\Http\Requests\POS\StoreShiftRequest;
 use App\Http\Requests\POS\UpdateShiftRequest;
-use Illuminate\Http\Request;
+use App\Models\Inventory\InventoryLocation;
+use App\Models\POS\CashierSession;
+use App\Models\System\User;
+use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
+use App\Repositories\Contracts\POS\MonthClosingRepositoryInterface;
+use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
+use App\Repositories\Contracts\POS\ShiftRepositoryInterface;
+use App\Services\POS\ShiftService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,13 +33,13 @@ class SalesTransactionController extends Controller
     public function shifts(Request $request): Response
     {
         $shifts = $this->shiftRepository->paginate($request->only('search'), 50);
-        
-        $sessions = \App\Models\POS\CashierSession::with(['user', 'shift', 'location'])
+
+        $sessions = CashierSession::with(['user', 'shift', 'location'])
             ->orderBy('opened_at', 'desc')
             ->get();
 
-        $locations = \App\Models\Inventory\InventoryLocation::where('is_active', true)->get();
-        $users = \App\Models\System\User::all();
+        $locations = InventoryLocation::where('is_active', true)->get();
+        $users = User::all();
 
         return Inertia::render('POS/Shifts/Index', [
             'shifts' => $shifts,
@@ -47,11 +52,11 @@ class SalesTransactionController extends Controller
 
     public function index(Request $request): Response
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth::user();
         $filters = $request->only(['search', 'status']);
 
         // Kasir biasa hanya boleh melihat transaksi dari lokasinya sendiri
-        if (!$user->hasAnyRole(['admin', 'supervisor'])) {
+        if (! $user->hasAnyRole(['admin', 'supervisor'])) {
             $filters['location_id'] = session('pos_location_id');
         }
 
@@ -81,52 +86,55 @@ class SalesTransactionController extends Controller
         ]);
     }
 
-    public function shiftsList(Request $request): \Illuminate\Http\JsonResponse
+    public function shiftsList(Request $request): JsonResponse
     {
         $shifts = $this->shiftRepository->findActive();
 
         $data = $shifts->map(function ($shift) {
             return [
-                'id'          => $shift->id,
-                'shift_code'  => $shift->shift_code,
-                'shift_name'  => $shift->shift_name,
-                'name'        => $shift->shift_name, // fallback for ShiftOpener.vue
-                'start_time'  => $shift->start_time?->format('H:i') ?? $shift->start_time,
-                'end_time'    => $shift->end_time?->format('H:i') ?? $shift->end_time,
-                'is_active'   => $shift->is_active,
+                'id' => $shift->id,
+                'shift_code' => $shift->shift_code,
+                'shift_name' => $shift->shift_name,
+                'name' => $shift->shift_name, // fallback for ShiftOpener.vue
+                'start_time' => $shift->start_time?->format('H:i') ?? $shift->start_time,
+                'end_time' => $shift->end_time?->format('H:i') ?? $shift->end_time,
+                'is_active' => $shift->is_active,
                 'description' => $shift->description,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
     public function storeShift(StoreShiftRequest $request): RedirectResponse
     {
         $this->shiftService->create($request->validated());
+
         return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil dibuat.');
     }
 
     public function updateShift(UpdateShiftRequest $request, int $id): RedirectResponse
     {
         $shift = $this->shiftService->findById($id);
-        if (!$shift) {
+        if (! $shift) {
             abort(404);
         }
         $this->shiftService->update($shift, $request->validated());
+
         return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil diperbarui.');
     }
 
     public function destroyShift(int $id): RedirectResponse
     {
         $shift = $this->shiftService->findById($id);
-        if (!$shift) {
+        if (! $shift) {
             abort(404);
         }
         $this->shiftService->delete($shift);
+
         return redirect()->route('pos.shifts.index')->with('success', 'Shift berhasil dihapus.');
     }
 

@@ -42,6 +42,7 @@ class SalesReportController extends Controller
         // Export if format specified
         if (isset($validated['format']) && $validated['format'] !== 'json') {
             $format = ReportFormat::from($validated['format']);
+
             return $this->exporter->export($report, 'sales_report', $format);
         }
 

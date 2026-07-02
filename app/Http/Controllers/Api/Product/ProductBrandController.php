@@ -20,11 +20,10 @@ class ProductBrandController extends Controller
         $brands = ProductBrand::query()
             ->when(
                 $request->search,
-                fn($q, $s) =>
-                $q->where('brand_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('brand_name', 'like', "%{$s}%")
                     ->orWhere('brand_code', 'like', "%{$s}%")
             )
-            ->when(isset($request->is_active), fn($q) => $q->where('is_active', $request->boolean('is_active')))
+            ->when(isset($request->is_active), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -39,6 +38,7 @@ class ProductBrandController extends Controller
         $this->authorize('product.brand.view');
         $brand = ProductBrand::find($id);
         abort_if(! $brand, 404, 'Brand tidak ditemukan.');
+
         return response()->json(['data' => $brand]);
     }
 
@@ -47,10 +47,10 @@ class ProductBrandController extends Controller
         $this->authorize('product.brand.manage');
 
         $validated = $request->validate([
-            'brand_code'  => ['required', 'string', 'max:50', 'unique:product_brands,brand_code'],
-            'brand_name'  => ['required', 'string', 'max:150'],
+            'brand_code' => ['required', 'string', 'max:50', 'unique:product_brands,brand_code'],
+            'brand_name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
         $validated['created_by'] = auth()->id();
         $validated['updated_by'] = auth()->id();
@@ -68,10 +68,10 @@ class ProductBrandController extends Controller
         abort_if(! $brand, 404, 'Brand tidak ditemukan.');
 
         $validated = $request->validate([
-            'brand_code'  => ['sometimes', 'string', 'max:50', Rule::unique('product_brands', 'brand_code')->ignore($id)],
-            'brand_name'  => ['sometimes', 'string', 'max:150'],
+            'brand_code' => ['sometimes', 'string', 'max:50', Rule::unique('product_brands', 'brand_code')->ignore($id)],
+            'brand_name' => ['sometimes', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
         $validated['updated_by'] = auth()->id();
 

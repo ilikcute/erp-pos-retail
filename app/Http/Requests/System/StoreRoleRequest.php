@@ -3,6 +3,7 @@
 namespace App\Http\Requests\System;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class StoreRoleRequest extends FormRequest
         if (! $this->has('display_name') && $this->has('name')) {
             $this->merge([
                 'display_name' => $this->name,
-                'name' => \Illuminate\Support\Str::slug($this->name),
+                'name' => Str::slug($this->name),
             ]);
         }
     }

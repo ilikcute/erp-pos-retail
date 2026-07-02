@@ -32,7 +32,7 @@ class PurchaseReportService
             ->join('suppliers as s', 'po.supplier_id', '=', 's.id')
             ->leftJoin('purchase_order_items as poi', 'po.id', '=', 'poi.purchase_order_id')
             ->whereBetween('po.order_date', [$dateFrom, $dateTo])
-            ->when($supplierId, fn($q) => $q->where('po.supplier_id', $supplierId))
+            ->when($supplierId, fn ($q) => $q->where('po.supplier_id', $supplierId))
             ->groupBy(
                 'po.id',
                 'po.po_number',
@@ -49,7 +49,7 @@ class PurchaseReportService
 
         return [
             'period' => ['from' => $dateFrom, 'to' => $dateTo],
-            'data' => $data->map(fn($row) => [
+            'data' => $data->map(fn ($row) => [
                 'id' => $row->id,
                 'po_number' => $row->po_number,
                 'order_date' => $row->order_date,
@@ -97,7 +97,7 @@ class PurchaseReportService
             )
             ->join('suppliers as s', 'ap.supplier_id', '=', 's.id')
             ->where('ap.status', '!=', 'PAID')
-            ->when($supplierId, fn($q) => $q->where('ap.supplier_id', $supplierId))
+            ->when($supplierId, fn ($q) => $q->where('ap.supplier_id', $supplierId))
             ->orderBy('ap.due_date')
             ->get();
 
@@ -140,7 +140,7 @@ class PurchaseReportService
             'summary' => [
                 'total_payables' => $data->count(),
                 'total_amount' => (float) $data->sum('remaining_amount'),
-                'overdue_amount' => (float) $data->filter(fn($r) => $r->days_overdue > 0)->sum('remaining_amount'),
+                'overdue_amount' => (float) $data->filter(fn ($r) => $r->days_overdue > 0)->sum('remaining_amount'),
             ],
         ];
     }
@@ -197,6 +197,7 @@ class PurchaseReportService
     private function calculateSupplierRating(float $fillRate, float $leadTime): string
     {
         $score = ($fillRate * 0.7) + (max(0, 100 - $leadTime) * 0.3);
+
         return match (true) {
             $score >= 90 => 'A',
             $score >= 75 => 'B',

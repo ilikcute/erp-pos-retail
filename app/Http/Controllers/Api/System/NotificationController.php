@@ -12,7 +12,7 @@ class NotificationController extends Controller
     {
         $notifications = Auth::user()
             ->notifications()
-            ->when(!$request->boolean('include_read'), fn($q) => $q->whereNull('read_at'))
+            ->when(! $request->boolean('include_read'), fn ($q) => $q->whereNull('read_at'))
             ->latest()
             ->paginate(20);
 

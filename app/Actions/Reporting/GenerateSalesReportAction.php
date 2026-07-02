@@ -3,9 +3,6 @@
 namespace App\Actions\Reporting;
 
 use App\Models\POS\SalesTransaction;
-use App\Models\Inventory\InventoryBalance;
-use App\Models\Accounting\GeneralLedger;
-use Illuminate\Support\Facades\DB;
 
 class GenerateSalesReportAction
 {
@@ -26,20 +23,20 @@ class GenerateSalesReportAction
             $query->where('customer_id', $filters['customer_id']);
         }
 
-        $transactions = $query->with(['items', 'payments', 'cashier', 'customer'])
+        $transactions = $query->with(['items', 'payments.paymentMethod', 'cashier', 'customer'])
             ->get();
 
         return [
-            'total_sales'        => $transactions->sum('grand_total'),
+            'total_sales' => $transactions->sum('grand_total'),
             'total_transactions' => $transactions->count(),
-            'total_items_sold'   => $transactions->sum(function ($tx) {
+            'total_items_sold' => $transactions->sum(function ($tx) {
                 return $tx->items->sum('quantity');
             }),
-            'average_sale'       => $transactions->count() > 0
+            'average_sale' => $transactions->count() > 0
                 ? $transactions->sum('grand_total') / $transactions->count()
                 : 0,
-            'payment_summary'    => $this->getPaymentSummary($transactions),
-            'transactions'       => $transactions,
+            'payment_summary' => $this->getPaymentSummary($transactions),
+            'transactions' => $transactions,
         ];
     }
 
@@ -49,11 +46,11 @@ class GenerateSalesReportAction
 
         foreach ($transactions as $transaction) {
             foreach ($transaction->payments as $payment) {
-                $methodName = $payment->paymentMethod->name ?? 'Unknown';
-                if (!isset($paymentSummary[$methodName])) {
+                $methodName = $payment->paymentMethod->method_name ?? 'Unknown';
+                if (! isset($paymentSummary[$methodName])) {
                     $paymentSummary[$methodName] = 0;
                 }
-                $paymentSummary[$methodName] += $payment->amount;
+                $paymentSummary[$methodName] += (float) $payment->amount;
             }
         }
 

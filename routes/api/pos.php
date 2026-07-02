@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\POS\ShiftController;
+use App\Http\Controllers\Api\POS\SalesHoldController;
 use App\Http\Controllers\Api\POS\SalesSessionController;
 use App\Http\Controllers\Api\POS\SalesTransactionController;
-use App\Http\Controllers\Api\POS\SalesHoldController;
+use App\Http\Controllers\Api\POS\ShiftController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('pos')->group(function () {
     // ── Shifts ──────────────────────────────────────────────

@@ -11,8 +11,8 @@ class RewardCatalogController extends Controller
     public function index(Request $request)
     {
         $query = LoyaltyRewardCatalog::query()
-            ->when($request->reward_type, fn($q) => $q->where('reward_type', $request->reward_type))
-            ->when($request->is_active !== null, fn($q) => $q->where('is_active', $request->is_active))
+            ->when($request->reward_type, fn ($q) => $q->where('reward_type', $request->reward_type))
+            ->when($request->is_active !== null, fn ($q) => $q->where('is_active', $request->is_active))
             ->orderBy('created_at', 'desc');
 
         return response()->json([
@@ -52,7 +52,7 @@ class RewardCatalogController extends Controller
         $reward = LoyaltyRewardCatalog::findOrFail($id);
 
         $validated = $request->validate([
-            'reward_code' => 'string|unique:loyalty_reward_catalogs,reward_code,' . $id,
+            'reward_code' => 'string|unique:loyalty_reward_catalogs,reward_code,'.$id,
             'reward_name' => 'string',
             'reward_type' => 'in:VOUCHER,PRODUCT,LUCKY_DRAW',
             'point_required' => 'integer|min:1',

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Accounting\CoaController;
 use App\Http\Controllers\Api\Accounting\PaymentMethodController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('chart-of-accounts')->group(function () {
     Route::get('/', [CoaController::class, 'index']);

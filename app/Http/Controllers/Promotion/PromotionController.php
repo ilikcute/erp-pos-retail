@@ -18,9 +18,9 @@ class PromotionController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
-        
+
         // Hanya user dengan role tertentu yang boleh melihat halaman promosi
-        if (!$user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor', 'kasir'])) {
+        if (! $user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor', 'kasir'])) {
             abort(403, 'Unauthorized');
         }
 

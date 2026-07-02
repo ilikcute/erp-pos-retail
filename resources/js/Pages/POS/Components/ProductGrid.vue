@@ -1,6 +1,5 @@
 <script setup>
 import { computed, ref } from "vue";
-import { getProductImageUrl } from "@/Utils/imageUrl";
 import { formatPrice } from "@/Utils/formatPrice";
 
 const props = defineProps({
@@ -119,45 +118,27 @@ const colorFor = (i) => palette[i % palette.length];
                     :key="p.id"
                     @click="emit('add-to-cart', p)"
                     :disabled="addingProductId === p.id"
-                    class="card-friendly p-base text-left hover:shadow-floating hover:-translate-y-0.5 transition-all duration-150 active:scale-95 ring-1 ring-transparent focus:outline-none disabled:opacity-50"
+                    class="card-friendly p-md text-left hover:shadow-floating hover:-translate-y-0.5 transition-all duration-150 active:scale-95 ring-1 ring-transparent focus:outline-none disabled:opacity-50 flex flex-col justify-between"
                     :class="colorFor(idx).ring"
                 >
-                    <div
-                        class="w-full aspect-square rounded-xl flex items-center justify-center mb-md overflow-hidden"
-                        :class="colorFor(idx).tint"
-                    >
-                        <img
-                            v-if="p.image"
-                            :src="getProductImageUrl(p.image)"
-                            :alt="p.title"
-                            class="w-full h-full object-cover"
-                        />
-                        <span v-else class="text-4xl">{{
-                            p.emoji || "📦"
-                        }}</span>
+                    <div>
+                        <div class="flex items-center justify-between gap-sm mb-xs">
+                            <span class="font-mono text-[10px] font-bold text-ink-muted truncate max-w-[100px]" :title="p.barcode || p.sku">
+                                🏷️ {{ p.barcode || p.sku || '-' }}
+                            </span>
+                            <span :class="p.stock <= 5 ? 'bg-semantic-danger-soft text-semantic-danger' : 'bg-surface-muted text-ink-muted'" class="text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                Stok: {{ p.stock }}
+                            </span>
+                        </div>
+                        <p class="text-xs font-bold text-ink-primary leading-snug line-clamp-2 min-h-[2rem]">
+                            {{ p.title }}
+                        </p>
                     </div>
-                    <p
-                        class="text-sm font-semibold text-ink-primary leading-snug line-clamp-2 min-h-[2.5rem]"
-                    >
-                        {{ p.title }}
-                    </p>
-                    <div class="flex items-center justify-between mt-xs">
-                        <span
-                            class="text-card-title font-bold"
-                            :class="colorFor(idx).text"
-                            >{{ formatPrice(p.sell_price) }}</span
-                        >
-                    </div>
-                    <div class="flex items-center justify-between mt-xs">
-                        <span
-                            class="inline-block text-[11px] font-medium text-ink-muted"
-                            >Stok: {{ p.stock }}</span
-                        >
-                        <span
-                            v-if="p.stock <= 5"
-                            class="text-[11px] font-semibold text-semantic-danger"
-                            >⚠️</span
-                        >
+                    <div class="flex items-center justify-between mt-sm border-t border-border-soft pt-xs">
+                        <span class="text-sm font-extrabold" :class="colorFor(idx).text">
+                            {{ formatPrice(p.sell_price) }}
+                        </span>
+                        <span class="text-xs">➕</span>
                     </div>
                 </button>
             </div>

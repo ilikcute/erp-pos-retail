@@ -29,9 +29,9 @@ class TaxController extends Controller
             'data' => TaxResource::collection($taxes->items()),
             'meta' => [
                 'current_page' => $taxes->currentPage(),
-                'last_page'    => $taxes->lastPage(),
-                'per_page'     => $taxes->perPage(),
-                'total'        => $taxes->total(),
+                'last_page' => $taxes->lastPage(),
+                'per_page' => $taxes->perPage(),
+                'total' => $taxes->total(),
             ],
         ]);
     }
@@ -51,7 +51,7 @@ class TaxController extends Controller
         $tax = $this->taxService->create($request->validated());
 
         return response()->json([
-            'data'    => new TaxResource($tax),
+            'data' => new TaxResource($tax),
             'message' => 'Tax berhasil ditambahkan.',
         ], 201);
     }
@@ -64,7 +64,7 @@ class TaxController extends Controller
         $tax = $this->taxService->update($tax, $request->validated());
 
         return response()->json([
-            'data'    => new TaxResource($tax),
+            'data' => new TaxResource($tax),
             'message' => 'Tax berhasil diperbarui.',
         ]);
     }

@@ -14,15 +14,12 @@ class EloquentPriceListItemRepository implements PriceListItemRepositoryInterfac
             ->with(['variant.product', 'variant.barcodes'])
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->whereHas(
+                fn ($q, $s) => $q->whereHas(
                     'variant',
-                    fn($q) =>
-                    $q->where('sku', 'like', "%{$s}%")
+                    fn ($q) => $q->where('sku', 'like', "%{$s}%")
                         ->orWhereHas(
                             'product',
-                            fn($q) =>
-                            $q->where('product_name', 'like', "%{$s}%")
+                            fn ($q) => $q->where('product_name', 'like', "%{$s}%")
                         )
                 )
             )
@@ -33,7 +30,7 @@ class EloquentPriceListItemRepository implements PriceListItemRepositoryInterfac
     {
         return PriceListItem::where('price_list_id', $priceListId)
             ->where('product_variant_id', $variantId)
-            ->when($unitId, fn($q) => $q->where('unit_id', $unitId))
+            ->when($unitId, fn ($q) => $q->where('unit_id', $unitId))
             ->where('min_qty', '<=', $qty)
             ->orderByDesc('min_qty')
             ->first();

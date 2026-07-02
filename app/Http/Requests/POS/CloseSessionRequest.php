@@ -15,6 +15,8 @@ class CloseSessionRequest extends FormRequest
     {
         return [
             'closing_cash' => 'required|numeric|min:0',
+            'reimbursement_amount' => 'nullable|numeric|min:0',
+            'variance_reason' => 'nullable|string|max:1000',
             'notes' => 'nullable|string|max:500',
         ];
     }

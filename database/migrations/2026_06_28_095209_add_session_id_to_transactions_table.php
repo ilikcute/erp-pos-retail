@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sales_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('sales_transactions', 'cashier_session_id')) {
+            if (! Schema::hasColumn('sales_transactions', 'cashier_session_id')) {
                 $table->foreignId('cashier_session_id')
                     ->nullable()
                     ->after('user_id')
@@ -17,7 +17,7 @@ return new class extends Migration
                     ->nullOnDelete();
             }
 
-            if (!Schema::hasColumn('sales_transactions', 'day_closing_id')) {
+            if (! Schema::hasColumn('sales_transactions', 'day_closing_id')) {
                 $table->foreignId('day_closing_id')
                     ->nullable()
                     ->after('cashier_session_id')

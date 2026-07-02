@@ -2,16 +2,16 @@
 
 namespace App\Models\Pricing;
 
+use App\Enums\PriceChangeRequestStatus;
+use App\Traits\HasApprovedBy;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\HasCreatedBy;
-use App\Traits\HasApprovedBy;
-use App\Enums\PriceChangeRequestStatus;
 
 class PriceChangeRequest extends Model
 {
-    use HasCreatedBy, HasApprovedBy;
+    use HasApprovedBy, HasCreatedBy;
 
     protected $fillable = [
         'request_no',
@@ -31,11 +31,11 @@ class PriceChangeRequest extends Model
     ];
 
     protected $casts = [
-        'status'         => PriceChangeRequestStatus::class,
+        'status' => PriceChangeRequestStatus::class,
         'effective_date' => 'date',
-        'approved_at'    => 'datetime',
-        'rejected_at'    => 'datetime',
-        'applied_at'     => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'applied_at' => 'datetime',
     ];
 
     public function priceList(): BelongsTo

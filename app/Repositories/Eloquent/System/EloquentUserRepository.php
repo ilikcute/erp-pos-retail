@@ -15,19 +15,17 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->with('roles')
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where(
-                    fn($q) => $q
+                fn ($q, $s) => $q->where(
+                    fn ($q) => $q
                         ->where('name', 'like', "%{$s}%")
                         ->orWhere('email', 'like', "%{$s}%")
                         ->orWhere('phone', 'like', "%{$s}%")
                 )
             )
-            ->when($filters['status'] ?? null, fn($q, $status) => $q->where('status', $status))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->when(
                 $filters['role_id'] ?? null,
-                fn($q, $roleId) =>
-                $q->whereHas('roles', fn($q) => $q->where('roles.id', $roleId))
+                fn ($q, $roleId) => $q->whereHas('roles', fn ($q) => $q->where('roles.id', $roleId))
             )
             ->latest()
             ->paginate($perPage);
@@ -51,6 +49,7 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function update(User $user, array $data): User
     {
         $user->update($data);
+
         return $user->fresh();
     }
 
@@ -60,7 +59,7 @@ class EloquentUserRepository implements UserRepositoryInterface
         $user->delete();
     }
 
-    public function listAll(): \Illuminate\Database\Eloquent\Collection
+    public function listAll(): Collection
     {
         return User::with('roles')->orderBy('name')->get();
     }

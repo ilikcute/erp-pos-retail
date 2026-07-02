@@ -11,8 +11,8 @@ class CoaRepository implements CoaRepositoryInterface
     public function getAll(array $filters = []): Collection
     {
         $query = ChartOfAccount::with('parent')
-            ->when(isset($filters['account_type']), fn($q) => $q->where('account_type', $filters['account_type']))
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['account_type']), fn ($q) => $q->where('account_type', $filters['account_type']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->orderBy('account_code');
 
         return $query->get();

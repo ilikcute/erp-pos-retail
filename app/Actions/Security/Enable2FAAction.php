@@ -3,9 +3,8 @@
 namespace App\Actions\Security;
 
 use App\Models\System\User;
-use App\Models\Auth\UserSession;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Enable2FAAction
 {

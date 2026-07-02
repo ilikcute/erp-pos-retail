@@ -6,14 +6,14 @@ enum ReturnStatus: string
 {
     case DRAFT = 'DRAFT';
     case POSTED = 'POSTED';
-    case VOID  = 'VOID';
+    case VOID = 'VOID';
 
     public function label(): string
     {
         return match ($this) {
-            self::DRAFT  => 'Draft',
+            self::DRAFT => 'Draft',
             self::POSTED => 'Posted',
-            self::VOID   => 'Void',
+            self::VOID => 'Void',
         };
     }
 

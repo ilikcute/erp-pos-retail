@@ -47,10 +47,17 @@ const sessionColumns = [
     { key: 'session_no', label: 'Session No' },
     { key: 'user', label: 'Kasir' },
     { key: 'shift', label: 'Shift' },
-    { key: 'location', label: 'Lokasi' },
+    { key: 'shift_start', label: 'Mulai Shift', align: 'center' },
+    { key: 'shift_end', label: 'Akhir Shift', align: 'center' },
     { key: 'opened_at', label: 'Waktu Buka' },
-    { key: 'status', label: 'Status', align: 'center' },
+    { key: 'closed_at', label: 'Waktu Tutup' },
+    { key: 'opening_cash', label: 'Modal Awal', align: 'right' },
     { key: 'expected_cash', label: 'Estimasi Kas', align: 'right' },
+    { key: 'closing_cash', label: 'Tunai Aktual', align: 'right' },
+    { key: 'cash_difference', label: 'Selisih', align: 'right' },
+    { key: 'reimbursement_amount', label: 'Penggantian', align: 'right' },
+    { key: 'variance_reason', label: 'Informasi Variance' },
+    { key: 'status', label: 'Status', align: 'center' },
     { key: 'actions', label: 'Aksi', align: 'center' },
 ];
 
@@ -155,6 +162,19 @@ const closeForm = ref({
     notes: '',
 });
 
+const showVarianceModal = ref(false);
+const varianceForm = ref({
+    reimbursement_amount: 0,
+    variance_reason: '',
+});
+const reimbursementAmountDisplay = ref('');
+
+const onReimbursementAmountInput = (e) => {
+    const formatted = formatRupiahInput(e.target.value);
+    reimbursementAmountDisplay.value = formatted;
+    varianceForm.value.reimbursement_amount = parseRupiahInput(formatted);
+};
+
 const openCloseModal = (session) => {
     selectedSession.value = session;
     closeForm.value = {
@@ -177,20 +197,40 @@ const onClosingCashInput = (e) => {
     closeForm.value.closing_cash = parseRupiahInput(formatted);
 };
 
-const submitCloseSession = async () => {
+const submitCloseSession = async (bypassVariance = false) => {
     if (!selectedSession.value) return;
+
+    const diff = Number(closeForm.value.closing_cash) - Number(selectedSession.value.expected_cash);
+    if (diff !== 0 && !bypassVariance) {
+        varianceForm.value = {
+            reimbursement_amount: 0,
+            variance_reason: '',
+        };
+        reimbursementAmountDisplay.value = '';
+        showVarianceModal.value = true;
+        return;
+    }
+
     isClosing.value = true;
     try {
+        const payload = {
+            closing_cash: Number(closeForm.value.closing_cash) || 0,
+            notes: closeForm.value.notes,
+        };
+
+        if (diff !== 0) {
+            payload.reimbursement_amount = Number(varianceForm.value.reimbursement_amount) || 0;
+            payload.variance_reason = varianceForm.value.variance_reason;
+        }
+
         const { data } = await axios.post(
             `/pos/sessions/${selectedSession.value.id}/close`,
-            {
-                closing_cash: Number(closeForm.value.closing_cash) || 0,
-                notes: closeForm.value.notes,
-            }
+            payload
         );
         if (data?.success !== false) {
             toast.success("Sesi kasir berhasil ditutup.");
             showCloseModal.value = false;
+            showVarianceModal.value = false;
             selectedSession.value = null;
             router.reload();
         } else {
@@ -201,6 +241,10 @@ const submitCloseSession = async () => {
     } finally {
         isClosing.value = false;
     }
+};
+
+const submitCloseSessionWithVariance = () => {
+    submitCloseSession(true);
 };
 </script>
 
@@ -244,28 +288,61 @@ const submitCloseSession = async () => {
         </div>
 
         <!-- Tab 1: Sessions List -->
-        <div v-if="activeTab === 'sessions'" class="card-friendly p-lg">
+        <div v-if="activeTab === 'sessions'" class="card-friendly p-lg overflow-x-auto">
             <DataTable :columns="sessionColumns" :rows="sessions">
                 <template #cell-session_no="{ row }">
-                    <span class="font-mono font-bold text-ink-primary">{{ row.session_no }}</span>
+                    <span class="font-mono font-bold text-ink-primary text-xs">{{ row.session_no }}</span>
                 </template>
                 <template #cell-user="{ row }">
-                    <span class="font-semibold text-ink-primary">{{ row.user?.name || 'Kasir' }}</span>
+                    <span class="font-semibold text-ink-primary text-xs">{{ row.user?.name || 'Kasir' }}</span>
                 </template>
                 <template #cell-shift="{ row }">
-                    <span>{{ row.shift?.shift_name || '-' }}</span>
+                    <span class="text-xs">{{ row.shift?.shift_name || '-' }}</span>
                 </template>
-                <template #cell-location="{ row }">
-                    <span class="chip bg-accent-sky-soft text-accent-sky px-md py-0.5 text-xs">{{ row.location?.name || '-' }}</span>
+                <template #cell-shift_start="{ row }">
+                    <span class="font-mono text-xs">{{ row.shift?.start_time || '-' }}</span>
+                </template>
+                <template #cell-shift_end="{ row }">
+                    <span class="font-mono text-xs">{{ row.shift?.end_time || '-' }}</span>
                 </template>
                 <template #cell-opened_at="{ value }">
-                    <span>{{ formatDate(value) }}</span>
+                    <span class="text-xs">{{ formatDate(value) }}</span>
+                </template>
+                <template #cell-closed_at="{ value }">
+                    <span class="text-xs">{{ value ? formatDate(value) : '-' }}</span>
+                </template>
+                <template #cell-opening_cash="{ value }">
+                    <span class="font-mono text-xs text-ink-muted">{{ formatCurrency(value || 0) }}</span>
+                </template>
+                <template #cell-expected_cash="{ value }">
+                    <span class="font-mono text-xs text-ink-muted font-bold">{{ formatCurrency(value || 0) }}</span>
+                </template>
+                <template #cell-closing_cash="{ value }">
+                    <span class="font-mono text-xs text-ink-primary font-bold">{{ value !== null ? formatCurrency(value) : '-' }}</span>
+                </template>
+                <template #cell-cash_difference="{ value, row }">
+                    <span v-if="row.status === 'CLOSED'" 
+                          :class="Number(value) > 0 ? 'text-semantic-success' : (Number(value) < 0 ? 'text-semantic-danger font-semibold' : 'text-ink-muted')"
+                          class="font-mono text-xs font-bold">
+                        {{ formatCurrency(value || 0) }}
+                    </span>
+                    <span v-else class="text-xs text-ink-muted">-</span>
+                </template>
+                <template #cell-reimbursement_amount="{ value, row }">
+                    <span v-if="row.status === 'CLOSED' && Number(value) > 0" class="font-mono text-xs text-brand font-bold">
+                        {{ formatCurrency(value) }}
+                    </span>
+                    <span v-else-if="row.status === 'CLOSED'" class="text-xs text-ink-muted">Rp 0</span>
+                    <span v-else class="text-xs text-ink-muted">-</span>
+                </template>
+                <template #cell-variance_reason="{ value, row }">
+                    <span v-if="row.status === 'CLOSED'" class="text-xs text-ink-secondary block max-w-[150px] truncate" :title="value">
+                        {{ value || '-' }}
+                    </span>
+                    <span v-else class="text-xs text-ink-muted">-</span>
                 </template>
                 <template #cell-status="{ value }">
                     <StatusBadge :status="value" variant="soft" size="sm" />
-                </template>
-                <template #cell-expected_cash="{ value }">
-                    <span class="font-mono text-ink-muted font-bold">{{ formatCurrency(value || 0) }}</span>
                 </template>
                 <template #cell-actions="{ row }">
                     <div class="flex gap-sm justify-center">
@@ -403,7 +480,7 @@ const submitCloseSession = async () => {
 
         <!-- Close Cashier Session Modal -->
         <BaseModal :show="showCloseModal" @close="showCloseModal = false" title="🔒 Tutup Sesi Kasir">
-            <form @submit.prevent="submitCloseSession" class="space-y-md" v-if="selectedSession">
+            <form @submit.prevent="submitCloseSession(false)" class="space-y-md" v-if="selectedSession">
                 <div class="bg-surface-main p-lg rounded-xl border border-border-soft space-y-sm text-sm">
                     <div class="flex justify-between">
                         <span class="text-ink-muted">No Sesi:</span>
@@ -448,6 +525,55 @@ const submitCloseSession = async () => {
                     <BaseButton type="submit" variant="primary" :disabled="isClosing">
                         <span v-if="isClosing">Memproses...</span>
                         <span v-else>🔒 Tutup Sesi Kasir</span>
+                    </BaseButton>
+                </div>
+            </form>
+        </BaseModal>
+
+        <!-- Variance Information Modal -->
+        <BaseModal :show="showVarianceModal" @close="showVarianceModal = false" title="⚠️ Selisih Kas Terdeteksi">
+            <form @submit.prevent="submitCloseSessionWithVariance" class="space-y-md" v-if="selectedSession">
+                <div class="bg-semantic-warning-soft/30 p-lg rounded-xl border border-semantic-warning/20 space-y-sm text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-ink-muted">Uang Estimasi (Expected):</span>
+                        <span class="font-bold text-ink-primary font-mono">{{ formatCurrency(selectedSession.expected_cash || 0) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-ink-muted">Uang Aktual (Aktual):</span>
+                        <span class="font-bold text-ink-primary font-mono">{{ formatCurrency(closeForm.closing_cash || 0) }}</span>
+                    </div>
+                    <div class="border-t border-semantic-warning/20 pt-sm flex justify-between items-center">
+                        <span class="font-bold text-semantic-warning">Selisih Kas:</span>
+                        <span class="font-extrabold text-semantic-warning text-lg font-mono">
+                            {{ formatCurrency(closeForm.closing_cash - (selectedSession.expected_cash || 0)) }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="text-xs text-ink-muted leading-relaxed">
+                    Terdapat perbedaan antara uang fisik di laci dengan estimasi sistem. Harap isi nilai penggantian (reimbursement) atau informasi/penjelasan mengenai selisih tersebut.
+                </div>
+
+                <FormInput
+                    :model-value="reimbursementAmountDisplay"
+                    @input="onReimbursementAmountInput"
+                    type="text"
+                    label="Nilai Penggantian (Reimbursement)"
+                    placeholder="Masukkan nilai uang penggantian jika ada..."
+                />
+
+                <FormTextarea
+                    v-model="varianceForm.variance_reason"
+                    label="Informasi / Alasan Variance"
+                    placeholder="Jelaskan alasan selisih kas (wajib jika tidak ada nilai penggantian)..."
+                    rows="3"
+                />
+
+                <div class="flex justify-end gap-sm pt-md border-t border-border-soft">
+                    <BaseButton type="button" variant="secondary" @click="showVarianceModal = false">Batal</BaseButton>
+                    <BaseButton type="submit" variant="primary" :disabled="isClosing || (!varianceForm.reimbursement_amount && !varianceForm.variance_reason.trim())">
+                        <span v-if="isClosing">Memproses...</span>
+                        <span v-else>🔒 Konfirmasi & Tutup Sesi</span>
                     </BaseButton>
                 </div>
             </form>

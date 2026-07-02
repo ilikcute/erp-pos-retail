@@ -28,13 +28,13 @@ class CashierSessionController extends Controller
      */
     public function active()
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $session = $this->sessionService->getActiveSession($user->id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => true,
-                'data'    => null,
+                'data' => null,
                 'message' => 'Tidak ada sesi aktif',
             ]);
         }
@@ -52,22 +52,22 @@ class CashierSessionController extends Controller
      */
     public function open(OpenSessionRequest $request)
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $userId = $request->input('user_id', $user->id);
 
         try {
             $session = $this->openAction->execute(
-                userId:  $userId,
+                userId: $userId,
                 shiftId: $request->shift_id,
                 data: [
                     'opening_cash' => (float) $request->opening_cash,
-                    'location_id'  => $request->location_id,
-                    'notes'        => $request->notes,
+                    'location_id' => $request->location_id,
+                    'notes' => $request->notes,
                 ],
             );
 
             // Simpan session_id di session Laravel untuk POS
-            session(['pos_session_id'  => $session->id]);
+            session(['pos_session_id' => $session->id]);
             session(['pos_location_id' => $session->location_id]);
 
             return (new CashierSessionResource($session))
@@ -91,7 +91,7 @@ class CashierSessionController extends Controller
     {
         $session = $this->sessionRepo->findById($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'message' => 'Sesi tidak ditemukan',
@@ -105,7 +105,9 @@ class CashierSessionController extends Controller
                 session: $session,
                 data: [
                     'closing_cash' => (float) $request->closing_cash,
-                    'notes'        => $request->notes,
+                    'reimbursement_amount' => (float) $request->input('reimbursement_amount', 0),
+                    'variance_reason' => $request->input('variance_reason'),
+                    'notes' => $request->notes,
                 ],
             );
 
@@ -152,7 +154,7 @@ class CashierSessionController extends Controller
     {
         $session = $this->sessionRepo->findById($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'message' => 'Sesi tidak ditemukan',

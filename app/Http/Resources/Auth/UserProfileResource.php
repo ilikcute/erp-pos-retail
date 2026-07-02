@@ -10,34 +10,31 @@ class UserProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                    => $this->id,
-            'name'                  => $this->name,
-            'email'                 => $this->email,
-            'phone'                 => $this->phone,
-            'avatar'                => $this->avatar,
-            'status'                => $this->status,
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'avatar' => $this->avatar,
+            'status' => $this->status,
             'force_password_change' => $this->force_password_change,
-            'last_login_at'         => $this->last_login_at?->toISOString(),
-            'roles'                 => $this->whenLoaded(
+            'last_login_at' => $this->last_login_at?->toISOString(),
+            'roles' => $this->whenLoaded(
                 'roles',
-                fn() =>
-                $this->roles->map(fn($role) => [
-                    'id'   => $role->id,
+                fn () => $this->roles->map(fn ($role) => [
+                    'id' => $role->id,
                     'name' => $role->name,
                     'display_name' => $role->display_name,
                 ])
             ),
-            'permissions'           => $this->whenLoaded(
+            'permissions' => $this->whenLoaded(
                 'roles',
-                fn() =>
-                $this->roles->flatMap(
-                    fn($role) =>
-                    $role->relationLoaded('permissions')
+                fn () => $this->roles->flatMap(
+                    fn ($role) => $role->relationLoaded('permissions')
                         ? $role->permissions->pluck('name')
                         : []
                 )->unique()->values()
             ),
-            'created_at'            => $this->created_at?->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
         ];
     }
 }

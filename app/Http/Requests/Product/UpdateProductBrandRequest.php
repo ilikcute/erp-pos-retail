@@ -17,15 +17,15 @@ class UpdateProductBrandRequest extends FormRequest
         $brandId = $this->route('id');
 
         return [
-            'code'        => [
+            'code' => [
                 'required',
                 'string',
                 'max:50',
                 Rule::unique('product_brands', 'brand_code')->ignore($brandId),
             ],
-            'name'        => ['required', 'string', 'max:150'],
+            'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ];
     }
 }

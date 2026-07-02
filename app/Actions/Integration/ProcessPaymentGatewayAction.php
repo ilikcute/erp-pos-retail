@@ -4,6 +4,7 @@ namespace App\Actions\Integration;
 
 use App\Models\POS\SalesPayment;
 use Illuminate\Support\Facades\Log;
+use Stripe\StripeClient;
 
 class ProcessPaymentGatewayAction
 {
@@ -14,7 +15,7 @@ class ProcessPaymentGatewayAction
     public function processStripePayment(SalesPayment $payment, array $paymentMethodData): array
     {
         try {
-            $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
+            $stripe = new StripeClient(config('services.stripe.secret'));
 
             $charge = $stripe->charges->create([
                 'amount' => (int) ($payment->amount * 100),
@@ -42,7 +43,7 @@ class ProcessPaymentGatewayAction
             ];
         } catch (\Exception $e) {
             Log::error("Stripe payment failed: {$e->getMessage()}");
-            
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -53,7 +54,7 @@ class ProcessPaymentGatewayAction
     public function refundStripePayment(SalesPayment $payment): array
     {
         try {
-            $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
+            $stripe = new StripeClient(config('services.stripe.secret'));
 
             $refund = $stripe->refunds->create([
                 'charge' => $payment->gateway_transaction_id,
@@ -70,7 +71,7 @@ class ProcessPaymentGatewayAction
             ];
         } catch (\Exception $e) {
             Log::error("Stripe refund failed: {$e->getMessage()}");
-            
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),

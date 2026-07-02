@@ -27,10 +27,10 @@ class OptimizeQueryCacheAction
         });
     }
 
-    public function cacheActivePromotions(string $date = null): array
+    public function cacheActivePromotions(?string $date = null): array
     {
         $date = $date ?? now()->toDateString();
-        
+
         return Cache::remember("promotions.active.{$date}", 3600, function () use ($date) {
             return DB::table('promotions')
                 ->where('is_active', true)
@@ -52,7 +52,7 @@ class OptimizeQueryCacheAction
         Cache::forget("price_list.{$priceListId}");
     }
 
-    public function invalidatePromotionCache(string $date = null): void
+    public function invalidatePromotionCache(?string $date = null): void
     {
         $date = $date ?? now()->toDateString();
         Cache::forget("promotions.active.{$date}");

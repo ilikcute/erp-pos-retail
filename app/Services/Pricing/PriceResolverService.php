@@ -5,8 +5,8 @@ namespace App\Services\Pricing;
 use App\Models\Pricing\PriceList;
 use App\Models\Pricing\PriceListItem;
 use App\Repositories\Contracts\MasterData\CustomerRepositoryInterface;
-use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 use App\Repositories\Contracts\Pricing\PriceListItemRepositoryInterface;
+use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 
 /**
  * PriceResolverService
@@ -28,11 +28,11 @@ class PriceResolverService
     /**
      * Resolve harga untuk satu variant.
      *
-     * @param  int       $variantId
-     * @param  int|null  $customerId    — jika ada customer, cek customer category price list
-     * @param  int|null  $unitId        — jika null, pakai unit default variant
-     * @param  float     $qty           — untuk tiered pricing
+     * @param  int|null  $customerId  — jika ada customer, cek customer category price list
+     * @param  int|null  $unitId  — jika null, pakai unit default variant
+     * @param  float  $qty  — untuk tiered pricing
      * @return array{price: float, price_list_id: int, price_list_name: string, unit_id: int}
+     *
      * @throws \RuntimeException jika tidak ada harga ditemukan
      */
     public function resolve(
@@ -44,12 +44,16 @@ class PriceResolverService
         // 1. Coba price list dari customer category
         if ($customerId) {
             $price = $this->resolveByCustomer($variantId, $customerId, $unitId, $qty);
-            if ($price) return $price;
+            if ($price) {
+                return $price;
+            }
         }
 
         // 2. Fallback ke default RETAIL price list
         $price = $this->resolveDefault($variantId, $unitId, $qty);
-        if ($price) return $price;
+        if ($price) {
+            return $price;
+        }
 
         throw new \RuntimeException(
             "Tidak ada harga ditemukan untuk variant ID {$variantId}."
@@ -66,7 +70,9 @@ class PriceResolverService
         float $qty
     ): ?array {
         $customer = $this->customerRepository->findById($customerId);
-        if (! $customer?->customer_category_id) return null;
+        if (! $customer?->customer_category_id) {
+            return null;
+        }
 
         // Ambil price list yang mapped ke customer category ini
         $priceLists = $this->priceListRepository->getActiveMappedToCategory($customer->customer_category_id);
@@ -87,10 +93,14 @@ class PriceResolverService
     private function resolveDefault(int $variantId, ?int $unitId, float $qty): ?array
     {
         $defaultList = $this->priceListRepository->findActiveDefaultRetail();
-        if (! $defaultList) return null;
+        if (! $defaultList) {
+            return null;
+        }
 
         $item = $this->priceListItemRepository->findItem($defaultList->id, $variantId, $unitId, $qty);
-        if (! $item) return null;
+        if (! $item) {
+            return null;
+        }
 
         return $this->formatResult($item, $defaultList);
     }
@@ -98,12 +108,12 @@ class PriceResolverService
     private function formatResult(PriceListItem $item, PriceList $priceList): array
     {
         return [
-            'price'           => (float) $item->price,
-            'price_list_id'   => $priceList->id,
+            'price' => (float) $item->price,
+            'price_list_id' => $priceList->id,
             'price_list_name' => $priceList->price_list_name,
             'price_list_type' => $priceList->price_list_type->value,
-            'unit_id'         => $item->unit_id,
-            'min_qty'         => (float) $item->min_qty,
+            'unit_id' => $item->unit_id,
+            'min_qty' => (float) $item->min_qty,
         ];
     }
 
@@ -111,8 +121,7 @@ class PriceResolverService
      * Resolve batch — untuk list produk di POS atau laporan.
      *
      * @param  array<int>  $variantIds
-     * @param  int|null    $customerId
-     * @return array<int, array>   key = variant_id
+     * @return array<int, array> key = variant_id
      */
     public function resolveBatch(array $variantIds, ?int $customerId = null): array
     {
@@ -124,6 +133,7 @@ class PriceResolverService
                 $result[$variantId] = null;
             }
         }
+
         return $result;
     }
 }

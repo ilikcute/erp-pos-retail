@@ -16,8 +16,7 @@ class EloquentProductVariantRepository implements ProductVariantRepositoryInterf
     {
         return ProductVariant::whereHas(
             'barcodes',
-            fn($q) =>
-            $q->where('barcode', $barcode)
+            fn ($q) => $q->where('barcode', $barcode)
         )->with(['product', 'barcodes', 'costProfile'])->first();
     }
 
@@ -29,6 +28,7 @@ class EloquentProductVariantRepository implements ProductVariantRepositoryInterf
     public function update(ProductVariant $variant, array $data): ProductVariant
     {
         $variant->update($data);
+
         return $variant->fresh();
     }
 

@@ -15,11 +15,10 @@ class EloquentProductCategoryRepository implements ProductCategoryRepositoryInte
             ->with('parent')
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where('category_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('category_name', 'like', "%{$s}%")
                     ->orWhere('category_code', 'like', "%{$s}%")
             )
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->orderBy('sort_order')
             ->paginate($perPage);
     }
@@ -37,6 +36,7 @@ class EloquentProductCategoryRepository implements ProductCategoryRepositoryInte
     public function update(ProductCategory $category, array $data): ProductCategory
     {
         $category->update($data);
+
         return $category->fresh();
     }
 
@@ -49,6 +49,7 @@ class EloquentProductCategoryRepository implements ProductCategoryRepositoryInte
     {
         return ProductCategory::active()->orderBy('sort_order')->get();
     }
+
     public function getTree(): Collection
     {
         // Ambil semua kategori dengan children-nya (recursive via with)

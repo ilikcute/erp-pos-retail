@@ -22,16 +22,16 @@ class CreatePurchaseOrderAction
 
             $purchaseOrder = PurchaseOrder::create([
                 'purchase_order_no' => $poNo,
-                'supplier_id'       => $data['supplier_id'],
-                'po_date'           => $data['po_date'] ?? now()->toDateString(),
-                'expected_date'     => $data['expected_date'],
-                'status'            => DocumentStatus::DRAFT->value,
-                'notes'             => $data['notes'] ?? null,
-                'subtotal'          => 0,
-                'tax_amount'        => 0,
-                'grand_total'       => 0,
-                'created_by'        => auth()->id(),
-                'updated_by'        => auth()->id(),
+                'supplier_id' => $data['supplier_id'],
+                'po_date' => $data['po_date'] ?? now()->toDateString(),
+                'expected_date' => $data['expected_date'],
+                'status' => DocumentStatus::DRAFT->value,
+                'notes' => $data['notes'] ?? null,
+                'subtotal' => 0,
+                'tax_amount' => 0,
+                'grand_total' => 0,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
             ]);
 
             $this->createPoItems($purchaseOrder, $data['items'] ?? []);
@@ -44,7 +44,7 @@ class CreatePurchaseOrderAction
                 recordId: $purchaseOrder->id,
                 documentNo: $poNo,
                 newValues: [
-                    'supplier_id'   => $data['supplier_id'],
+                    'supplier_id' => $data['supplier_id'],
                     'expected_date' => $data['expected_date'],
                 ],
             );
@@ -57,15 +57,15 @@ class CreatePurchaseOrderAction
     {
         foreach ($items as $item) {
             $purchaseOrder->items()->create([
-                'product_id'         => $item['product_id'],
+                'product_id' => $item['product_id'],
                 'product_variant_id' => $item['product_variant_id'],
-                'quantity'           => $item['quantity'],
-                'unit_id'            => $item['unit_id'],
-                'unit_cost'          => $item['unit_cost'],
-                'tax_rate'           => $item['tax_rate'] ?? 0,
-                'line_total'         => $item['quantity'] * $item['unit_cost'],
-                'notes'              => $item['notes'] ?? null,
-                'created_by'         => auth()->id(),
+                'quantity' => $item['quantity'],
+                'unit_id' => $item['unit_id'],
+                'unit_cost' => $item['unit_cost'],
+                'tax_rate' => $item['tax_rate'] ?? 0,
+                'line_total' => $item['quantity'] * $item['unit_cost'],
+                'notes' => $item['notes'] ?? null,
+                'created_by' => auth()->id(),
             ]);
         }
     }
@@ -77,8 +77,8 @@ class CreatePurchaseOrderAction
         $grandTotal = $subtotal + $taxAmount;
 
         $purchaseOrder->update([
-            'subtotal'    => $subtotal,
-            'tax_amount'  => $taxAmount,
+            'subtotal' => $subtotal,
+            'tax_amount' => $taxAmount,
             'grand_total' => $grandTotal,
         ]);
     }

@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers\Loyalty;
 
+use App\Enums\Loyalty\RedemptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Loyalty\LoyaltyAccount;
-use App\Models\Loyalty\LoyaltyTransaction;
-use App\Models\Loyalty\LoyaltyTier;
 use App\Models\Loyalty\LoyaltyConfiguration;
-use App\Models\Loyalty\LoyaltyRewardCatalog;
 use App\Models\Loyalty\LoyaltyRedemption;
-use App\Models\Loyalty\LoyaltyAdjustment;
+use App\Models\Loyalty\LoyaltyRewardCatalog;
+use App\Models\Loyalty\LoyaltyTier;
+use App\Models\Loyalty\LoyaltyTransaction;
 use App\Models\MasterData\Customer;
 use App\Models\Product\Product;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class LoyaltyController extends Controller
 {
@@ -52,7 +52,7 @@ class LoyaltyController extends Controller
         ]);
 
         $customer = Customer::findOrFail($request->customer_id);
-        $accountNo = 'LY-' . str_pad($customer->id, 8, '0', STR_PAD_LEFT);
+        $accountNo = 'LY-'.str_pad($customer->id, 8, '0', STR_PAD_LEFT);
 
         // Get regular tier
         $regularTier = LoyaltyTier::where('minimum_points', 0)->first();
@@ -124,21 +124,21 @@ class LoyaltyController extends Controller
 
             $latest = LoyaltyRedemption::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $redemptionNo = 'LRD-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $redemptionNo = 'LRD-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             LoyaltyRedemption::create([
                 'redemption_number' => $redemptionNo,
                 'loyalty_account_id' => $account->id,
                 'reward_catalog_id' => $reward->id,
                 'points_used' => $reward->point_required,
-                'status' => \App\Enums\Loyalty\RedemptionStatus::PENDING,
+                'status' => RedemptionStatus::PENDING,
             ]);
 
             LoyaltyTransaction::create([
                 'loyalty_account_id' => $account->id,
                 'points' => $reward->point_required,
                 'transaction_type' => 'REDEEM',
-                'reason' => 'Redeem Reward (Pending Approval): ' . $reward->reward_name,
+                'reason' => 'Redeem Reward (Pending Approval): '.$reward->reward_name,
                 'transaction_date' => now()->toDateString(),
             ]);
         });
@@ -149,13 +149,13 @@ class LoyaltyController extends Controller
     public function approveRedemption(int $id): RedirectResponse
     {
         $redemption = LoyaltyRedemption::findOrFail($id);
-        if ($redemption->status !== \App\Enums\Loyalty\RedemptionStatus::PENDING) {
+        if ($redemption->status !== RedemptionStatus::PENDING) {
             return back()->with('error', 'Hanya pengajuan PENDING yang dapat disetujui.');
         }
 
         DB::transaction(function () use ($redemption) {
             $redemption->update([
-                'status' => \App\Enums\Loyalty\RedemptionStatus::APPROVED,
+                'status' => RedemptionStatus::APPROVED,
                 'approved_by' => auth()->id() ?? 1,
                 'approved_at' => now(),
             ]);
@@ -174,13 +174,13 @@ class LoyaltyController extends Controller
     {
         $request->validate(['rejection_notes' => 'required|string|max:255']);
         $redemption = LoyaltyRedemption::findOrFail($id);
-        if ($redemption->status !== \App\Enums\Loyalty\RedemptionStatus::PENDING) {
+        if ($redemption->status !== RedemptionStatus::PENDING) {
             return back()->with('error', 'Hanya pengajuan PENDING yang dapat ditolak.');
         }
-        
-        DB::transaction(function() use ($redemption, $request) {
+
+        DB::transaction(function () use ($redemption, $request) {
             $redemption->update([
-                'status' => \App\Enums\Loyalty\RedemptionStatus::REJECTED,
+                'status' => RedemptionStatus::REJECTED,
                 'rejection_notes' => $request->rejection_notes,
             ]);
             // Refund points
@@ -191,7 +191,7 @@ class LoyaltyController extends Controller
                 'loyalty_account_id' => $account->id,
                 'points' => $redemption->points_used,
                 'transaction_type' => 'EARN',
-                'reason' => 'Pengembalian poin (Redemption ditolak): ' . ($redemption->reward->reward_name ?? 'Reward'),
+                'reason' => 'Pengembalian poin (Redemption ditolak): '.($redemption->reward->reward_name ?? 'Reward'),
                 'transaction_date' => now()->toDateString(),
             ]);
         });
@@ -241,7 +241,7 @@ class LoyaltyController extends Controller
     {
         $reward = LoyaltyRewardCatalog::findOrFail($id);
         $validated = $request->validate([
-            'reward_code' => 'required|string|max:50|unique:loyalty_reward_catalogs,reward_code,' . $id,
+            'reward_code' => 'required|string|max:50|unique:loyalty_reward_catalogs,reward_code,'.$id,
             'reward_name' => 'required|string|max:255',
             'reward_type' => 'required|in:VOUCHER,PRODUCT,LUCKY_DRAW',
             'point_required' => 'required|integer|min:1',
@@ -262,6 +262,7 @@ class LoyaltyController extends Controller
     {
         $reward = LoyaltyRewardCatalog::findOrFail($id);
         $reward->delete();
+
         return back()->with('success', 'Reward Catalog berhasil dihapus.');
     }
 
@@ -283,12 +284,13 @@ class LoyaltyController extends Controller
     {
         $tier = LoyaltyTier::findOrFail($id);
         $validated = $request->validate([
-            'tier_name' => 'required|string|max:50|unique:loyalty_tiers,tier_name,' . $id,
+            'tier_name' => 'required|string|max:50|unique:loyalty_tiers,tier_name,'.$id,
             'minimum_points' => 'required|integer|min:0',
             'point_multiplier' => 'required|numeric|min:1',
             'discount_percentage' => 'required|numeric|min:0|max:100',
         ]);
         $tier->update($validated);
+
         return back()->with('success', 'Membership Tier berhasil diperbarui.');
     }
 
@@ -296,6 +298,7 @@ class LoyaltyController extends Controller
     {
         $tier = LoyaltyTier::findOrFail($id);
         $tier->delete();
+
         return back()->with('success', 'Membership Tier berhasil dihapus.');
     }
 }

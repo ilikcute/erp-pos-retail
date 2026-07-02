@@ -2,28 +2,37 @@
 
 namespace App\Actions\Reporting;
 
-use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\Excel as ExcelWriter;
+use App\Exports\FinancialReportExport;
+use App\Exports\InventoryReportExport;
+use App\Exports\MarginReportExport;
+use App\Exports\SalesReportExport;
 
 class ExportReportToExcelAction
 {
     public function execute(string $reportType, array $data, string $filename): string
     {
-        $exportClass = $this->getExportClass($reportType);
-        
-        $filePath = "exports/{$filename}_" . now()->timestamp . ".xlsx";
-        Excel::store(new $exportClass($data), $filePath, 'local');
+        $storageDir = storage_path('app/public/exports');
 
-        return $filePath;
+        if (! is_dir($storageDir)) {
+            mkdir($storageDir, 0755, true);
+        }
+
+        $fileName = "{$filename}_".now()->timestamp.'.xlsx';
+        $filePath = "{$storageDir}/{$fileName}";
+
+        $exporter = $this->getExporter($reportType, $data);
+        $exporter->export($filePath);
+
+        return "exports/{$fileName}";
     }
 
-    private function getExportClass(string $reportType): string
+    private function getExporter(string $reportType, array $data): object
     {
-        return match($reportType) {
-            'sales' => \App\Exports\SalesReportExport::class,
-            'inventory' => \App\Exports\InventoryReportExport::class,
-            'financial' => \App\Exports\FinancialReportExport::class,
-            'dashboard' => \App\Exports\DashboardExport::class,
+        return match ($reportType) {
+            'sales' => new SalesReportExport($data),
+            'inventory' => new InventoryReportExport($data),
+            'financial' => new FinancialReportExport($data),
+            'margin' => new MarginReportExport($data),
             default => throw new \InvalidArgumentException("Unknown report type: {$reportType}"),
         };
     }

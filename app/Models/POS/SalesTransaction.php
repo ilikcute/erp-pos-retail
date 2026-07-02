@@ -2,14 +2,14 @@
 
 namespace App\Models\POS;
 
+use App\Models\MasterData\Customer;
+use App\Models\MasterData\Tax;
+use App\Models\System\User;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Models\System\User;
-use App\Models\MasterData\Customer;
-use App\Models\MasterData\Tax;
-use App\Traits\HasCreatedBy;
 
 class SalesTransaction extends Model
 {
@@ -41,16 +41,16 @@ class SalesTransaction extends Model
     ];
 
     protected $casts = [
-        'subtotal'        => 'decimal:2',
+        'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
-        'tax_amount'      => 'decimal:2',
-        'grand_total'     => 'decimal:2',
-        'paid_amount'     => 'decimal:2',
-        'change_amount'   => 'decimal:2',
-        'tax_rate'        => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
         'transaction_date' => 'date',
-        'posted_at'       => 'datetime',
-        'voided_at'       => 'datetime',
+        'posted_at' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     public function session(): BelongsTo

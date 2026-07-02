@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserRole extends Model
 {
     protected $table = 'user_roles';
+
     protected $fillable = ['user_id', 'role_id', 'assigned_by'];
 
     public function user(): BelongsTo

@@ -28,8 +28,8 @@ class SystemSetting extends Model
         return match ($this->type) {
             'boolean' => filter_var($this->value, FILTER_VALIDATE_BOOLEAN),
             'integer' => (int) $this->value,
-            'json'    => json_decode($this->value, true),
-            default   => $this->value,
+            'json' => json_decode($this->value, true),
+            default => $this->value,
         };
     }
 
@@ -40,6 +40,7 @@ class SystemSetting extends Model
     {
         return Cache::remember("setting:{$key}", 3600, function () use ($key, $default) {
             $setting = static::where('key', $key)->first();
+
             return $setting ? $setting->getTypedValue() : $default;
         });
     }

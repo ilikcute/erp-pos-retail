@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\Product\ProductCategoryController;
 use App\Http\Controllers\Product\ProductBrandController;
+use App\Http\Controllers\Product\ProductCategoryController;
+use App\Http\Controllers\Product\ProductController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('product')->name('product.')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');

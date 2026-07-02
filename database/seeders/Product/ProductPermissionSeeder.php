@@ -32,18 +32,18 @@ class ProductPermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as &$p) {
-            $p['name']        = "{$p['module']}.{$p['resource']}.{$p['action']}";
+            $p['name'] = "{$p['module']}.{$p['resource']}.{$p['action']}";
             $p['description'] = null;
-            $p['created_at']  = now();
-            $p['updated_at']  = now();
+            $p['created_at'] = now();
+            $p['updated_at'] = now();
         }
 
         DB::table('permissions')->insertOrIgnore($permissions);
 
         // Assign semua permission Phase 2 ke superadmin
-        $superadminId  = DB::table('roles')->where('name', 'superadmin')->value('id');
-        $adminId       = DB::table('roles')->where('name', 'admin')->value('id');
-        $managerId     = DB::table('roles')->where('name', 'manager')->value('id');
+        $superadminId = DB::table('roles')->where('name', 'superadmin')->value('id');
+        $adminId = DB::table('roles')->where('name', 'admin')->value('id');
+        $managerId = DB::table('roles')->where('name', 'manager')->value('id');
 
         $phase2PermIds = DB::table('permissions')
             ->whereIn('module', ['product', 'pricing'])
@@ -78,16 +78,16 @@ class ProductPermissionSeeder extends Seeder
 
         // Tambah document type untuk price change request
         DB::table('document_types')->insertOrIgnore([[
-            'code'        => 'PRICE_CHANGE_REQUEST',
-            'name'        => 'Price Change Request',
-            'prefix'      => 'PCR',
-            'suffix'      => null,
+            'code' => 'PRICE_CHANGE_REQUEST',
+            'name' => 'Price Change Request',
+            'prefix' => 'PCR',
+            'suffix' => null,
             'date_format' => 'Ym',
-            'padding'     => 4,
-            'separator'   => '-',
-            'is_active'   => true,
-            'created_at'  => now(),
-            'updated_at'  => now(),
+            'padding' => 4,
+            'separator' => '-',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]]);
 
         $this->command->info('✅ Phase 2 permissions & document type berhasil di-seed.');

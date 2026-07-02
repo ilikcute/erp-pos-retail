@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\System\User;
 use App\Models\POS\SalesTransaction;
+use App\Models\System\User;
 
 class SalesTransactionPolicy
 {
@@ -19,6 +19,7 @@ class SalesTransactionPolicy
 
         // Kasir biasa hanya boleh melihat transaksi dari lokasinya sendiri
         $activeLocationId = session('pos_location_id');
+
         return $transaction->session && $transaction->session->location_id === $activeLocationId;
     }
 }

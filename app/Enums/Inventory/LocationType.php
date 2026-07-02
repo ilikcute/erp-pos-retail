@@ -22,7 +22,7 @@ enum LocationType: string
             self::WAREHOUSE,
             self::RECEIVING,
             self::RETURN_AREA,
-            self::DAMAGED_AREA
+            self::DAMAGED_AREA,
         ]);
     }
 

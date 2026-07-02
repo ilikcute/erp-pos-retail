@@ -2,8 +2,8 @@
 
 namespace App\Models\Inventory;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Product\ProductVariant;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryBatch extends Model
 {
@@ -13,12 +13,12 @@ class InventoryBatch extends Model
         'batch_no',
         'expiry_date',
         'unit_cost',
-        'is_active'
+        'is_active',
     ];
 
     protected $casts = [
         'expiry_date' => 'date',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     public function variant()

@@ -14,11 +14,11 @@ class UpdateShiftRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shift_name'  => 'sometimes|required|string|max:100',
-            'start_time'  => 'sometimes|required|date_format:H:i',
-            'end_time'    => 'sometimes|required|date_format:H:i|after:start_time',
+            'shift_name' => 'sometimes|required|string|max:100',
+            'start_time' => 'sometimes|required|date_format:H:i',
+            'end_time' => 'sometimes|required|date_format:H:i|after:start_time',
             'description' => 'nullable|string|max:500',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 }

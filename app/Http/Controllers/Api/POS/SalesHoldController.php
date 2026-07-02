@@ -21,7 +21,7 @@ class SalesHoldController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => SalesHoldResource::collection($holds),
+            'data' => SalesHoldResource::collection($holds),
         ]);
     }
 
@@ -32,7 +32,7 @@ class SalesHoldController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Hold bill created successfully',
-            'data'    => new SalesHoldResource($hold),
+            'data' => new SalesHoldResource($hold),
         ], 201);
     }
 
@@ -40,7 +40,7 @@ class SalesHoldController extends Controller
     {
         $hold = $this->holdService->findById($id);
 
-        if (!$hold) {
+        if (! $hold) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hold bill not found',
@@ -50,7 +50,7 @@ class SalesHoldController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => new SalesHoldResource($hold),
+            'data' => new SalesHoldResource($hold),
         ]);
     }
 
@@ -58,7 +58,7 @@ class SalesHoldController extends Controller
     {
         $hold = $this->holdService->findById($id);
 
-        if (!$hold) {
+        if (! $hold) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hold bill not found',
@@ -70,7 +70,7 @@ class SalesHoldController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Hold bill resumed successfully',
-            'data'    => $result,
+            'data' => $result,
         ]);
     }
 
@@ -78,7 +78,7 @@ class SalesHoldController extends Controller
     {
         $hold = $this->holdService->findById($id);
 
-        if (!$hold) {
+        if (! $hold) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hold bill not found',

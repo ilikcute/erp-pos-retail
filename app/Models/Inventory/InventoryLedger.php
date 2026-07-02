@@ -40,14 +40,17 @@ class InventoryLedger extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
+
     public function location(): BelongsTo
     {
         return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
+
     public function batch(): BelongsTo
     {
         return $this->belongsTo(InventoryBatch::class, 'inventory_batch_id');
     }
+
     public function reference(): MorphTo
     {
         return $this->morphTo();

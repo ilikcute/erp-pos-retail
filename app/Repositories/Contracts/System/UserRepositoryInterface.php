@@ -4,6 +4,7 @@ namespace App\Repositories\Contracts\System;
 
 use App\Models\System\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface UserRepositoryInterface
 {
@@ -23,5 +24,5 @@ interface UserRepositoryInterface
 
     public function syncRoles(User $user, array $roleIds): void;
 
-    public function listAll(): \Illuminate\Database\Eloquent\Collection;
+    public function listAll(): Collection;
 }

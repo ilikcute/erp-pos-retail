@@ -15,12 +15,12 @@ class InventoryTransfer extends Model
         'remarks',
         'created_by',
         'posted_by',
-        'posted_at'
+        'posted_at',
     ];
 
     protected $casts = [
         'transfer_date' => 'date',
-        'posted_at' => 'datetime'
+        'posted_at' => 'datetime',
     ];
 
     public function source()

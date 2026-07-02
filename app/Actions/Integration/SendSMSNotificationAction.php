@@ -29,7 +29,7 @@ class SendSMSNotificationAction
             ];
         } catch (\Exception $e) {
             Log::error("SMS send failed: {$e->getMessage()}");
-            
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -57,7 +57,7 @@ class SendSMSNotificationAction
             ];
         } catch (\Exception $e) {
             Log::error("Low stock SMS failed: {$e->getMessage()}");
-            
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -67,10 +67,10 @@ class SendSMSNotificationAction
 
     private function formatTransactionMessage(array $data): string
     {
-        return "✅ RECEIPT\n" .
-               "Transaction: {$data['transaction_no']}\n" .
-               "Amount: {$data['grand_total']}\n" .
-               "Date: {$data['transaction_date']}\n" .
-               "Thank you for your purchase!";
+        return "✅ RECEIPT\n".
+               "Transaction: {$data['transaction_no']}\n".
+               "Amount: {$data['grand_total']}\n".
+               "Date: {$data['transaction_date']}\n".
+               'Thank you for your purchase!';
     }
 }

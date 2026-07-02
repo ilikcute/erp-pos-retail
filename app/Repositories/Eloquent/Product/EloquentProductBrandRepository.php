@@ -14,11 +14,10 @@ class EloquentProductBrandRepository implements ProductBrandRepositoryInterface
         return ProductBrand::query()
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where('brand_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('brand_name', 'like', "%{$s}%")
                     ->orWhere('brand_code', 'like', "%{$s}%")
             )
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -36,6 +35,7 @@ class EloquentProductBrandRepository implements ProductBrandRepositoryInterface
     public function update(ProductBrand $brand, array $data): ProductBrand
     {
         $brand->update($data);
+
         return $brand->fresh();
     }
 

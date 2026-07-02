@@ -63,6 +63,7 @@ class LoyaltyAccount extends Model
     public function canRedeem(int $points): bool
     {
         $config = LoyaltyConfiguration::first();
+
         return $this->current_balance >= $points
             && $points >= ($config->minimum_redeem_points ?? 0);
     }
@@ -73,6 +74,7 @@ class LoyaltyAccount extends Model
     public function pointsToRupiah(int $points): float
     {
         $config = LoyaltyConfiguration::first();
+
         return $points * ($config->point_value ?? 0);
     }
 
@@ -83,6 +85,7 @@ class LoyaltyAccount extends Model
     {
         $config = LoyaltyConfiguration::first();
         $earnRate = $config->earn_rate ?? 1000;
+
         return (int) floor($rupiah / $earnRate);
     }
 }

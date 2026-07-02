@@ -6,6 +6,7 @@ use App\Enums\Promotion\PromotionStatus;
 use App\Models\Promotion\Promotion;
 use App\Models\Promotion\PromotionUsageLog;
 use App\Repositories\Contracts\Promotion\PromotionRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class PromotionRepository implements PromotionRepositoryInterface
@@ -31,7 +32,7 @@ class PromotionRepository implements PromotionRepositoryInterface
 
     public function findActivePromotions(?string $validDate = null): Collection
     {
-        $now = $validDate ? \Carbon\Carbon::parse($validDate) : now();
+        $now = $validDate ? Carbon::parse($validDate) : now();
 
         return Promotion::with(['conditions', 'rewards', 'targets'])
             ->where('status', PromotionStatus::ACTIVE)

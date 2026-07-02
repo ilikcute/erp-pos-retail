@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\Accounting;
 
-use App\Enums\Accounting\AccountType;
-use App\Enums\Accounting\NormalBalance;
 use App\Http\Controllers\Controller;
 use App\Models\Accounting\ChartOfAccount;
 use App\Repositories\Contracts\Accounting\CoaRepositoryInterface;
@@ -59,6 +57,7 @@ class CoaController extends Controller
     public function show(int $id)
     {
         $account = ChartOfAccount::with(['parent', 'children'])->findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $account]);
     }
 
@@ -68,7 +67,7 @@ class CoaController extends Controller
 
         $validated = $request->validate([
             'parent_id' => 'nullable|integer|exists:chart_of_accounts,id',
-            'account_code' => 'string|unique:chart_of_accounts,account_code,' . $id,
+            'account_code' => 'string|unique:chart_of_accounts,account_code,'.$id,
             'account_name' => 'string|max:255',
             'account_type' => 'in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
             'normal_balance' => 'in:DEBIT,CREDIT',

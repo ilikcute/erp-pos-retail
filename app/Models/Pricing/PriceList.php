@@ -2,11 +2,12 @@
 
 namespace App\Models\Pricing;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Traits\HasCreatedBy;
 use App\Enums\PriceListType;
+use App\Models\MasterData\CustomerCategory;
+use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PriceList extends Model
 {
@@ -28,10 +29,10 @@ class PriceList extends Model
 
     protected $casts = [
         'price_list_type' => PriceListType::class,
-        'is_default'      => 'boolean',
-        'is_active'       => 'boolean',
-        'valid_from'      => 'date',
-        'valid_to'        => 'date',
+        'is_default' => 'boolean',
+        'is_active' => 'boolean',
+        'valid_from' => 'date',
+        'valid_to' => 'date',
     ];
 
     public function items(): HasMany
@@ -42,7 +43,7 @@ class PriceList extends Model
     public function customerCategories(): BelongsToMany
     {
         return $this->belongsToMany(
-            \App\Models\MasterData\CustomerCategory::class,
+            CustomerCategory::class,
             'customer_category_price_lists',
             'price_list_id',
             'customer_category_id'
@@ -52,8 +53,13 @@ class PriceList extends Model
     public function isValid(): bool
     {
         $now = now()->toDateString();
-        if ($this->valid_from && $this->valid_from->toDateString() > $now) return false;
-        if ($this->valid_to   && $this->valid_to->toDateString()   < $now) return false;
+        if ($this->valid_from && $this->valid_from->toDateString() > $now) {
+            return false;
+        }
+        if ($this->valid_to && $this->valid_to->toDateString() < $now) {
+            return false;
+        }
+
         return $this->is_active;
     }
 

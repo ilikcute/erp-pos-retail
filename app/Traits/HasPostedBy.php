@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait HasPostedBy
 {
@@ -15,7 +15,7 @@ trait HasPostedBy
     public function markAsPosted(int $userId): void
     {
         $this->forceFill([
-            'status'    => 'POSTED',
+            'status' => 'POSTED',
             'posted_by' => $userId,
             'posted_at' => now(),
         ])->save();

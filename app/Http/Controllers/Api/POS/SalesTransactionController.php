@@ -26,12 +26,12 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => SalesTransactionResource::collection($transactions),
-            'meta'    => [
+            'data' => SalesTransactionResource::collection($transactions),
+            'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page'    => $transactions->lastPage(),
-                'per_page'     => $transactions->perPage(),
-                'total'        => $transactions->total(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
             ],
         ]);
     }
@@ -40,7 +40,7 @@ class SalesTransactionController extends Controller
     {
         $transaction = $this->transactionService->findById($id);
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction not found',
@@ -50,7 +50,7 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => new SalesTransactionResource($transaction),
+            'data' => new SalesTransactionResource($transaction),
         ]);
     }
 
@@ -61,7 +61,7 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaction created successfully',
-            'data'    => new SalesTransactionResource($transaction),
+            'data' => new SalesTransactionResource($transaction),
         ], 201);
     }
 
@@ -69,7 +69,7 @@ class SalesTransactionController extends Controller
     {
         $transaction = $this->transactionService->findById($id);
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction not found',
@@ -84,7 +84,7 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaction voided successfully',
-            'data'    => new SalesTransactionResource($transaction),
+            'data' => new SalesTransactionResource($transaction),
         ]);
     }
 
@@ -98,12 +98,12 @@ class SalesTransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => SalesTransactionResource::collection($transactions),
-            'meta'    => [
+            'data' => SalesTransactionResource::collection($transactions),
+            'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page'    => $transactions->lastPage(),
-                'per_page'     => $transactions->perPage(),
-                'total'        => $transactions->total(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
             ],
         ]);
     }

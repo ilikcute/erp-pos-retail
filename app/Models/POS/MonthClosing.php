@@ -3,6 +3,8 @@
 namespace App\Models\POS;
 
 use App\Enums\POS\ClosingStatus;
+use App\Models\Inventory\InventoryLocation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,12 +43,12 @@ class MonthClosing extends Model
     // ═══════════════════════════════════════════════════════════
     public function location(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Inventory\InventoryLocation::class, 'location_id');
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
 
     public function closedByUser(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'closed_by');
+        return $this->belongsTo(User::class, 'closed_by');
     }
 
     public function dayClosings(): HasMany
@@ -99,6 +101,7 @@ class MonthClosing extends Model
             11 => 'November',
             12 => 'Desember',
         ];
-        return ($months[$this->closing_month] ?? '') . ' ' . $this->closing_year;
+
+        return ($months[$this->closing_month] ?? '').' '.$this->closing_year;
     }
 }

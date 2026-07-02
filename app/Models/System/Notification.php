@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Notification extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = ['id', 'type', 'notifiable_type', 'notifiable_id', 'title', 'message', 'data', 'read_at'];

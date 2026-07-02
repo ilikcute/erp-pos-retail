@@ -2,6 +2,7 @@
 
 namespace App\Models\Pricing;
 
+use App\Models\Product\ProductVariant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,8 +27,8 @@ class PriceHistory extends Model
     ];
 
     protected $casts = [
-        'old_price'  => 'decimal:2',
-        'new_price'  => 'decimal:2',
+        'old_price' => 'decimal:2',
+        'new_price' => 'decimal:2',
         'changed_at' => 'datetime',
     ];
 
@@ -38,6 +39,6 @@ class PriceHistory extends Model
 
     public function variant(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Product\ProductVariant::class, 'product_variant_id');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

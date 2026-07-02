@@ -29,9 +29,9 @@ class SupplierController extends Controller
             'data' => SupplierResource::collection($suppliers->items()),
             'meta' => [
                 'current_page' => $suppliers->currentPage(),
-                'last_page'    => $suppliers->lastPage(),
-                'per_page'     => $suppliers->perPage(),
-                'total'        => $suppliers->total(),
+                'last_page' => $suppliers->lastPage(),
+                'per_page' => $suppliers->perPage(),
+                'total' => $suppliers->total(),
             ],
         ]);
     }
@@ -51,7 +51,7 @@ class SupplierController extends Controller
         $supplier = $this->supplierService->create($request->validated());
 
         return response()->json([
-            'data'    => new SupplierResource($supplier),
+            'data' => new SupplierResource($supplier),
             'message' => 'Supplier berhasil ditambahkan.',
         ], 201);
     }
@@ -64,7 +64,7 @@ class SupplierController extends Controller
         $supplier = $this->supplierService->update($supplier, $request->validated());
 
         return response()->json([
-            'data'    => new SupplierResource($supplier),
+            'data' => new SupplierResource($supplier),
             'message' => 'Supplier berhasil diperbarui.',
         ]);
     }

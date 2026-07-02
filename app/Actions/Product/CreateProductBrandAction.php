@@ -15,10 +15,10 @@ class CreateProductBrandAction
     {
         // Map frontend fields (code, name) to DB fields (brand_code, brand_name)
         $mappedData = [
-            'brand_code'  => $data['code'],
-            'brand_name'  => $data['name'],
+            'brand_code' => $data['code'],
+            'brand_name' => $data['name'],
             'description' => $data['description'] ?? null,
-            'is_active'   => $data['is_active'] ?? true,
+            'is_active' => $data['is_active'] ?? true,
         ];
 
         return $this->brandRepository->create($mappedData);

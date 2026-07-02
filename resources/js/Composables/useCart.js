@@ -21,8 +21,9 @@ export function useCart() {
                     toast.success(`${product.title} ditambahkan`);
                     addingProductId.value = null;
                 },
-                onError: () => {
-                    toast.error("Gagal menambahkan produk");
+                onError: (errs) => {
+                    const firstError = errs ? Object.values(errs)[0] : null;
+                    toast.error(firstError || "Gagal menambahkan produk");
                     addingProductId.value = null;
                 },
             },
@@ -39,8 +40,9 @@ export function useCart() {
             {
                 preserveScroll: true,
                 onSuccess: () => (updatingCartId.value = null),
-                onError: (errors) => {
-                    toast.error(errors?.message || "Gagal update quantity");
+                onError: (errs) => {
+                    const firstError = errs ? Object.values(errs)[0] : null;
+                    toast.error(firstError || "Gagal update quantity");
                     updatingCartId.value = null;
                 },
             },
@@ -59,8 +61,9 @@ export function useCart() {
                 );
                 removingItemId.value = null;
             },
-            onError: () => {
-                toast.error("Gagal menghapus item");
+            onError: (errs) => {
+                const firstError = errs ? Object.values(errs)[0] : null;
+                toast.error(firstError || "Gagal menghapus item");
                 removingItemId.value = null;
             },
         });
@@ -78,8 +81,9 @@ export function useCart() {
                     toast.success("Transaksi ditahan");
                     isHolding.value = false;
                 },
-                onError: (errors) => {
-                    toast.error(errors?.message || "Gagal menahan transaksi");
+                onError: (errs) => {
+                    const firstError = errs ? Object.values(errs)[0] : null;
+                    toast.error(firstError || "Gagal menahan transaksi");
                     isHolding.value = false;
                 },
             },

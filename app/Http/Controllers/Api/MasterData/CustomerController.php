@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MasterData\StoreCustomerRequest;
 use App\Http\Requests\MasterData\UpdateCustomerRequest;
 use App\Http\Resources\MasterData\CustomerResource;
-use App\Models\MasterData\Customer;
 use App\Services\MasterData\CustomerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,9 +29,9 @@ class CustomerController extends Controller
             'data' => CustomerResource::collection($customers->items()),
             'meta' => [
                 'current_page' => $customers->currentPage(),
-                'last_page'    => $customers->lastPage(),
-                'per_page'     => $customers->perPage(),
-                'total'        => $customers->total(),
+                'last_page' => $customers->lastPage(),
+                'per_page' => $customers->perPage(),
+                'total' => $customers->total(),
             ],
         ]);
     }
@@ -52,7 +51,7 @@ class CustomerController extends Controller
         $customer = $this->customerService->create($request->validated());
 
         return response()->json([
-            'data'    => new CustomerResource($customer),
+            'data' => new CustomerResource($customer),
             'message' => 'Customer berhasil ditambahkan.',
         ], 201);
     }
@@ -65,7 +64,7 @@ class CustomerController extends Controller
         $customer = $this->customerService->update($customer, $request->validated());
 
         return response()->json([
-            'data'    => new CustomerResource($customer),
+            'data' => new CustomerResource($customer),
             'message' => 'Customer berhasil diperbarui.',
         ]);
     }

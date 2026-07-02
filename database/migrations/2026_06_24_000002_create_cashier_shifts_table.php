@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -25,7 +26,7 @@ return new class extends Migration
         });
 
         // Seed default shifts
-        \Illuminate\Support\Facades\DB::table('cashier_shifts')->insert([
+        DB::table('cashier_shifts')->insert([
             [
                 'name' => 'Shift Pagi',
                 'shift_name' => 'Shift Pagi',

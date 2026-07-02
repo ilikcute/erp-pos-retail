@@ -29,9 +29,9 @@ class UserController extends Controller
             'data' => UserResource::collection($users->items()),
             'meta' => [
                 'current_page' => $users->currentPage(),
-                'last_page'    => $users->lastPage(),
-                'per_page'     => $users->perPage(),
-                'total'        => $users->total(),
+                'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
             ],
         ]);
     }
@@ -54,7 +54,7 @@ class UserController extends Controller
         $user = $this->userService->create($request->validated());
 
         return response()->json([
-            'data'    => new UserResource($user),
+            'data' => new UserResource($user),
             'message' => 'User berhasil dibuat.',
         ], 201);
     }
@@ -68,7 +68,7 @@ class UserController extends Controller
         $user = $this->userService->update($user, $request->validated());
 
         return response()->json([
-            'data'    => new UserResource($user),
+            'data' => new UserResource($user),
             'message' => 'User berhasil diperbarui.',
         ]);
     }

@@ -1,4 +1,5 @@
 <?php
+
 return [
     'default_location_id' => env('POS_DEFAULT_LOCATION_ID', 1),
     'payment_gateways' => [

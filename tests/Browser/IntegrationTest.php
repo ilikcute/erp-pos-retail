@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\System\User;
 use App\Models\MasterData\Supplier;
 use App\Models\Product\Product;
+use App\Models\System\User;
 
 test('inventory page loads without errors', function () {
     $user = User::factory()->create();

@@ -13,7 +13,7 @@ class ApprovalLevel extends Model
         'role_id',
         'min_amount',
         'max_amount',
-        'is_active'
+        'is_active',
     ];
 
     protected function casts(): array

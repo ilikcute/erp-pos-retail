@@ -4,8 +4,6 @@ namespace App\Actions\Security;
 
 use App\Models\Auth\UserSession;
 use App\Models\System\User;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 
 class ManageDevicesAction
 {

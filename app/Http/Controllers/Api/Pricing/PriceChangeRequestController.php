@@ -51,7 +51,7 @@ class PriceChangeRequestController extends Controller
         $priceRequest = $this->service->create($validated);
 
         return response()->json([
-            'data'    => new PriceChangeRequestResource($priceRequest),
+            'data' => new PriceChangeRequestResource($priceRequest),
             'message' => 'Price change request berhasil dibuat.',
         ], 201);
     }
@@ -66,7 +66,7 @@ class PriceChangeRequestController extends Controller
         $priceRequest = $this->service->approve($priceRequest, auth()->id());
 
         return response()->json([
-            'data'    => new PriceChangeRequestResource($priceRequest),
+            'data' => new PriceChangeRequestResource($priceRequest),
             'message' => 'Price change request disetujui.',
         ]);
     }
@@ -83,7 +83,7 @@ class PriceChangeRequestController extends Controller
         $priceRequest = $this->service->reject($priceRequest, auth()->id(), $request->reason);
 
         return response()->json([
-            'data'    => new PriceChangeRequestResource($priceRequest),
+            'data' => new PriceChangeRequestResource($priceRequest),
             'message' => 'Price change request ditolak.',
         ]);
     }
@@ -98,7 +98,7 @@ class PriceChangeRequestController extends Controller
         $priceRequest = $this->service->apply($priceRequest, auth()->id());
 
         return response()->json([
-            'data'    => new PriceChangeRequestResource($priceRequest),
+            'data' => new PriceChangeRequestResource($priceRequest),
             'message' => 'Perubahan harga berhasil diterapkan.',
         ]);
     }

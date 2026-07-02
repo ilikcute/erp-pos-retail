@@ -9,8 +9,8 @@ use App\Models\System\DocumentType;
 use App\Models\System\SystemSetting;
 use App\Repositories\Contracts\System\RoleRepositoryInterface;
 use App\Repositories\Contracts\System\UserRepositoryInterface;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

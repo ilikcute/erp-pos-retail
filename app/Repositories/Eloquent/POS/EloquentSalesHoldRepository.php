@@ -39,13 +39,14 @@ class EloquentSalesHoldRepository implements SalesHoldRepositoryInterface
     public function update(SalesHold $hold, array $data): SalesHold
     {
         $hold->update($data);
+
         return $hold->fresh();
     }
 
     public function resume(SalesHold $hold): void
     {
         $hold->update([
-            'status'     => 'RESUMED',
+            'status' => 'RESUMED',
             'resumed_at' => now(),
         ]);
     }

@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Promotion\PromotionController as WebPromotionController;
+use App\Http\Controllers\Api\POS\PosPromotionController;
 use App\Http\Controllers\Api\Promotion\PromotionController as ApiPromotionController;
 use App\Http\Controllers\Api\Promotion\PromotionSettingController;
-use App\Http\Controllers\Api\POS\PosPromotionController;
+use App\Http\Controllers\Promotion\PromotionController as WebPromotionController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('promotions')->group(function () {
     Route::get('/', [WebPromotionController::class, 'index'])->name('promotions.index');

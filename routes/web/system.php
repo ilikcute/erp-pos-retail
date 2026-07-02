@@ -1,14 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\System\DocumentSequenceController;
+use App\Http\Controllers\System\ActivityLogController;
+use App\Http\Controllers\System\ApprovalController;
+use App\Http\Controllers\System\AuditLogController;
+use App\Http\Controllers\System\NotificationController;
+use App\Http\Controllers\System\RoleController;
 use App\Http\Controllers\System\SystemController;
 use App\Http\Controllers\System\UserController;
-use App\Http\Controllers\System\RoleController;
-use App\Http\Controllers\System\ApprovalController;
-use App\Http\Controllers\System\ActivityLogController;
-use App\Http\Controllers\System\NotificationController;
-use App\Http\Controllers\System\AuditLogController;
-use App\Http\Controllers\Api\System\DocumentSequenceController;
+use Illuminate\Support\Facades\Route;
 
 // System pages
 Route::get('/system', [SystemController::class, 'index'])->name('system.index');

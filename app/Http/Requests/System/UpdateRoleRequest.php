@@ -3,6 +3,7 @@
 namespace App\Http\Requests\System;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class UpdateRoleRequest extends FormRequest
 {
@@ -16,7 +17,7 @@ class UpdateRoleRequest extends FormRequest
         if (! $this->has('display_name') && $this->has('name')) {
             $this->merge([
                 'display_name' => $this->name,
-                'name' => \Illuminate\Support\Str::slug($this->name),
+                'name' => Str::slug($this->name),
             ]);
         }
     }
@@ -26,7 +27,7 @@ class UpdateRoleRequest extends FormRequest
         $roleId = $this->route('id');
 
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:roles,name,' . $this->route('id')],
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name,'.$this->route('id')],
             'display_name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],

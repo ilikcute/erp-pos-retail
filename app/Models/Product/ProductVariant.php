@@ -2,15 +2,17 @@
 
 namespace App\Models\Product;
 
+use App\Models\Pricing\PriceListItem;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductVariant extends Model
 {
-    use SoftDeletes, HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'product_id',
@@ -27,10 +29,10 @@ class ProductVariant extends Model
     ];
 
     protected $casts = [
-        'is_default'     => 'boolean',
-        'is_active'      => 'boolean',
-        'weight'         => 'decimal:2',
-        'volume'         => 'decimal:2',
+        'is_default' => 'boolean',
+        'is_active' => 'boolean',
+        'weight' => 'decimal:2',
+        'volume' => 'decimal:2',
         'purchase_price' => 'decimal:2',
     ];
 
@@ -56,14 +58,14 @@ class ProductVariant extends Model
         return $this->hasMany(ProductVariantAttribute::class);
     }
 
-    public function costProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function costProfile(): HasOne
     {
         return $this->hasOne(ProductCostProfile::class);
     }
 
     public function priceListItems(): HasMany
     {
-        return $this->hasMany(\App\Models\Pricing\PriceListItem::class, 'product_variant_id');
+        return $this->hasMany(PriceListItem::class, 'product_variant_id');
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────

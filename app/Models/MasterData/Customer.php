@@ -2,16 +2,16 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Loyalty\LoyaltyAccount;
 use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use SoftDeletes, HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'customer_code',
@@ -32,9 +32,9 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'is_active'    => 'boolean',
+        'is_active' => 'boolean',
         'credit_limit' => 'decimal:2',
-        'birth_date'   => 'date',
+        'birth_date' => 'date',
     ];
 
     public function loyaltyAccount(): HasOne

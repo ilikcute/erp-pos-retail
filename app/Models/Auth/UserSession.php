@@ -2,9 +2,9 @@
 
 namespace App\Models\Auth;
 
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\System\User;
 
 class UserSession extends Model
 {

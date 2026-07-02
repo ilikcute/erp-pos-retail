@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\System;
 
+use App\Events\ApprovalApproved;
+use App\Events\ApprovalRejected;
 use App\Http\Controllers\Controller;
 use App\Models\System\Approval;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ class ApprovalController extends Controller
     {
         $approvals = Approval::with(['requestor', 'approvable'])
             ->where('status', 'PENDING')
-            ->when($request->module, fn($q) => $q->where('module', $request->module))
+            ->when($request->module, fn ($q) => $q->where('module', $request->module))
             ->latest()
             ->paginate(20);
 
@@ -41,7 +43,7 @@ class ApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
 
-        if (!$approval->isPending()) {
+        if (! $approval->isPending()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Approval sudah diproses',
@@ -56,7 +58,7 @@ class ApprovalController extends Controller
         ]);
 
         // Trigger approval callback (optional)
-        event(new \App\Events\ApprovalApproved($approval));
+        event(new ApprovalApproved($approval));
 
         return response()->json([
             'success' => true,
@@ -73,7 +75,7 @@ class ApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
 
-        if (!$approval->isPending()) {
+        if (! $approval->isPending()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Approval sudah diproses',
@@ -87,7 +89,7 @@ class ApprovalController extends Controller
             'rejection_notes' => $validated['notes'],
         ]);
 
-        event(new \App\Events\ApprovalRejected($approval));
+        event(new ApprovalRejected($approval));
 
         return response()->json([
             'success' => true,

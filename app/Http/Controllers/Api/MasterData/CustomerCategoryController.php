@@ -22,11 +22,10 @@ class CustomerCategoryController extends Controller
         $categories = CustomerCategory::query()
             ->when(
                 $request->search,
-                fn($q, $s) =>
-                $q->where('category_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('category_name', 'like', "%{$s}%")
                     ->orWhere('category_code', 'like', "%{$s}%")
             )
-            ->when(isset($request->is_active), fn($q) => $q->where('is_active', $request->boolean('is_active')))
+            ->when(isset($request->is_active), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -34,9 +33,9 @@ class CustomerCategoryController extends Controller
             'data' => $categories->items(),
             'meta' => [
                 'current_page' => $categories->currentPage(),
-                'last_page'    => $categories->lastPage(),
-                'per_page'     => $categories->perPage(),
-                'total'        => $categories->total(),
+                'last_page' => $categories->lastPage(),
+                'per_page' => $categories->perPage(),
+                'total' => $categories->total(),
             ],
         ]);
     }
@@ -58,8 +57,8 @@ class CustomerCategoryController extends Controller
         $validated = $request->validate([
             'category_code' => ['required', 'string', 'max:50', 'unique:customer_categories,category_code'],
             'category_name' => ['required', 'string', 'max:100'],
-            'description'   => ['nullable', 'string', 'max:255'],
-            'is_active'     => ['nullable', 'boolean'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
         $category = CustomerCategory::create($validated);
@@ -78,8 +77,8 @@ class CustomerCategoryController extends Controller
         $validated = $request->validate([
             'category_code' => ['sometimes', 'string', 'max:50', Rule::unique('customer_categories', 'category_code')->ignore($id)],
             'category_name' => ['sometimes', 'string', 'max:100'],
-            'description'   => ['nullable', 'string', 'max:255'],
-            'is_active'     => ['nullable', 'boolean'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
         $original = $category->only(['category_code', 'category_name', 'is_active']);

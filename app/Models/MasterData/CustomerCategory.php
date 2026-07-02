@@ -2,9 +2,9 @@
 
 namespace App\Models\MasterData;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\HasCreatedBy;
 
 class CustomerCategory extends Model
 {

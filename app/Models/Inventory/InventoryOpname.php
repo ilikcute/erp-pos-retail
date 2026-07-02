@@ -17,13 +17,13 @@ class InventoryOpname extends Model
         'approved_by',
         'posted_by',
         'approved_at',
-        'posted_at'
+        'posted_at',
     ];
 
     protected $casts = [
         'opname_date' => 'date',
         'approved_at' => 'datetime',
-        'posted_at' => 'datetime'
+        'posted_at' => 'datetime',
     ];
 
     public function location()

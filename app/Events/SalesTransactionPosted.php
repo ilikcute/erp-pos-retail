@@ -5,7 +5,6 @@ namespace App\Events;
 use App\Models\POS\SalesTransaction;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -23,7 +22,7 @@ class SalesTransactionPosted implements ShouldBroadcast
     {
         return [
             new Channel('pos'),
-            new PrivateChannel('cashier.' . $this->transaction->cashier_id),
+            new PrivateChannel('cashier.'.$this->transaction->cashier_id),
         ];
     }
 

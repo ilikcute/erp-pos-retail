@@ -5,8 +5,8 @@ namespace App\Actions\POS;
 use App\Enums\DocumentStatus;
 use App\Models\POS\SalesTransaction;
 use App\Models\POS\SalesVoid;
-use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
 use App\Repositories\Contracts\Inventory\InventoryLedgerRepositoryInterface;
+use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
 use App\Support\AuditService;
 use App\Support\DocumentNumberService;
 use Illuminate\Support\Facades\DB;
@@ -30,20 +30,20 @@ class VoidSalesTransactionAction
             $voidNo = $this->documentNumberService->generate('SALES_VOID');
 
             SalesVoid::create([
-                'void_no'              => $voidNo,
+                'void_no' => $voidNo,
                 'sales_transaction_id' => $transaction->id,
-                'transaction_no'       => $transaction->transaction_no,
-                'void_reason'          => $reason,
-                'void_date'            => now()->toDateString(),
-                'void_amount'          => $transaction->grand_total,
-                'status'               => DocumentStatus::POSTED->value,
-                'created_by'           => auth()->id(),
-                'voided_by'            => auth()->id(),
-                'voided_at'            => now(),
+                'transaction_no' => $transaction->transaction_no,
+                'void_reason' => $reason,
+                'void_date' => now()->toDateString(),
+                'void_amount' => $transaction->grand_total,
+                'status' => DocumentStatus::POSTED->value,
+                'created_by' => auth()->id(),
+                'voided_by' => auth()->id(),
+                'voided_at' => now(),
             ]);
 
             $transaction->update([
-                'status'    => DocumentStatus::VOID->value,
+                'status' => DocumentStatus::VOID->value,
                 'voided_by' => auth()->id(),
                 'voided_at' => now(),
             ]);
@@ -69,18 +69,18 @@ class VoidSalesTransactionAction
     {
         foreach ($transaction->items as $item) {
             $this->inventoryLedgerRepository->create([
-                'document_type'      => 'SALES_VOID',
-                'document_id'        => $transaction->id,
-                'document_no'        => $transaction->transaction_no,
-                'product_id'         => $item->product_id,
+                'document_type' => 'SALES_VOID',
+                'document_id' => $transaction->id,
+                'document_no' => $transaction->transaction_no,
+                'product_id' => $item->product_id,
                 'product_variant_id' => $item->product_variant_id,
-                'location_id'        => null,
-                'movement_type'      => 'IN',
-                'quantity'           => $item->quantity,
-                'unit_cost'          => $item->cost_price,
-                'reference_date'     => now()->toDateString(),
-                'notes'              => "POS Void: {$transaction->transaction_no} - {$item->quantity} units",
-                'created_by'         => auth()->id(),
+                'location_id' => null,
+                'movement_type' => 'IN',
+                'quantity' => $item->quantity,
+                'unit_cost' => $item->cost_price,
+                'reference_date' => now()->toDateString(),
+                'notes' => "POS Void: {$transaction->transaction_no} - {$item->quantity} units",
+                'created_by' => auth()->id(),
             ]);
         }
     }

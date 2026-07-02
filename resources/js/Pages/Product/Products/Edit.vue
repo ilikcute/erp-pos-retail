@@ -13,12 +13,14 @@ const props = defineProps({
     brands: { type: Array, required: true },
     categories: { type: Array, required: true },
     units: { type: Array, required: true },
+    taxes: { type: Array, default: () => [] },
 });
 
 const form = useForm({
     product_name: props.product.product_name,
     brand_id: props.product.brand_id || "",
     category_id: props.product.category_id || "",
+    tax_id: props.product.tax_id || "",
     base_unit_id: props.product.base_unit_id,
     description: props.product.description || "",
     short_description: props.product.short_description || "",
@@ -227,7 +229,7 @@ function submitAddVariant() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <FormSelect
                         v-model="form.category_id"
                         label="Category"
@@ -255,6 +257,15 @@ function submitAddVariant() {
                         :options="[
                             { value: '', label: '-- Select Unit --' },
                             ...units.map(u => ({ value: u.id, label: u.unit_name }))
+                        ]"
+                    />
+                    <FormSelect
+                        v-model="form.tax_id"
+                        label="Pajak (Tax)"
+                        :error="form.errors.tax_id"
+                        :options="[
+                            { value: '', label: '-- Tanpa Pajak --' },
+                            ...taxes.map(t => ({ value: t.id, label: `${t.tax_name} (${t.tax_rate}%)` }))
                         ]"
                     />
                 </div>

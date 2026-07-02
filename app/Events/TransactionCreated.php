@@ -19,7 +19,7 @@ class TransactionCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('pos.session.' . $this->transaction->cashier_session_id),
+            new Channel('pos.session.'.$this->transaction->cashier_session_id),
         ];
     }
 

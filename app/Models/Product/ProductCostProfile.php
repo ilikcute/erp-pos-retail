@@ -2,9 +2,9 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasCreatedBy;
 
 /**
  * Profil biaya per varian — digunakan oleh Inventory untuk HPP.
@@ -26,8 +26,8 @@ class ProductCostProfile extends Model
 
     protected $casts = [
         'standard_cost' => 'decimal:4',
-        'last_cost'     => 'decimal:4',
-        'average_cost'  => 'decimal:4',
+        'last_cost' => 'decimal:4',
+        'average_cost' => 'decimal:4',
     ];
 
     public function variant(): BelongsTo

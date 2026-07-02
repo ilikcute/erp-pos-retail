@@ -2,8 +2,8 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Model;
 
 class LandedCost extends Model
 {

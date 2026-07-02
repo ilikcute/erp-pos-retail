@@ -26,7 +26,7 @@ class EloquentUserAuthRepository implements UserAuthRepositoryInterface
     public function updatePassword(int $userId, string $hashedPassword): void
     {
         User::where('id', $userId)->update([
-            'password'              => $hashedPassword,
+            'password' => $hashedPassword,
             'force_password_change' => false,
         ]);
     }

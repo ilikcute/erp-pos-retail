@@ -2,10 +2,11 @@
 
 namespace App\Models\Purchasing;
 
+use App\Models\MasterData\Supplier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\MasterData\Supplier;
-use App\Models\Auth\User; // or App\Models\System\User depending on workspace
+
+// or App\Models\System\User depending on workspace
 
 class PurchaseOrder extends Model
 {

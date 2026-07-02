@@ -21,12 +21,11 @@ class ProductCategoryController extends Controller
             ->with('parent')
             ->when(
                 $request->search,
-                fn($q, $s) =>
-                $q->where('category_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('category_name', 'like', "%{$s}%")
                     ->orWhere('category_code', 'like', "%{$s}%")
             )
-            ->when($request->boolean('root_only'), fn($q) => $q->root())
-            ->when(isset($request->is_active), fn($q) => $q->where('is_active', $request->boolean('is_active')))
+            ->when($request->boolean('root_only'), fn ($q) => $q->root())
+            ->when(isset($request->is_active), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
             ->orderBy('sort_order')
             ->paginate($request->integer('per_page', 50));
 
@@ -51,6 +50,7 @@ class ProductCategoryController extends Controller
         $this->authorize('product.category.view');
         $category = ProductCategory::with(['parent', 'children'])->find($id);
         abort_if(! $category, 404, 'Kategori tidak ditemukan.');
+
         return response()->json(['data' => $category]);
     }
 
@@ -61,10 +61,10 @@ class ProductCategoryController extends Controller
         $validated = $request->validate([
             'category_code' => ['required', 'string', 'max:50', 'unique:product_categories,category_code'],
             'category_name' => ['required', 'string', 'max:150'],
-            'parent_id'     => ['nullable', 'integer', 'exists:product_categories,id'],
-            'description'   => ['nullable', 'string', 'max:255'],
-            'sort_order'    => ['nullable', 'integer', 'min:0'],
-            'is_active'     => ['boolean'],
+            'parent_id' => ['nullable', 'integer', 'exists:product_categories,id'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['boolean'],
         ]);
         $validated['created_by'] = auth()->id();
         $validated['updated_by'] = auth()->id();
@@ -84,10 +84,10 @@ class ProductCategoryController extends Controller
         $validated = $request->validate([
             'category_code' => ['sometimes', 'string', 'max:50', Rule::unique('product_categories', 'category_code')->ignore($id)],
             'category_name' => ['sometimes', 'string', 'max:150'],
-            'parent_id'     => ['nullable', 'integer', 'exists:product_categories,id', Rule::notIn([$id])],
-            'description'   => ['nullable', 'string', 'max:255'],
-            'sort_order'    => ['nullable', 'integer', 'min:0'],
-            'is_active'     => ['boolean'],
+            'parent_id' => ['nullable', 'integer', 'exists:product_categories,id', Rule::notIn([$id])],
+            'description' => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['boolean'],
         ]);
         $validated['updated_by'] = auth()->id();
 

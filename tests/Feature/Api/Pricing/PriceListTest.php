@@ -2,20 +2,24 @@
 
 namespace Tests\Feature\Api\Pricing;
 
-use App\Models\MasterData\Unit;
+use App\Enums\PriceListType;
 use App\Models\MasterData\Customer;
 use App\Models\MasterData\CustomerCategory;
-use App\Models\Product\Product;
-use App\Models\Product\ProductVariant;
+use App\Models\MasterData\Unit;
 use App\Models\Pricing\PriceList;
 use App\Models\Pricing\PriceListItem;
+use App\Models\Product\Product;
+use App\Models\Product\ProductVariant;
 use Tests\ApiTestCase;
 
 class PriceListTest extends ApiTestCase
 {
     private Unit $unit;
+
     private ProductVariant $variant;
+
     private CustomerCategory $category;
+
     private Customer $customer;
 
     protected function setUp(): void
@@ -160,7 +164,7 @@ class PriceListTest extends ApiTestCase
         // List items
         $responseList = $this->getJson("/api/v1/pricing/price-lists/{$priceList->id}/items");
         $responseList->assertStatus(200)
-            ->assertJsonFragment(['price' => "5000.00"]);
+            ->assertJsonFragment(['price' => '5000.00']);
     }
 
     public function test_price_resolver_logic()
@@ -169,7 +173,7 @@ class PriceListTest extends ApiTestCase
 
         // 1. Fetch or Create Default Retail Price List (Price: 5000)
         $defaultList = PriceList::where('is_default', true)
-            ->where('price_list_type', \App\Enums\PriceListType::RETAIL->value)
+            ->where('price_list_type', PriceListType::RETAIL->value)
             ->active()
             ->first();
 
@@ -220,7 +224,7 @@ class PriceListTest extends ApiTestCase
         $responseA->assertStatus(200);
         // Note: price resolver might return numeric or structure depending on service implementation
         // Let's assert that the returned resolved price value matches 5000
-        $this->assertEquals(5000, (float)$responseA->json('data.price'));
+        $this->assertEquals(5000, (float) $responseA->json('data.price'));
 
         // Scenario B: Resolve price for Wholesale customer -> Should resolve to 4000
         $responseB = $this->postJson('/api/v1/pricing/price-lists/resolve', [
@@ -231,6 +235,6 @@ class PriceListTest extends ApiTestCase
         ]);
 
         $responseB->assertStatus(200);
-        $this->assertEquals(4000, (float)$responseB->json('data.price'));
+        $this->assertEquals(4000, (float) $responseB->json('data.price'));
     }
 }

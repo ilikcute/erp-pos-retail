@@ -33,14 +33,14 @@ class DocumentTypeSeeder extends Seeder
         ];
 
         foreach ($types as &$type) {
-            $type['suffix']     = null;
-            $type['is_active']  = true;
+            $type['suffix'] = null;
+            $type['is_active'] = true;
             $type['created_at'] = now();
             $type['updated_at'] = now();
         }
 
         DB::table('document_types')->insertOrIgnore($types);
 
-        $this->command->info('✅ Document types berhasil di-seed (' . count($types) . ' tipe).');
+        $this->command->info('✅ Document types berhasil di-seed ('.count($types).' tipe).');
     }
 }

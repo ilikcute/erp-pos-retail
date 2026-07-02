@@ -90,7 +90,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as &$p) {
-            $p['name']       = "{$p['module']}.{$p['resource']}.{$p['action']}";
+            $p['name'] = "{$p['module']}.{$p['resource']}.{$p['action']}";
             $p['description'] = null;
             $p['created_at'] = now();
             $p['updated_at'] = now();
@@ -110,7 +110,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($roles as &$r) {
-            $r['is_active']  = true;
+            $r['is_active'] = true;
             $r['created_at'] = now();
             $r['updated_at'] = now();
         }
@@ -118,17 +118,17 @@ class RolePermissionSeeder extends Seeder
         DB::table('roles')->insertOrIgnore($roles);
 
         // ── Assign semua permissions ke superadmin ───────────────────
-        $superadminId  = DB::table('roles')->where('name', 'superadmin')->value('id');
-        $adminId       = DB::table('roles')->where('name', 'admin')->value('id');
+        $superadminId = DB::table('roles')->where('name', 'superadmin')->value('id');
+        $adminId = DB::table('roles')->where('name', 'admin')->value('id');
         $permissionIds = DB::table('permissions')->pluck('id');
 
         // Superadmin: semua permissions
         foreach ($permissionIds as $pid) {
             DB::table('role_permissions')->insertOrIgnore([
-                'role_id'       => $superadminId,
+                'role_id' => $superadminId,
                 'permission_id' => $pid,
-                'created_at'    => now(),
-                'updated_at'    => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
 
@@ -139,10 +139,10 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($adminPermissions as $pid) {
             DB::table('role_permissions')->insertOrIgnore([
-                'role_id'       => $adminId,
+                'role_id' => $adminId,
                 'permission_id' => $pid,
-                'created_at'    => now(),
-                'updated_at'    => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }

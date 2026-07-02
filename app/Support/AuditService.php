@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\System\AuditLog;
 use App\Models\System\ActivityLog;
+use App\Models\System\AuditLog;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditService
@@ -26,21 +26,21 @@ class AuditService
         ?string $reason = null,
     ): void {
         AuditLog::create([
-            'user_id'       => auth()->id(),
-            'module'        => $module,
-            'action'        => $action,
-            'table_name'    => $tableName,
-            'record_id'     => $recordId,
-            'document_no'   => $documentNo,
+            'user_id' => auth()->id(),
+            'module' => $module,
+            'action' => $action,
+            'table_name' => $tableName,
+            'record_id' => $recordId,
+            'document_no' => $documentNo,
             'document_type' => $documentType,
             'status_before' => $statusBefore,
-            'status_after'  => $statusAfter,
-            'old_values'    => $oldValues ?: null,
-            'new_values'    => $newValues ?: null,
-            'reason'        => $reason,
-            'ip_address'    => request()->ip(),
-            'user_agent'    => request()->userAgent(),
-            'created_at'    => now(),
+            'status_after' => $statusAfter,
+            'old_values' => $oldValues ?: null,
+            'new_values' => $newValues ?: null,
+            'reason' => $reason,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'created_at' => now(),
         ]);
     }
 
@@ -54,13 +54,13 @@ class AuditService
         ?string $description = null,
     ): void {
         ActivityLog::create([
-            'user_id'     => auth()->id(),
-            'activity'    => $activity,
-            'module'      => $module,
+            'user_id' => auth()->id(),
+            'activity' => $activity,
+            'module' => $module,
             'description' => $description,
-            'ip_address'  => request()->ip(),
-            'user_agent'  => request()->userAgent(),
-            'created_at'  => now(),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'created_at' => now(),
         ]);
     }
 

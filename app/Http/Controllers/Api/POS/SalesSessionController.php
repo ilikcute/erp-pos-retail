@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\POS;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\POS\OpenSessionRequest;
 use App\Http\Requests\POS\CloseSessionRequest;
+use App\Http\Requests\POS\OpenSessionRequest;
 use App\Http\Resources\POS\SalesSessionResource;
 use App\Services\POS\SalesSessionService;
 use Illuminate\Http\JsonResponse;
@@ -26,12 +26,12 @@ class SalesSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => SalesSessionResource::collection($sessions),
-            'meta'    => [
+            'data' => SalesSessionResource::collection($sessions),
+            'meta' => [
                 'current_page' => $sessions->currentPage(),
-                'last_page'    => $sessions->lastPage(),
-                'per_page'     => $sessions->perPage(),
-                'total'        => $sessions->total(),
+                'last_page' => $sessions->lastPage(),
+                'per_page' => $sessions->perPage(),
+                'total' => $sessions->total(),
             ],
         ]);
     }
@@ -40,7 +40,7 @@ class SalesSessionController extends Controller
     {
         $session = $this->sessionService->findById($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'message' => 'Session not found',
@@ -50,7 +50,7 @@ class SalesSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => new SalesSessionResource($session),
+            'data' => new SalesSessionResource($session),
         ]);
     }
 
@@ -66,7 +66,7 @@ class SalesSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Session opened successfully',
-            'data'    => new SalesSessionResource($session),
+            'data' => new SalesSessionResource($session),
         ], 201);
     }
 
@@ -74,7 +74,7 @@ class SalesSessionController extends Controller
     {
         $session = $this->sessionService->findById($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'message' => 'Session not found',
@@ -90,7 +90,7 @@ class SalesSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Session closed successfully',
-            'data'    => new SalesSessionResource($session),
+            'data' => new SalesSessionResource($session),
         ]);
     }
 
@@ -101,7 +101,7 @@ class SalesSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => $session ? new SalesSessionResource($session) : null,
+            'data' => $session ? new SalesSessionResource($session) : null,
         ]);
     }
 }

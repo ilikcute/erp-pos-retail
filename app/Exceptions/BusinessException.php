@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 class BusinessException extends Exception
 {
     protected array $errors;
+
     protected int $statusCode;
 
     public function __construct(

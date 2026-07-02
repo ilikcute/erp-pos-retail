@@ -2,8 +2,6 @@
 
 namespace App\Actions\Mobile;
 
-use Illuminate\Support\Facades\File;
-
 class SetupCapacitorConfigAction
 {
     public function execute(): array

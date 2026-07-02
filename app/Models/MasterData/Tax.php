@@ -2,13 +2,13 @@
 
 namespace App\Models\MasterData;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasCreatedBy;
 
 class Tax extends Model
 {
-    use SoftDeletes, HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'tax_code',
@@ -22,9 +22,9 @@ class Tax extends Model
     ];
 
     protected $casts = [
-        'tax_rate'     => 'decimal:2',
+        'tax_rate' => 'decimal:2',
         'is_inclusive' => 'boolean',
-        'is_active'    => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**

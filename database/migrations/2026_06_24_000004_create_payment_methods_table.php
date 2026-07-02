@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -47,12 +48,12 @@ return new class extends Migration
         ];
 
         foreach ($methods as $m) {
-            $account = \Illuminate\Support\Facades\DB::table('chart_of_accounts')
+            $account = DB::table('chart_of_accounts')
                 ->where('account_code', $m['coa_code'])
                 ->first();
 
             if ($account) {
-                \Illuminate\Support\Facades\DB::table('payment_methods')->insert([
+                DB::table('payment_methods')->insert([
                     'method_code' => $m['code'],
                     'method_name' => $m['name'],
                     'method_type' => $m['type'],

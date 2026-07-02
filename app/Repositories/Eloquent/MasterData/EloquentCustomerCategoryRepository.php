@@ -14,8 +14,7 @@ class EloquentCustomerCategoryRepository implements CustomerCategoryRepositoryIn
         return CustomerCategory::query()
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where('category_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('category_name', 'like', "%{$s}%")
                     ->orWhere('category_code', 'like', "%{$s}%")
             )
             ->latest()
@@ -35,6 +34,7 @@ class EloquentCustomerCategoryRepository implements CustomerCategoryRepositoryIn
     public function update(CustomerCategory $category, array $data): CustomerCategory
     {
         $category->update($data);
+
         return $category->fresh();
     }
 

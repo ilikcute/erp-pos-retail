@@ -15,11 +15,10 @@ class EloquentRoleRepository implements RoleRepositoryInterface
             ->with('permissions')
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where('name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('name', 'like', "%{$s}%")
                     ->orWhere('display_name', 'like', "%{$s}%")
             )
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -42,6 +41,7 @@ class EloquentRoleRepository implements RoleRepositoryInterface
     public function update(Role $role, array $data): Role
     {
         $role->update($data);
+
         return $role->fresh();
     }
 

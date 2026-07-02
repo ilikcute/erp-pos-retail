@@ -4,6 +4,7 @@ namespace App\Services\Loyalty;
 
 use App\Enums\Loyalty\AdjustmentType;
 use App\Enums\Loyalty\RedemptionStatus;
+use App\Enums\Loyalty\RewardType;
 use App\Enums\Loyalty\TransactionType;
 use App\Models\Loyalty\LoyaltyAccount;
 use App\Models\Loyalty\LoyaltyAdjustment;
@@ -34,7 +35,7 @@ class LoyaltyService
     ): array {
         $config = LoyaltyConfiguration::getInstance();
 
-        if (!$config->is_enabled) {
+        if (! $config->is_enabled) {
             return ['earned' => 0, 'message' => 'Loyalty program nonaktif'];
         }
 
@@ -71,7 +72,7 @@ class LoyaltyService
                 transactionValue: $transactionValue,
                 reference: $reference,
                 userId: $userId,
-                notes: "Perolehan dari transaksi Rp " . number_format($transactionValue, 0, ',', '.')
+                notes: 'Perolehan dari transaksi Rp '.number_format($transactionValue, 0, ',', '.')
             );
 
             // Cek upgrade tier
@@ -98,11 +99,11 @@ class LoyaltyService
             $account = $this->accountRepo->findOrCreateForCustomer($customerId);
             $reward = LoyaltyRewardCatalog::findOrFail($rewardCatalogId);
 
-            if (!$reward->isAvailable()) {
+            if (! $reward->isAvailable()) {
                 throw new \DomainException('Reward tidak tersedia atau stok habis');
             }
 
-            if (!$account->canRedeem($reward->point_required)) {
+            if (! $account->canRedeem($reward->point_required)) {
                 throw new \DomainException(
                     "Poin tidak mencukupi. Dibutuhkan: {$reward->point_required}, tersedia: {$account->current_balance}"
                 );
@@ -121,10 +122,10 @@ class LoyaltyService
                 'points_used' => $reward->point_required,
                 'reward_value' => $reward->voucher_amount ?? 0,
                 'status' => RedemptionStatus::REDEEMED,
-                'voucher_code' => $reward->reward_type === \App\Enums\Loyalty\RewardType::VOUCHER
+                'voucher_code' => $reward->reward_type === RewardType::VOUCHER
                     ? $this->generateVoucherCode()
                     : null,
-                'voucher_expiry' => $reward->reward_type === \App\Enums\Loyalty\RewardType::VOUCHER
+                'voucher_expiry' => $reward->reward_type === RewardType::VOUCHER
                     ? now()->addMonths(3)
                     : null,
                 'approved_by' => $userId,
@@ -188,7 +189,7 @@ class LoyaltyService
                 transactionValue: $rupiahValue,
                 reference: $reference,
                 userId: $userId,
-                notes: "Pembayaran dengan poin (Rp " . number_format($rupiahValue, 0, ',', '.') . ")"
+                notes: 'Pembayaran dengan poin (Rp '.number_format($rupiahValue, 0, ',', '.').')'
             );
 
             return [
@@ -308,6 +309,7 @@ class LoyaltyService
         $last = LoyaltyTransaction::whereDate('created_at', today())
             ->where('reference_number', 'like', "{$prefix}-{$date}-%")
             ->count();
+
         return sprintf('%s-%s-%04d', $prefix, $date, $last + 1);
     }
 
@@ -315,6 +317,7 @@ class LoyaltyService
     {
         $date = now()->format('Ymd');
         $last = LoyaltyRedemption::whereDate('created_at', today())->count();
+
         return sprintf('LRD-%s-%04d', $date, $last + 1);
     }
 
@@ -322,11 +325,12 @@ class LoyaltyService
     {
         $date = now()->format('Ymd');
         $last = LoyaltyAdjustment::whereDate('created_at', today())->count();
+
         return sprintf('LAD-%s-%04d', $date, $last + 1);
     }
 
     private function generateVoucherCode(): string
     {
-        return 'VOU-' . strtoupper(Str::random(8));
+        return 'VOU-'.strtoupper(Str::random(8));
     }
 }

@@ -27,17 +27,17 @@ class BusinessProfileController extends Controller
 
         $validated = $request->validate([
             'business_name' => ['sometimes', 'string', 'max:150'],
-            'legal_name'    => ['nullable', 'string', 'max:150'],
-            'tax_id'        => ['nullable', 'string', 'max:30'],
-            'address'       => ['nullable', 'string', 'max:500'],
-            'city'          => ['nullable', 'string', 'max:100'],
-            'province'      => ['nullable', 'string', 'max:100'],
-            'postal_code'   => ['nullable', 'string', 'max:10'],
-            'phone'         => ['nullable', 'string', 'max:20'],
-            'email'         => ['nullable', 'email', 'max:100'],
-            'website'       => ['nullable', 'string', 'max:100'],
-            'currency'      => ['nullable', 'string', 'max:10'],
-            'timezone'      => ['nullable', 'string', 'max:50'],
+            'legal_name' => ['nullable', 'string', 'max:150'],
+            'tax_id' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'website' => ['nullable', 'string', 'max:100'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'timezone' => ['nullable', 'string', 'max:50'],
         ]);
 
         $validated['updated_by'] = auth()->id();
@@ -55,7 +55,7 @@ class BusinessProfileController extends Controller
         $this->auditService->log('System', 'UPDATE_BUSINESS_PROFILE', 'business_profiles', $profile->id, $original, $validated);
 
         return response()->json([
-            'data'    => $profile->fresh(),
+            'data' => $profile->fresh(),
             'message' => 'Profil bisnis berhasil diperbarui.',
         ]);
     }

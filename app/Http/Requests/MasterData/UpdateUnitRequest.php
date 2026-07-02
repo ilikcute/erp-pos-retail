@@ -17,10 +17,10 @@ class UpdateUnitRequest extends FormRequest
         $unitId = $this->route('unit');
 
         return [
-            'unit_code'   => ['sometimes', 'required', 'string', 'max:20', Rule::unique('units', 'unit_code')->ignore($unitId)],
-            'unit_name'   => ['sometimes', 'required', 'string', 'max:100'],
+            'unit_code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('units', 'unit_code')->ignore($unitId)],
+            'unit_name' => ['sometimes', 'required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

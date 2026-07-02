@@ -5,10 +5,12 @@ namespace App\Http\Controllers\POS;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\POS\CloseDayRequest;
 use App\Http\Resources\POS\DayClosingResource;
+use App\Models\System\User;
 use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
 use App\Services\POS\DayClosingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class DayClosingController extends Controller
 {
@@ -50,7 +52,7 @@ class DayClosingController extends Controller
     {
         $closing = $this->dayClosingRepo->findById($id);
 
-        if (!$closing) {
+        if (! $closing) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tutup harian tidak ditemukan',
@@ -68,17 +70,17 @@ class DayClosingController extends Controller
         $user = Auth::user();
 
         // Jika kasir biasa (tidak memiliki role admin/supervisor/manager/owner), wajib memvalidasi kredensial supervisor
-        if (!$user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$user->hasPermission('pos.day-closing.manage')) {
-            $supervisor = \App\Models\System\User::where('email', $request->supervisor_email)->first();
+        if (! $user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && ! $user->hasPermission('pos.day-closing.manage')) {
+            $supervisor = User::where('email', $request->supervisor_email)->first();
 
-            if (!$supervisor || !\Illuminate\Support\Facades\Hash::check($request->supervisor_password, $supervisor->password)) {
+            if (! $supervisor || ! Hash::check($request->supervisor_password, $supervisor->password)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Kredensial supervisor salah atau tidak ditemukan.',
                 ], 422);
             }
 
-            if (!$supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$supervisor->hasPermission('pos.day-closing.manage')) {
+            if (! $supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && ! $supervisor->hasPermission('pos.day-closing.manage')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User supervisor yang dimasukkan tidak memiliki wewenang tutup buku.',
@@ -87,7 +89,7 @@ class DayClosingController extends Controller
 
             // Gabungkan catatan jika supervisor mengoverride
             $request->merge([
-                'notes' => trim(($request->notes ?? '') . "\nDiotorisasi oleh supervisor: " . $supervisor->name)
+                'notes' => trim(($request->notes ?? '')."\nDiotorisasi oleh supervisor: ".$supervisor->name),
             ]);
         }
 

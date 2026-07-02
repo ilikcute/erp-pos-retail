@@ -3,6 +3,7 @@
 namespace App\Services\Reporting;
 
 use App\Enums\Reporting\ReportFormat;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportExporter
 {
@@ -19,7 +20,7 @@ class ReportExporter
         };
     }
 
-    private function exportToCsv(array $data, string $filename): \Symfony\Component\HttpFoundation\StreamedResponse
+    private function exportToCsv(array $data, string $filename): StreamedResponse
     {
         $headers = [
             'Content-Type' => 'text/csv',
@@ -30,7 +31,7 @@ class ReportExporter
             $handle = fopen('php://output', 'w');
 
             // Header row
-            if (!empty($data['data'])) {
+            if (! empty($data['data'])) {
                 fputcsv($handle, array_keys($data['data'][0]));
 
                 // Data rows

@@ -2,14 +2,14 @@
 
 namespace App\Models\System;
 
+use App\Enums\UserStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Enums\UserStatus;
 
 class User extends Authenticatable
 {
@@ -36,11 +36,11 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at'    => 'datetime',
-        'last_login_at'        => 'datetime',
+        'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
         'force_password_change' => 'boolean',
-        'password'             => 'hashed',
-        'status'               => UserStatus::class,
+        'password' => 'hashed',
+        'status' => UserStatus::class,
     ];
 
     // ─── Relationships ────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class User extends Authenticatable
     public function hasPermission(string $permission): bool
     {
         return $this->roles()
-            ->whereHas('permissions', fn($q) => $q->where('name', $permission))
+            ->whereHas('permissions', fn ($q) => $q->where('name', $permission))
             ->exists();
     }
 

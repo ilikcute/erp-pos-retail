@@ -17,19 +17,19 @@ class LedgerRepository implements LedgerRepositoryInterface
     {
         $query = InventoryLedger::with(['variant', 'location', 'batch']);
 
-        if (!empty($filters['product_variant_id'])) {
+        if (! empty($filters['product_variant_id'])) {
             $query->where('product_variant_id', $filters['product_variant_id']);
         }
-        if (!empty($filters['location_id'])) {
+        if (! empty($filters['location_id'])) {
             $query->where('location_id', $filters['location_id']);
         }
-        if (!empty($filters['transaction_type'])) {
+        if (! empty($filters['transaction_type'])) {
             $query->where('transaction_type', $filters['transaction_type']);
         }
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('transaction_date', '>=', $filters['date_from']);
         }
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('transaction_date', '<=', $filters['date_to']);
         }
 

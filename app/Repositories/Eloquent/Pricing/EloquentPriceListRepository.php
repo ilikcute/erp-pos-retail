@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Eloquent\Pricing;
 
+use App\Enums\PriceListType;
 use App\Models\Pricing\PriceList;
 use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
-use App\Enums\PriceListType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -16,12 +16,11 @@ class EloquentPriceListRepository implements PriceListRepositoryInterface
             ->with('customerCategories')
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where('price_list_name', 'like', "%{$s}%")
+                fn ($q, $s) => $q->where('price_list_name', 'like', "%{$s}%")
                     ->orWhere('price_list_code', 'like', "%{$s}%")
             )
-            ->when($filters['type'] ?? null, fn($q, $t) => $q->where('price_list_type', $t))
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when($filters['type'] ?? null, fn ($q, $t) => $q->where('price_list_type', $t))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -39,6 +38,7 @@ class EloquentPriceListRepository implements PriceListRepositoryInterface
     public function update(PriceList $priceList, array $data): PriceList
     {
         $priceList->update($data);
+
         return $priceList->fresh();
     }
 
@@ -59,8 +59,7 @@ class EloquentPriceListRepository implements PriceListRepositoryInterface
     {
         return PriceList::whereHas(
             'customerCategories',
-            fn($q) =>
-            $q->where('customer_category_id', $categoryId)
+            fn ($q) => $q->where('customer_category_id', $categoryId)
         )->active()->get();
     }
 }

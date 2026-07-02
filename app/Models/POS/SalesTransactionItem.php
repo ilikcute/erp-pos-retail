@@ -2,12 +2,13 @@
 
 namespace App\Models\POS;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\MasterData\Unit;
 use App\Models\Product\Product;
 use App\Models\Product\ProductVariant;
-use App\Models\MasterData\Unit;
+use App\Models\System\User;
 use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesTransactionItem extends Model
 {
@@ -29,15 +30,16 @@ class SalesTransactionItem extends Model
         'cost_price',
         'notes',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
-        'quantity'        => 'decimal:4',
-        'unit_price'      => 'decimal:2',
+        'quantity' => 'decimal:4',
+        'unit_price' => 'decimal:2',
         'discount_amount' => 'decimal:2',
-        'tax_amount'      => 'decimal:2',
-        'line_total'      => 'decimal:2',
-        'cost_price'      => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'line_total' => 'decimal:2',
+        'cost_price' => 'decimal:2',
     ];
 
     public function salesTransaction(): BelongsTo
@@ -58,5 +60,10 @@ class SalesTransactionItem extends Model
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

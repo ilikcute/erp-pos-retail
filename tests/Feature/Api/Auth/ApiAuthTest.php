@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Api\Auth;
 
-use App\Models\System\User;
 use App\Enums\UserStatus;
+use App\Models\System\Role;
+use App\Models\System\User;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\Sanctum;
 use Tests\ApiTestCase;
 
 class ApiAuthTest extends ApiTestCase
@@ -86,10 +88,10 @@ class ApiAuthTest extends ApiTestCase
             'status' => UserStatus::ACTIVE,
         ]);
 
-        $role = \App\Models\System\Role::firstOrCreate(['name' => 'kasir'], ['display_name' => 'Kasir', 'is_active' => true]);
+        $role = Role::firstOrCreate(['name' => 'kasir'], ['display_name' => 'Kasir', 'is_active' => true]);
         $user->roles()->sync([$role->id]);
 
-        \Laravel\Sanctum\Sanctum::actingAs($user);
+        Sanctum::actingAs($user);
 
         $response = $this->postJson('/api/v1/auth/change-password', [
             'current_password' => $password,

@@ -63,6 +63,7 @@ class Promotion extends Model
     public function isCurrentlyActive(): bool
     {
         $now = now();
+
         return $this->status === PromotionStatus::ACTIVE
             && $this->valid_from <= $now
             && $this->valid_until >= $now;
@@ -70,15 +71,16 @@ class Promotion extends Model
 
     public function hasReachedMaxUsage(): bool
     {
-        if (!$this->limits || !isset($this->limits['max_usage'])) {
+        if (! $this->limits || ! isset($this->limits['max_usage'])) {
             return false;
         }
+
         return $this->current_usage >= $this->limits['max_usage'];
     }
 
     public function hasCustomerReachedMaxUsage(int $customerId): bool
     {
-        if (!$this->limits || !isset($this->limits['max_usage_per_customer'])) {
+        if (! $this->limits || ! isset($this->limits['max_usage_per_customer'])) {
             return false;
         }
 

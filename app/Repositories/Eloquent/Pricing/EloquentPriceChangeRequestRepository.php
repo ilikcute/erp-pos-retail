@@ -12,8 +12,8 @@ class EloquentPriceChangeRequestRepository implements PriceChangeRequestReposito
     {
         return PriceChangeRequest::query()
             ->with(['priceList', 'items'])
-            ->when($filters['status'] ?? null, fn($q, $s) => $q->where('status', $s))
-            ->when($filters['price_list_id'] ?? null, fn($q, $v) => $q->where('price_list_id', $v))
+            ->when($filters['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($filters['price_list_id'] ?? null, fn ($q, $v) => $q->where('price_list_id', $v))
             ->latest()
             ->paginate($perPage);
     }
@@ -36,6 +36,7 @@ class EloquentPriceChangeRequestRepository implements PriceChangeRequestReposito
     public function update(PriceChangeRequest $request, array $data): PriceChangeRequest
     {
         $request->update($data);
+
         return $request->fresh();
     }
 

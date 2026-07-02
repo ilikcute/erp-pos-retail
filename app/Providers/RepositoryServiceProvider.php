@@ -6,14 +6,16 @@ use App\Repositories\Contracts\Auth\UserAuthRepositoryInterface;
 // Contracts & Implementations
 // ── Auth & System ─────────────────────────────────────────────
 use App\Repositories\Contracts\Inventory\InventoryLedgerRepositoryInterface;
+use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
+use App\Repositories\Contracts\Loyalty\TierRepositoryInterface;
 use App\Repositories\Contracts\MasterData\CurrencyRepositoryInterface;
 use App\Repositories\Contracts\MasterData\CustomerCategoryRepositoryInterface;
 use App\Repositories\Contracts\MasterData\CustomerRepositoryInterface;
 use App\Repositories\Contracts\MasterData\SupplierRepositoryInterface;
 use App\Repositories\Contracts\MasterData\TaxRepositoryInterface;
+// ── MasterData ────────────────────────────────────────────────
 use App\Repositories\Contracts\MasterData\UnitConversionRepositoryInterface;
 use App\Repositories\Contracts\MasterData\UnitRepositoryInterface;
-// ── MasterData ────────────────────────────────────────────────
 use App\Repositories\Contracts\POS\SalesHoldRepositoryInterface;
 use App\Repositories\Contracts\POS\SalesSessionRepositoryInterface;
 use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
@@ -26,34 +28,32 @@ use App\Repositories\Contracts\Product\ProductBrandRepositoryInterface;
 use App\Repositories\Contracts\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Contracts\Product\ProductRepositoryInterface;
 use App\Repositories\Contracts\Product\ProductVariantRepositoryInterface;
+// ── Product ───────────────────────────────────────────────────
 use App\Repositories\Contracts\System\PermissionRepositoryInterface;
 use App\Repositories\Contracts\System\RoleRepositoryInterface;
-// ── Product ───────────────────────────────────────────────────
 use App\Repositories\Contracts\System\UserRepositoryInterface;
 use App\Repositories\Eloquent\Auth\EloquentUserAuthRepository;
 use App\Repositories\Eloquent\Inventory\EloquentInventoryLedgerRepository;
+use App\Repositories\Eloquent\Loyalty\AccountRepository;
+use App\Repositories\Eloquent\Loyalty\TierRepository;
 use App\Repositories\Eloquent\MasterData\EloquentCurrencyRepository;
+// ── Pricing ───────────────────────────────────────────────────
 use App\Repositories\Eloquent\MasterData\EloquentCustomerCategoryRepository;
 use App\Repositories\Eloquent\MasterData\EloquentCustomerRepository;
 use App\Repositories\Eloquent\MasterData\EloquentSupplierRepository;
 use App\Repositories\Eloquent\MasterData\EloquentTaxRepository;
-// ── Pricing ───────────────────────────────────────────────────
 use App\Repositories\Eloquent\MasterData\EloquentUnitConversionRepository;
 use App\Repositories\Eloquent\MasterData\EloquentUnitRepository;
 use App\Repositories\Eloquent\POS\EloquentSalesHoldRepository;
 use App\Repositories\Eloquent\POS\EloquentSalesSessionRepository;
+// ── Inventory ─────────────────────────────────────────────────
 use App\Repositories\Eloquent\POS\EloquentSalesTransactionRepository;
 use App\Repositories\Eloquent\POS\EloquentShiftRepository;
+// ── POS ───────────────────────────────────────────────────────
 use App\Repositories\Eloquent\Pricing\EloquentPriceChangeRequestRepository;
 use App\Repositories\Eloquent\Pricing\EloquentPriceHistoryRepository;
-// ── Inventory ─────────────────────────────────────────────────
 use App\Repositories\Eloquent\Pricing\EloquentPriceListItemRepository;
 use App\Repositories\Eloquent\Pricing\EloquentPriceListRepository;
-// ── POS ───────────────────────────────────────────────────────
-use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
-use App\Repositories\Contracts\Loyalty\TierRepositoryInterface;
-use App\Repositories\Eloquent\Loyalty\AccountRepository;
-use App\Repositories\Eloquent\Loyalty\TierRepository;
 use App\Repositories\Eloquent\Product\EloquentProductBrandRepository;
 use App\Repositories\Eloquent\Product\EloquentProductCategoryRepository;
 use App\Repositories\Eloquent\Product\EloquentProductRepository;

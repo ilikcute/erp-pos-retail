@@ -13,14 +13,13 @@ class EloquentTaxRepository implements TaxRepositoryInterface
         return Tax::query()
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where(
-                    fn($q) => $q
+                fn ($q, $s) => $q->where(
+                    fn ($q) => $q
                         ->where('tax_name', 'like', "%{$s}%")
                         ->orWhere('tax_code', 'like', "%{$s}%")
                 )
             )
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -38,6 +37,7 @@ class EloquentTaxRepository implements TaxRepositoryInterface
     public function update(Tax $tax, array $data): Tax
     {
         $tax->update($data);
+
         return $tax->fresh();
     }
 

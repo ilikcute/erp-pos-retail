@@ -2,10 +2,10 @@
 
 namespace App\Models\Accounting;
 
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\System\User;
 
 class FiscalPeriod extends Model
 {
@@ -26,7 +26,7 @@ class FiscalPeriod extends Model
 
     public function closer(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\System\User::class, 'closed_by');
+        return $this->belongsTo(User::class, 'closed_by');
     }
 
     public function trialBalances(): HasMany

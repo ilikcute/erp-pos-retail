@@ -4,6 +4,7 @@ namespace App\Repositories\Contracts\MasterData;
 
 use App\Models\MasterData\Unit;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface UnitRepositoryInterface
 {
@@ -17,7 +18,7 @@ interface UnitRepositoryInterface
 
     public function delete(Unit $unit): void;
 
-    public function listAll(): \Illuminate\Database\Eloquent\Collection;
+    public function listAll(): Collection;
 
-    public function listActive(): \Illuminate\Database\Eloquent\Collection;
+    public function listActive(): Collection;
 }

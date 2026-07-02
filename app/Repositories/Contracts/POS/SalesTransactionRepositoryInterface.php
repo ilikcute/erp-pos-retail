@@ -3,8 +3,8 @@
 namespace App\Repositories\Contracts\POS;
 
 use App\Models\POS\SalesTransaction;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 interface SalesTransactionRepositoryInterface
 {
@@ -18,5 +18,5 @@ interface SalesTransactionRepositoryInterface
 
     public function update(SalesTransaction $transaction, array $data): SalesTransaction;
 
-    public function getDailySummary(\Carbon\Carbon $date): array;
+    public function getDailySummary(Carbon $date): array;
 }

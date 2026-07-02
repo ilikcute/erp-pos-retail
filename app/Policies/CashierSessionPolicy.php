@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\System\User;
 use App\Models\POS\CashierSession;
+use App\Models\System\User;
 
 class CashierSessionPolicy
 {
@@ -18,8 +18,8 @@ class CashierSessionPolicy
         }
 
         // Admin, supervisor, atau yang memiliki permission pos.sessions.close_any bisa menutup sesi siapa saja
-        return $user->hasRole('admin') 
-            || $user->hasRole('supervisor') 
+        return $user->hasRole('admin')
+            || $user->hasRole('supervisor')
             || $user->hasPermission('pos.sessions.close_any');
     }
 }

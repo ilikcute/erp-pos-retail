@@ -14,7 +14,7 @@ class SimulatePromotionAction
 
     public function execute(Promotion $promotion, array $cartItems, ?int $customerId = null): array
     {
-        return DB::transaction(function () use ($promotion, $cartItems, $customerId) {
+        return DB::transaction(function () use ($promotion, $cartItems) {
             $totalDiscount = 0;
             $discountedItems = [];
 
@@ -22,9 +22,9 @@ class SimulatePromotionAction
                 $itemDiscount = $this->calculateItemDiscount($promotion, $item);
                 if ($itemDiscount > 0) {
                     $discountedItems[] = [
-                        'product_id'      => $item['product_id'],
-                        'quantity'        => $item['quantity'],
-                        'unit_price'      => $item['unit_price'],
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
                         'discount_amount' => $itemDiscount,
                     ];
                     $totalDiscount += $itemDiscount;
@@ -38,9 +38,9 @@ class SimulatePromotionAction
             );
 
             return [
-                'promotion_id'     => $promotion->id,
-                'promotion_no'     => $promotion->promotion_no,
-                'total_discount'   => $totalDiscount,
+                'promotion_id' => $promotion->id,
+                'promotion_no' => $promotion->promotion_no,
+                'total_discount' => $totalDiscount,
                 'discounted_items' => $discountedItems,
             ];
         });

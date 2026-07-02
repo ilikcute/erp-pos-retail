@@ -2,8 +2,8 @@
 
 namespace App\Models\Inventory;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Product\ProductVariant;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryTransferItem extends Model
 {

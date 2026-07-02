@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MasterData\MasterDataController;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/master-data', fn() => redirect('/master-data/suppliers'));
+Route::get('/master-data', fn () => redirect('/master-data/suppliers'));
 Route::get('/master-data/suppliers', [MasterDataController::class, 'suppliers'])->name('master-data.suppliers');
 Route::get('/master-data/customers', [MasterDataController::class, 'customers'])->name('master-data.customers');
 Route::get('/master-data/customer-categories', [MasterDataController::class, 'customerCategories'])->name('master-data.customer-categories');

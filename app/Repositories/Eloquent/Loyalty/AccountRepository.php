@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent\Loyalty;
 
 use App\Models\Loyalty\LoyaltyAccount;
+use App\Models\Loyalty\LoyaltyConfiguration;
 use App\Repositories\Contracts\Loyalty\AccountRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,7 @@ class AccountRepository implements AccountRepositoryInterface
         return DB::transaction(function () use ($customerId) {
             $account = LoyaltyAccount::where('customer_id', $customerId)->first();
 
-            if (!$account) {
+            if (! $account) {
                 $account = LoyaltyAccount::create([
                     'account_no' => $this->generateAccountNo(),
                     'customer_id' => $customerId,
@@ -41,6 +42,7 @@ class AccountRepository implements AccountRepositoryInterface
         return DB::transaction(function () use ($accountId, $points) {
             $account = LoyaltyAccount::lockForUpdate()->findOrFail($accountId);
             $account->increment('current_balance', $points);
+
             return $account->fresh();
         });
     }
@@ -50,14 +52,15 @@ class AccountRepository implements AccountRepositoryInterface
         return DB::transaction(function () use ($accountId, $points) {
             $account = LoyaltyAccount::lockForUpdate()->findOrFail($accountId);
 
-            $config = \App\Models\Loyalty\LoyaltyConfiguration::getInstance();
-            if (!$config->allow_negative_point && $account->current_balance < $points) {
+            $config = LoyaltyConfiguration::getInstance();
+            if (! $config->allow_negative_point && $account->current_balance < $points) {
                 throw new \DomainException(
                     "Poin tidak mencukupi. Tersedia: {$account->current_balance}, dibutuhkan: {$points}"
                 );
             }
 
             $account->decrement('current_balance', $points);
+
             return $account->fresh();
         });
     }
@@ -68,6 +71,7 @@ class AccountRepository implements AccountRepositoryInterface
             $account = LoyaltyAccount::lockForUpdate()->findOrFail($accountId);
             $account->increment('lifetime_spending', $spending);
             $account->increment('lifetime_earned', $pointsEarned);
+
             return $account->fresh();
         });
     }
@@ -76,6 +80,7 @@ class AccountRepository implements AccountRepositoryInterface
     {
         $last = LoyaltyAccount::orderBy('id', 'desc')->first();
         $nextNumber = $last ? $last->id + 1 : 1;
-        return 'LYL-' . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+
+        return 'LYL-'.str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
     }
 }

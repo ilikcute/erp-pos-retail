@@ -4,6 +4,7 @@ namespace App\Repositories\Contracts\Pricing;
 
 use App\Models\Pricing\PriceList;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface PriceListRepositoryInterface
 {
@@ -19,5 +20,5 @@ interface PriceListRepositoryInterface
 
     public function findActiveDefaultRetail(): ?PriceList;
 
-    public function getActiveMappedToCategory(int $categoryId): \Illuminate\Database\Eloquent\Collection;
+    public function getActiveMappedToCategory(int $categoryId): Collection;
 }

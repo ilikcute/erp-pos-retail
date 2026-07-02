@@ -4,6 +4,7 @@ namespace App\Services\Reporting;
 
 use App\Enums\Accounting\AccountType;
 use App\Enums\Reporting\FinancialReportType;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class FinancialReportService
@@ -221,7 +222,7 @@ class FinancialReportService
             ->leftJoin('journal_entries as je', 'jel.journal_entry_id', '=', 'je.id')
             ->where('coa.is_postable', true)
             ->where('coa.is_active', true)
-            ->when($asOfDate, fn($q) => $q->where('je.journal_date', '<=', $asOfDate))
+            ->when($asOfDate, fn ($q) => $q->where('je.journal_date', '<=', $asOfDate))
             ->where('je.status', 'POSTED')
             ->groupBy('coa.id', 'coa.account_code', 'coa.account_name', 'coa.account_type', 'coa.normal_balance')
             ->orderBy('coa.account_code')
@@ -287,7 +288,7 @@ class FinancialReportService
             ->join('chart_of_accounts as coa', 'jel.account_id', '=', 'coa.id')
             ->whereBetween('je.journal_date', [$dateFrom, $dateTo])
             ->where('je.status', 'POSTED')
-            ->when($accountId, fn($q) => $q->where('jel.account_id', $accountId))
+            ->when($accountId, fn ($q) => $q->where('jel.account_id', $accountId))
             ->orderBy('je.journal_date')
             ->orderBy('je.journal_number')
             ->orderBy('jel.line_order');
@@ -299,6 +300,7 @@ class FinancialReportService
             $runningBalance = 0;
             $items = $items->map(function ($item) use (&$runningBalance) {
                 $runningBalance += $item->debit - $item->credit;
+
                 return [
                     'journal_number' => $item->journal_number,
                     'date' => $item->journal_date,
@@ -338,7 +340,7 @@ class FinancialReportService
         ?int $locationId,
         ?string $accountCodePrefix = null,
         bool $excludePrefix = false
-    ): \Illuminate\Support\Collection {
+    ): Collection {
         $query = DB::table('chart_of_accounts as coa')
             ->select(
                 'coa.id',
@@ -365,7 +367,7 @@ class FinancialReportService
 
         return $query->orderBy('coa.account_code')
             ->get()
-            ->map(fn($row) => [
+            ->map(fn ($row) => [
                 'id' => $row->id,
                 'account_code' => $row->account_code,
                 'account_name' => $row->account_name,
@@ -377,7 +379,7 @@ class FinancialReportService
         AccountType $accountType,
         string $asOfDate,
         ?int $locationId
-    ): \Illuminate\Support\Collection {
+    ): Collection {
         return DB::table('chart_of_accounts as coa')
             ->select(
                 'coa.id',
@@ -395,7 +397,7 @@ class FinancialReportService
             ->groupBy('coa.id', 'coa.account_code', 'coa.account_name')
             ->orderBy('coa.account_code')
             ->get()
-            ->map(fn($row) => [
+            ->map(fn ($row) => [
                 'id' => $row->id,
                 'account_code' => $row->account_code,
                 'account_name' => $row->account_name,

@@ -21,18 +21,18 @@ class CreatePromotionAction
             $promotionNo = $this->documentNumberService->generate('PROMOTION');
 
             $promotion = Promotion::create([
-                'promotion_no'    => $promotionNo,
-                'promotion_name'  => $data['promotion_name'],
-                'promotion_type'  => $data['promotion_type'],
-                'description'     => $data['description'] ?? null,
-                'start_date'      => $data['start_date'],
-                'end_date'        => $data['end_date'],
-                'status'          => DocumentStatus::DRAFT->value,
-                'is_active'       => false,
-                'priority'        => $data['priority'] ?? 0,
-                'notes'           => $data['notes'] ?? null,
-                'created_by'      => auth()->id(),
-                'updated_by'      => auth()->id(),
+                'promotion_no' => $promotionNo,
+                'promotion_name' => $data['promotion_name'],
+                'promotion_type' => $data['promotion_type'],
+                'description' => $data['description'] ?? null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'status' => DocumentStatus::DRAFT->value,
+                'is_active' => false,
+                'priority' => $data['priority'] ?? 0,
+                'notes' => $data['notes'] ?? null,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
             ]);
 
             $this->createPromotionConditions($promotion, $data['conditions'] ?? []);
@@ -47,8 +47,8 @@ class CreatePromotionAction
                 newValues: [
                     'promotion_name' => $data['promotion_name'],
                     'promotion_type' => $data['promotion_type'],
-                    'start_date'     => $data['start_date'],
-                    'end_date'       => $data['end_date'],
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'],
                 ],
             );
 
@@ -60,11 +60,11 @@ class CreatePromotionAction
     {
         foreach ($conditions as $condition) {
             $promotion->conditions()->create([
-                'condition_type'  => $condition['condition_type'],
-                'operator'        => $condition['operator'],
-                'value'           => $condition['value'],
-                'description'     => $condition['description'] ?? null,
-                'created_by'      => auth()->id(),
+                'condition_type' => $condition['condition_type'],
+                'operator' => $condition['operator'],
+                'value' => $condition['value'],
+                'description' => $condition['description'] ?? null,
+                'created_by' => auth()->id(),
             ]);
         }
     }
@@ -73,12 +73,12 @@ class CreatePromotionAction
     {
         foreach ($rewards as $reward) {
             $promotion->rewards()->create([
-                'reward_type'     => $reward['reward_type'],
-                'reward_value'    => $reward['reward_value'],
-                'reward_unit'     => $reward['reward_unit'],
-                'max_reward'      => $reward['max_reward'] ?? null,
-                'description'     => $reward['description'] ?? null,
-                'created_by'      => auth()->id(),
+                'reward_type' => $reward['reward_type'],
+                'reward_value' => $reward['reward_value'],
+                'reward_unit' => $reward['reward_unit'],
+                'max_reward' => $reward['max_reward'] ?? null,
+                'description' => $reward['description'] ?? null,
+                'created_by' => auth()->id(),
             ]);
         }
     }

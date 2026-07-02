@@ -3,32 +3,32 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Models\Accounting\PaymentMethod;
+use App\Models\Inventory\InventoryBatch;
+use App\Models\Inventory\InventoryLocation;
+use App\Models\MasterData\Supplier;
+use App\Models\MasterData\Unit;
+use App\Models\Product\ProductVariant;
+use App\Models\Purchasing\AccountsPayable;
+use App\Models\Purchasing\GoodsReceipt;
+use App\Models\Purchasing\GoodsReceiptItem;
+use App\Models\Purchasing\LandedCost;
 use App\Models\Purchasing\PurchaseOrder;
 use App\Models\Purchasing\PurchaseOrderItem;
 use App\Models\Purchasing\PurchaseRequest;
 use App\Models\Purchasing\PurchaseRequestItem;
-use App\Models\Purchasing\GoodsReceipt;
-use App\Models\Purchasing\GoodsReceiptItem;
-use App\Models\Purchasing\SupplierInvoice;
-use App\Models\Purchasing\SupplierInvoiceItem;
-use App\Models\Purchasing\AccountsPayable;
-use App\Models\Purchasing\SupplierPayment;
-use App\Models\Purchasing\SupplierPaymentAllocation;
 use App\Models\Purchasing\PurchaseReturn;
 use App\Models\Purchasing\PurchaseReturnItem;
-use App\Models\Purchasing\LandedCost;
+use App\Models\Purchasing\SupplierInvoice;
+use App\Models\Purchasing\SupplierInvoiceItem;
+use App\Models\Purchasing\SupplierPayment;
+use App\Models\Purchasing\SupplierPaymentAllocation;
 use App\Models\Purchasing\SupplierPerformance;
-use App\Models\Inventory\InventoryLocation;
-use App\Models\Inventory\InventoryBatch;
-use App\Models\Accounting\PaymentMethod;
-use App\Models\MasterData\Supplier;
-use App\Models\Product\ProductVariant;
-use App\Models\MasterData\Unit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class PurchasingController extends Controller
 {
@@ -129,7 +129,7 @@ class PurchasingController extends Controller
             // Generate sequence number
             $latestPo = PurchaseOrder::latest('id')->first();
             $nextId = $latestPo ? $latestPo->id + 1 : 1;
-            $poNumber = 'PO-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $poNumber = 'PO-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $po = PurchaseOrder::create([
                 'po_number' => $poNumber,
@@ -193,7 +193,7 @@ class PurchasingController extends Controller
     public function approve($id): RedirectResponse
     {
         $po = PurchaseOrder::findOrFail($id);
-        
+
         if ($po->status !== 'DRAFT') {
             return back()->with('error', 'Hanya Purchase Order DRAFT yang dapat disetujui.');
         }
@@ -234,10 +234,10 @@ class PurchasingController extends Controller
             'items.*.notes' => 'nullable|string',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = PurchaseRequest::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $prNumber = 'PR-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $prNumber = 'PR-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $pr = PurchaseRequest::create([
                 'pr_number' => $prNumber,
@@ -271,6 +271,7 @@ class PurchasingController extends Controller
             'approved_by' => auth()->id() ?? 1,
             'approved_at' => now(),
         ]);
+
         return back()->with('success', 'Purchase Request berhasil disetujui.');
     }
 
@@ -285,6 +286,7 @@ class PurchasingController extends Controller
             'status' => 'REJECTED',
             'rejection_notes' => $request->rejection_notes,
         ]);
+
         return back()->with('success', 'Purchase Request berhasil ditolak.');
     }
 
@@ -305,10 +307,10 @@ class PurchasingController extends Controller
             'items.*.expiry_date' => 'nullable|date',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = GoodsReceipt::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $grNumber = 'GR-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $grNumber = 'GR-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $gr = GoodsReceipt::create([
                 'gr_number' => $grNumber,
@@ -334,7 +336,7 @@ class PurchasingController extends Controller
         });
 
         return back()->with('success', 'Goods Receipt berhasil dibuat.');
-  }
+    }
 
     public function postReceipt(int $id): RedirectResponse
     {
@@ -343,7 +345,7 @@ class PurchasingController extends Controller
             return back()->with('error', 'Hanya Goods Receipt DRAFT yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($gr) {
+        DB::transaction(function () use ($gr) {
             $gr->update([
                 'status' => 'POSTED',
                 'posted_by' => auth()->id() ?? 1,
@@ -359,7 +361,7 @@ class PurchasingController extends Controller
                 // Create Inventory Batch
                 $batch = InventoryBatch::create([
                     'product_variant_id' => $item->product_variant_id,
-                    'batch_number' => $item->batch_no ?: 'BCH-' . date('Ymd') . '-' . rand(1000, 9999),
+                    'batch_number' => $item->batch_no ?: 'BCH-'.date('Ymd').'-'.rand(1000, 9999),
                     'expiry_date' => $item->expiry_date,
                     'quantity' => $item->received_qty,
                     'cost_price' => $item->unit_cost,
@@ -403,10 +405,10 @@ class PurchasingController extends Controller
             'items.*.tax_amount' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = SupplierInvoice::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $invoiceNumber = 'SI-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $invoiceNumber = 'SI-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $subtotal = 0;
             $taxAmount = 0;
@@ -458,7 +460,7 @@ class PurchasingController extends Controller
             return back()->with('error', 'Hanya Supplier Invoice DRAFT yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($invoice) {
+        DB::transaction(function () use ($invoice) {
             $invoice->update([
                 'status' => 'UNPAID',
                 'posted_by' => auth()->id() ?? 1,
@@ -468,7 +470,7 @@ class PurchasingController extends Controller
             // Create Accounts Payable
             $latest = AccountsPayable::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $apNumber = 'AP-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $apNumber = 'AP-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             AccountsPayable::create([
                 'payable_number' => $apNumber,
@@ -483,7 +485,7 @@ class PurchasingController extends Controller
                 'remaining_amount' => $invoice->total_amount,
                 'status' => 'OPEN',
                 'currency' => 'IDR',
-                'notes' => 'Generated from Invoice ' . $invoice->invoice_number,
+                'notes' => 'Generated from Invoice '.$invoice->invoice_number,
             ]);
         });
 
@@ -505,10 +507,10 @@ class PurchasingController extends Controller
             'allocations.*.allocated_amount' => 'required|numeric|min:0.01',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = SupplierPayment::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $paymentNumber = 'SP-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $paymentNumber = 'SP-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $totalAmount = collect($request->allocations)->sum('allocated_amount');
 
@@ -544,7 +546,7 @@ class PurchasingController extends Controller
             return back()->with('error', 'Hanya Supplier Payment DRAFT yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($payment) {
+        DB::transaction(function () use ($payment) {
             $payment->update([
                 'status' => 'POSTED',
                 'posted_by' => auth()->id() ?? 1,
@@ -592,10 +594,10 @@ class PurchasingController extends Controller
             'items.*.unit_cost' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = PurchaseReturn::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $returnNumber = 'PRT-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $returnNumber = 'PRT-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $totalAmount = 0;
             foreach ($request->items as $item) {
@@ -635,7 +637,7 @@ class PurchasingController extends Controller
             return back()->with('error', 'Hanya Purchase Return DRAFT yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($return) {
+        DB::transaction(function () use ($return) {
             $return->update([
                 'status' => 'POSTED',
                 'posted_by' => auth()->id() ?? 1,

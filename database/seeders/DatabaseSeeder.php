@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Inventory\InitialStockSeeder;
 use Database\Seeders\MasterData\CurrencySeeder;
 use Database\Seeders\MasterData\CustomerCategorySeeder;
 use Database\Seeders\MasterData\CustomerSeeder;
@@ -9,6 +10,11 @@ use Database\Seeders\MasterData\SupplierSeeder;
 use Database\Seeders\MasterData\TaxSeeder;
 use Database\Seeders\MasterData\UnitConversionSeeder;
 use Database\Seeders\MasterData\UnitSeeder;
+use Database\Seeders\Performance\BulkAuditLogSeeder;
+use Database\Seeders\Performance\BulkCustomerSeeder;
+use Database\Seeders\Performance\BulkProductSeeder;
+use Database\Seeders\Performance\BulkSalesTransactionSeeder;
+use Database\Seeders\Performance\BulkSupplierSeeder;
 use Database\Seeders\POS\PaymentMethodSeeder;
 use Database\Seeders\POS\SalesSessionSeeder;
 use Database\Seeders\POS\SalesTransactionSeeder;
@@ -23,12 +29,6 @@ use Database\Seeders\System\DocumentTypeSeeder;
 use Database\Seeders\System\RolePermissionSeeder;
 use Database\Seeders\System\SystemSettingSeeder;
 use Database\Seeders\System\UserSeeder;
-use Database\Seeders\Performance\BulkAuditLogSeeder;
-use Database\Seeders\Performance\BulkCustomerSeeder;
-use Database\Seeders\Performance\BulkProductSeeder;
-use Database\Seeders\Performance\BulkSalesTransactionSeeder;
-use Database\Seeders\Performance\BulkSupplierSeeder;
-
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -67,6 +67,9 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             DefaultPriceListSeeder::class,
             ProductSeeder::class,
+
+            // Inventory - Stok Awal
+            InitialStockSeeder::class,
 
             // POS
             PaymentMethodSeeder::class,

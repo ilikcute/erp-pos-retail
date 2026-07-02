@@ -9,7 +9,7 @@ class CloseDayRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
-        
+
         // Jika user memiliki hak akses langsung (admin, supervisor, manager, owner)
         if ($user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) || $user->hasPermission('pos.day-closing.manage')) {
             return true;

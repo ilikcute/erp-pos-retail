@@ -28,10 +28,11 @@ class Permission extends Model
     public static function fromString(string $permission): array
     {
         $parts = explode('.', $permission);
+
         return [
-            'module'   => $parts[0] ?? null,
+            'module' => $parts[0] ?? null,
             'resource' => $parts[1] ?? null,
-            'action'   => $parts[2] ?? null,
+            'action' => $parts[2] ?? null,
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Models\Accounting\ChartOfAccount;
 use App\Models\Accounting\PaymentMethod;
 use App\Repositories\Contracts\Accounting\PaymentMethodRepositoryInterface;
 use Illuminate\Http\Request;
@@ -49,8 +50,8 @@ class PaymentMethodController extends Controller
         ]);
 
         // Validasi: account harus postable
-        $account = \App\Models\Accounting\ChartOfAccount::findOrFail($validated['account_id']);
-        if (!$account->is_postable) {
+        $account = ChartOfAccount::findOrFail($validated['account_id']);
+        if (! $account->is_postable) {
             return response()->json([
                 'success' => false,
                 'message' => 'Akun harus bertipe postable (bisa ditransaksikan)',
@@ -71,6 +72,7 @@ class PaymentMethodController extends Controller
     public function show(int $id)
     {
         $method = PaymentMethod::with('account')->findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $method]);
     }
 
@@ -79,7 +81,7 @@ class PaymentMethodController extends Controller
         $method = PaymentMethod::findOrFail($id);
 
         $validated = $request->validate([
-            'method_code' => 'string|unique:payment_methods,method_code,' . $id,
+            'method_code' => 'string|unique:payment_methods,method_code,'.$id,
             'method_name' => 'string|max:255',
             'method_type' => 'in:CASH,QRIS,DEBIT,CREDIT_CARD,TRANSFER,LOYALTY_POINT,OTHER',
             'account_id' => 'integer|exists:chart_of_accounts,id',

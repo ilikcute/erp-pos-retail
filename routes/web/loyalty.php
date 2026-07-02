@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Loyalty\LoyaltyController;
 use App\Http\Controllers\Api\Loyalty\AccountController;
-use App\Http\Controllers\Api\Loyalty\RedemptionController;
 use App\Http\Controllers\Api\Loyalty\AdjustmentController as AdjustmentControllerLoyalty;
 use App\Http\Controllers\Api\Loyalty\ConfigurationController;
-use App\Http\Controllers\Api\Loyalty\TierController;
+use App\Http\Controllers\Api\Loyalty\RedemptionController;
 use App\Http\Controllers\Api\Loyalty\RewardCatalogController;
+use App\Http\Controllers\Api\Loyalty\TierController;
+use App\Http\Controllers\Loyalty\LoyaltyController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
 Route::post('/loyalty/accounts', [LoyaltyController::class, 'storeAccount'])->name('loyalty.accounts.store');

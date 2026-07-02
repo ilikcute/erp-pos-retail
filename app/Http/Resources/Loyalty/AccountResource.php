@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Loyalty;
 
+use App\Models\Loyalty\LoyaltyConfiguration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,7 +26,7 @@ class AccountResource extends JsonResource
                 'point_expiry_date' => $this->point_expiry_date?->format('Y-m-d'),
                 'tier_evaluation_date' => $this->tier_evaluation_date?->format('Y-m-d'),
                 'is_active' => $this->is_active,
-                'rupiah_value' => $this->current_balance * (\App\Models\Loyalty\LoyaltyConfiguration::getInstance()->point_value ?? 0),
+                'rupiah_value' => $this->current_balance * (LoyaltyConfiguration::getInstance()->point_value ?? 0),
             ],
         ];
     }

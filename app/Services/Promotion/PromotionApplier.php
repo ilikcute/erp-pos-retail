@@ -4,7 +4,6 @@ namespace App\Services\Promotion;
 
 use App\Enums\Promotion\RewardType;
 use App\Models\Promotion\Promotion;
-use Illuminate\Support\Collection;
 
 class PromotionApplier
 {
@@ -70,7 +69,7 @@ class PromotionApplier
     private function applyFixedAmount($reward, array $applicableItems): array
     {
         // Fixed amount diterapkan ke total, bukan per item
-        $totalApplicable = collect($applicableItems)->sum(fn($i) => $i['unit_price'] * $i['qty']);
+        $totalApplicable = collect($applicableItems)->sum(fn ($i) => $i['unit_price'] * $i['qty']);
         $discount = min($reward->reward_value, $totalApplicable);
 
         return [
@@ -81,7 +80,7 @@ class PromotionApplier
                     'product_id' => null,
                     'discount' => $discount,
                     'note' => 'Fixed amount discount',
-                ]
+                ],
             ],
         ];
     }
@@ -120,7 +119,7 @@ class PromotionApplier
                 [
                     'free_product_id' => $reward->free_product_id,
                     'free_qty' => $reward->free_product_qty,
-                ]
+                ],
             ],
         ];
     }

@@ -2,10 +2,10 @@
 
 namespace App\Models\Product;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\MasterData\Supplier;
 use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductSupplierLink extends Model
 {
@@ -24,8 +24,8 @@ class ProductSupplierLink extends Model
     ];
 
     protected $casts = [
-        'is_preferred'   => 'boolean',
-        'min_order_qty'  => 'decimal:4',
+        'is_preferred' => 'boolean',
+        'min_order_qty' => 'decimal:4',
         'lead_time_days' => 'integer',
     ];
 

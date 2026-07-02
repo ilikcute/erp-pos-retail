@@ -34,13 +34,13 @@ class MonthClosingRepository implements MonthClosingRepositoryInterface
     {
         $query = MonthClosing::with(['location', 'closedByUser']);
 
-        if (!empty($filters['year'])) {
+        if (! empty($filters['year'])) {
             $query->where('closing_year', $filters['year']);
         }
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['location_id'])) {
+        if (! empty($filters['location_id'])) {
             $query->where('location_id', $filters['location_id']);
         }
 
@@ -61,6 +61,7 @@ class MonthClosingRepository implements MonthClosingRepositoryInterface
         return DB::transaction(function () use ($id, $data) {
             $closing = MonthClosing::findOrFail($id);
             $closing->update($data);
+
             return $closing->fresh();
         });
     }

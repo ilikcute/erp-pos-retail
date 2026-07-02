@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Purchasing\PurchasingController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
-Route::get('/purchasing/po', fn() => redirect()->route('purchasing.index', ['activeTab' => 'orders']));
-Route::get('/purchasing/receipt', fn() => redirect()->route('purchasing.index', ['activeTab' => 'receipts']));
+Route::get('/purchasing/po', fn () => redirect()->route('purchasing.index', ['activeTab' => 'orders']));
+Route::get('/purchasing/receipt', fn () => redirect()->route('purchasing.index', ['activeTab' => 'receipts']));
 Route::get('/purchasing/create', [PurchasingController::class, 'create'])->name('purchasing.create');
 Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
 Route::get('/purchasing/{id}', [PurchasingController::class, 'show'])->name('purchasing.show');

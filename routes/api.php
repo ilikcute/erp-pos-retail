@@ -1,13 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
-use App\Http\Controllers\Api\Reporting\{
-    SalesReportController,
-    InventoryReportController,
-    FinancialReportController,
-    PurchaseReportController,
-};
+use App\Http\Controllers\Api\Reporting\FinancialReportController;
+use App\Http\Controllers\Api\Reporting\InventoryReportController;
+use App\Http\Controllers\Api\Reporting\PurchaseReportController;
+use App\Http\Controllers\Api\Reporting\SalesReportController;
+use App\Http\Controllers\Api\System\DashboardController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +22,7 @@ Route::prefix('v1')->group(function () {
 
     // ── AUTH (Public) ────────────────────────────────────────────────
     Route::prefix('auth')->group(function () {
-        Route::post('login',  [AuthController::class, 'login']);
+        Route::post('login', [AuthController::class, 'login']);
     });
 
     // ── AUTHENTICATED ROUTES ─────────────────────────────────────────
@@ -31,35 +30,35 @@ Route::prefix('v1')->group(function () {
 
         // ── Auth (Protected) ─────────────────────────────────────────
         Route::prefix('auth')->group(function () {
-            Route::post('logout',         [AuthController::class, 'logout']);
-            Route::post('logout-all',     [AuthController::class, 'logoutAllDevices']);
-            Route::get('me',              [AuthController::class, 'me']);
+            Route::post('logout', [AuthController::class, 'logout']);
+            Route::post('logout-all', [AuthController::class, 'logoutAllDevices']);
+            Route::get('me', [AuthController::class, 'me']);
             Route::post('change-password', [AuthController::class, 'changePassword']);
         });
 
         // ── System API Module ────────────────────────────────────────
-        require __DIR__ . '/api/system.php';
+        require __DIR__.'/api/system.php';
 
         // ── MasterData API Module ────────────────────────────────────
-        require __DIR__ . '/api/master-data.php';
+        require __DIR__.'/api/master-data.php';
 
         // ── Product API Module ───────────────────────────────────────
-        require __DIR__ . '/api/product.php';
+        require __DIR__.'/api/product.php';
 
         // ── Pricing API Module ───────────────────────────────────────
-        require __DIR__ . '/api/pricing.php';
+        require __DIR__.'/api/pricing.php';
 
         // ── POS API Module ───────────────────────────────────────────
-        require __DIR__ . '/api/pos.php';
+        require __DIR__.'/api/pos.php';
 
         // ── Reporting API Module (Standard) ──────────────────────────
-        require __DIR__ . '/api/reporting.php';
+        require __DIR__.'/api/reporting.php';
 
         // ── Accounting API Module ────────────────────────────────────
-        require __DIR__ . '/api/accounting.php';
+        require __DIR__.'/api/accounting.php';
 
         // ── Dashboard Route ──────────────────────────────────────────
-        Route::get('dashboard', [\App\Http\Controllers\Api\System\DashboardController::class, '__invoke']);
+        Route::get('dashboard', [DashboardController::class, '__invoke']);
 
         // ── Custom Reports ───────────────────────────────────────────
         // Sales Reports

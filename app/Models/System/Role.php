@@ -2,9 +2,9 @@
 
 namespace App\Models\System;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Traits\HasCreatedBy;
 
 class Role extends Model
 {

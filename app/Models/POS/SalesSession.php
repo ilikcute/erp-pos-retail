@@ -2,11 +2,11 @@
 
 namespace App\Models\POS;
 
+use App\Models\System\User;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\System\User;
-use App\Traits\HasCreatedBy;
 
 class SalesSession extends Model
 {
@@ -32,14 +32,14 @@ class SalesSession extends Model
     ];
 
     protected $casts = [
-        'opening_cash'       => 'decimal:2',
-        'closing_cash'       => 'decimal:2',
-        'expected_cash'      => 'decimal:2',
-        'cash_difference'    => 'decimal:2',
-        'total_sales'        => 'decimal:2',
+        'opening_cash' => 'decimal:2',
+        'closing_cash' => 'decimal:2',
+        'expected_cash' => 'decimal:2',
+        'cash_difference' => 'decimal:2',
+        'total_sales' => 'decimal:2',
         'total_transactions' => 'decimal:2',
-        'session_date'       => 'date',
-        'closed_at'          => 'datetime',
+        'session_date' => 'date',
+        'closed_at' => 'datetime',
     ];
 
     public function shift(): BelongsTo

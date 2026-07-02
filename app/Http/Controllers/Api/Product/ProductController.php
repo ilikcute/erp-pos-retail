@@ -30,9 +30,9 @@ class ProductController extends Controller
             'data' => ProductResource::collection($products->items()),
             'meta' => [
                 'current_page' => $products->currentPage(),
-                'last_page'    => $products->lastPage(),
-                'per_page'     => $products->perPage(),
-                'total'        => $products->total(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
             ],
         ]);
     }
@@ -67,7 +67,7 @@ class ProductController extends Controller
         $product = $this->productService->create($validated);
 
         return response()->json([
-            'data'    => new ProductResource($product),
+            'data' => new ProductResource($product),
             'message' => 'Produk berhasil ditambahkan.',
         ], 201);
     }
@@ -82,7 +82,7 @@ class ProductController extends Controller
         $product = $this->productService->update($product, $validated);
 
         return response()->json([
-            'data'    => new ProductResource($product),
+            'data' => new ProductResource($product),
             'message' => 'Produk berhasil diperbarui.',
         ]);
     }
@@ -107,20 +107,20 @@ class ProductController extends Controller
         abort_if(! $product, 404, 'Produk tidak ditemukan.');
 
         $validated = $request->validate([
-            'sku'            => ['required', 'string', 'max:100', 'unique:product_variants,sku'],
-            'variant_name'   => ['required', 'string', 'max:200'],
-            'barcode'        => ['nullable', 'string', 'max:100', 'unique:product_barcodes,barcode'],
-            'weight'         => ['nullable', 'numeric', 'min:0'],
+            'sku' => ['required', 'string', 'max:100', 'unique:product_variants,sku'],
+            'variant_name' => ['required', 'string', 'max:200'],
+            'barcode' => ['nullable', 'string', 'max:100', 'unique:product_barcodes,barcode'],
+            'weight' => ['nullable', 'numeric', 'min:0'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
-            'attributes'     => ['nullable', 'array'],
-            'attributes.*.attribute_id'      => ['required', 'integer', 'exists:product_attributes,id'],
+            'attributes' => ['nullable', 'array'],
+            'attributes.*.attribute_id' => ['required', 'integer', 'exists:product_attributes,id'],
             'attributes.*.attribute_value_id' => ['required', 'integer', 'exists:product_attribute_values,id'],
         ]);
 
         $variant = $this->productService->addVariant($product, $validated);
 
         return response()->json([
-            'data'    => new ProductVariantResource($variant),
+            'data' => new ProductVariantResource($variant),
             'message' => 'Varian berhasil ditambahkan.',
         ], 201);
     }

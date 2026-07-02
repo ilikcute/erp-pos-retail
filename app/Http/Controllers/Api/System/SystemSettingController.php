@@ -7,7 +7,6 @@ use App\Models\System\SystemSetting;
 use App\Support\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class SystemSettingController extends Controller
 {
@@ -20,14 +19,14 @@ class SystemSettingController extends Controller
         $this->authorize('system.setting.view');
 
         $settings = SystemSetting::query()
-            ->when($request->group, fn($q, $g) => $q->where('group', $g))
+            ->when($request->group, fn ($q, $g) => $q->where('group', $g))
             ->orderBy('group')->orderBy('key')
             ->get()
-            ->map(fn($s) => [
-                'key'         => $s->key,
-                'value'       => $s->getTypedValue(),
-                'type'        => $s->type,
-                'group'       => $s->group,
+            ->map(fn ($s) => [
+                'key' => $s->key,
+                'value' => $s->getTypedValue(),
+                'type' => $s->type,
+                'group' => $s->group,
                 'description' => $s->description,
             ]);
 
@@ -42,10 +41,10 @@ class SystemSettingController extends Controller
         abort_if(! $setting, 404, 'Setting tidak ditemukan.');
 
         return response()->json(['data' => [
-            'key'         => $setting->key,
-            'value'       => $setting->getTypedValue(),
-            'type'        => $setting->type,
-            'group'       => $setting->group,
+            'key' => $setting->key,
+            'value' => $setting->getTypedValue(),
+            'type' => $setting->type,
+            'group' => $setting->group,
             'description' => $setting->description,
         ]]);
     }
@@ -86,6 +85,6 @@ class SystemSettingController extends Controller
 
         $this->auditService->log('System', 'BULK_UPDATE_SETTINGS', 'system_settings', 'bulk', [], $request->settings);
 
-        return response()->json(['message' => count($request->settings) . ' settings berhasil diperbarui.']);
+        return response()->json(['message' => count($request->settings).' settings berhasil diperbarui.']);
     }
 }

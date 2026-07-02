@@ -14,10 +14,10 @@ class StoreProductBrandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'        => ['required', 'string', 'max:50', 'unique:product_brands,brand_code'],
-            'name'        => ['required', 'string', 'max:150'],
+            'code' => ['required', 'string', 'max:50', 'unique:product_brands,brand_code'],
+            'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ];
     }
 }

@@ -11,7 +11,7 @@ class CodeGeneratorService
         return DB::transaction(function () use ($table, $column, $prefix, $padding) {
             // Ambil record terakhir dengan lockForUpdate
             $lastRecord = DB::table($table)
-                ->where($column, 'like', $prefix . '%')
+                ->where($column, 'like', $prefix.'%')
                 ->orderByDesc($column) // Urutkan desc karena format U00001, U00002
                 ->lockForUpdate()
                 ->first();
@@ -23,7 +23,8 @@ class CodeGeneratorService
             }
 
             $newNumber = $lastNumber + 1;
-            return $prefix . str_pad($newNumber, $padding, '0', STR_PAD_LEFT);
+
+            return $prefix.str_pad($newNumber, $padding, '0', STR_PAD_LEFT);
         });
     }
 }

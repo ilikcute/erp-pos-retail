@@ -4,16 +4,15 @@ namespace App\Http\Controllers\Api\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Models\Inventory\InventoryPlanogram;
-use App\Models\Inventory\InventoryLocation;
-use App\Models\Product\ProductVariant;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PlanogramController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $planograms = InventoryPlanogram::with(['variant.product', 'location'])->get();
+
         return response()->json([
             'success' => true,
             'data' => $planograms,

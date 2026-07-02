@@ -13,13 +13,13 @@ class BalanceRepository implements BalanceRepositoryInterface
     {
         $query = InventoryBalance::with(['variant', 'location']);
 
-        if (!empty($filters['product_variant_id'])) {
+        if (! empty($filters['product_variant_id'])) {
             $query->where('product_variant_id', $filters['product_variant_id']);
         }
-        if (!empty($filters['location_id'])) {
+        if (! empty($filters['location_id'])) {
             $query->where('location_id', $filters['location_id']);
         }
-        if (!empty($filters['low_stock'])) {
+        if (! empty($filters['low_stock'])) {
             $query->whereHas('variant', function ($q) {
                 $q->whereColumn('inventory_balances.qty_available', '<', 'product_variants.reorder_point');
             });
@@ -79,7 +79,7 @@ class BalanceRepository implements BalanceRepositoryInterface
             ->firstOrFail();
 
         if ($balance->qty_available < $qty) {
-            throw new \DomainException("Stok tersedia tidak cukup untuk di-reserve");
+            throw new \DomainException('Stok tersedia tidak cukup untuk di-reserve');
         }
 
         $balance->increment('qty_reserved', $qty);

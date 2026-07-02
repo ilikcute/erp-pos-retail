@@ -17,7 +17,7 @@ class AccountController extends Controller
     {
         $account = $this->accountRepo->findByCustomerId($customerId);
 
-        if (!$account) {
+        if (! $account) {
             return response()->json([
                 'success' => true,
                 'data' => null,
@@ -32,14 +32,14 @@ class AccountController extends Controller
     {
         $account = $this->accountRepo->findByCustomerId($customerId);
 
-        if (!$account) {
+        if (! $account) {
             return response()->json(['success' => true, 'data' => []]);
         }
 
         $transactions = $account->transactions()
-            ->when($request->type, fn($q) => $q->where('transaction_type', $request->type))
-            ->when($request->date_from, fn($q) => $q->whereDate('transaction_date', '>=', $request->date_from))
-            ->when($request->date_to, fn($q) => $q->whereDate('transaction_date', '<=', $request->date_to))
+            ->when($request->type, fn ($q) => $q->where('transaction_type', $request->type))
+            ->when($request->date_from, fn ($q) => $q->whereDate('transaction_date', '>=', $request->date_from))
+            ->when($request->date_to, fn ($q) => $q->whereDate('transaction_date', '<=', $request->date_to))
             ->orderBy('transaction_date', 'desc')
             ->paginate(20);
 

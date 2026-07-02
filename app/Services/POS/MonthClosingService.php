@@ -6,6 +6,7 @@ use App\Enums\POS\ClosingStatus;
 use App\Models\POS\DayClosing;
 use App\Models\POS\MonthClosing;
 use App\Repositories\Contracts\POS\MonthClosingRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class MonthClosingService
@@ -16,7 +17,7 @@ class MonthClosingService
 
     /**
      * Eksekusi tutup bulanan
-     * 
+     *
      * Validasi:
      * 1. Periode tidak boleh di masa depan
      * 2. Semua hari di bulan tersebut harus sudah CLOSED
@@ -31,7 +32,7 @@ class MonthClosingService
     ): MonthClosing {
         return DB::transaction(function () use ($year, $month, $closedBy, $locationId, $notes) {
             // Validasi 1: Periode tidak boleh di masa depan
-            $periodDate = \Carbon\Carbon::createFromDate($year, $month, 1);
+            $periodDate = Carbon::createFromDate($year, $month, 1);
             if ($periodDate->isFuture()) {
                 throw new \DomainException('Tidak bisa menutup periode di masa depan');
             }
@@ -53,14 +54,14 @@ class MonthClosingService
             $openDays = DayClosing::whereYear('closing_date', $year)
                 ->whereMonth('closing_date', $month)
                 ->whereDate('closing_date', '<=', $lastDateToCheck)
-                ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+                ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
                 ->where('status', '!=', ClosingStatus::CLOSED)
                 ->count();
 
             if ($openDays > 0) {
                 throw new \DomainException(
-                    "Masih ada {$openDays} hari yang belum ditutup. " .
-                        "Tutup semua hari terlebih dahulu."
+                    "Masih ada {$openDays} hari yang belum ditutup. ".
+                        'Tutup semua hari terlebih dahulu.'
                 );
             }
 
@@ -70,7 +71,7 @@ class MonthClosingService
             $dayClosings = DayClosing::whereYear('closing_date', $year)
                 ->whereMonth('closing_date', $month)
                 ->where('status', ClosingStatus::CLOSED)
-                ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+                ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
                 ->get();
 
             $totalDaysClosed = $dayClosings->count();
@@ -127,7 +128,7 @@ class MonthClosingService
     {
         $closing = $this->monthClosingRepo->findByPeriod($year, $month, $locationId);
 
-        if (!$closing) {
+        if (! $closing) {
             return [
                 'closing_year' => $year,
                 'closing_month' => $month,

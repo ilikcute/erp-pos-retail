@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class PurchasingMockDataSeeder extends Seeder
 {
@@ -21,8 +21,8 @@ class PurchasingMockDataSeeder extends Seeder
                     'phone' => '08123456789',
                     'is_active' => true,
                     'created_at' => now(),
-                    'updated_at' => now()
-                ])
+                    'updated_at' => now(),
+                ]),
             ];
         }
 
@@ -33,7 +33,7 @@ class PurchasingMockDataSeeder extends Seeder
                 'sku' => 'SKU-MOCK',
                 'is_active' => true,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
             $variantIds = [
                 DB::table('product_variants')->insertGetId([
@@ -42,23 +42,23 @@ class PurchasingMockDataSeeder extends Seeder
                     'price' => 10000,
                     'is_active' => true,
                     'created_at' => now(),
-                    'updated_at' => now()
-                ])
+                    'updated_at' => now(),
+                ]),
             ];
         }
 
         $userId = DB::table('users')->value('id') ?? 1;
-        
+
         // Location
         $locationId = DB::table('inventory_locations')->value('id');
-        if (!$locationId) {
+        if (! $locationId) {
             $locationId = DB::table('inventory_locations')->insertGetId([
                 'name' => 'Main Warehouse',
                 'code' => 'WH-01',
                 'type' => 'WAREHOUSE',
                 'is_active' => true,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
         }
 
@@ -86,11 +86,11 @@ class PurchasingMockDataSeeder extends Seeder
         $prItemsBatch = [];
         for ($i = 1; $i <= 100; $i++) {
             $prId = DB::table('purchase_requests')->insertGetId([
-                'pr_number' => 'PR-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                'pr_number' => 'PR-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                 'request_date' => Carbon::now()->subDays(rand(1, 30))->toDateString(),
                 'requested_by' => $userId,
                 'status' => $i % 5 === 0 ? 'DRAFT' : ($i % 5 === 1 ? 'REJECTED' : 'APPROVED'),
-                'remarks' => 'Remarks request nomor ' . $i,
+                'remarks' => 'Remarks request nomor '.$i,
                 'approved_by' => $i % 5 > 1 ? $userId : null,
                 'approved_at' => $i % 5 > 1 ? now() : null,
                 'rejection_notes' => $i % 5 === 1 ? 'Anggaran tidak cukup' : null,
@@ -104,7 +104,7 @@ class PurchasingMockDataSeeder extends Seeder
                     'purchase_request_id' => $prId,
                     'product_variant_id' => $variantIds[array_rand($variantIds)],
                     'requested_qty' => rand(10, 100),
-                    'notes' => 'Catatan item ' . $k,
+                    'notes' => 'Catatan item '.$k,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -118,7 +118,7 @@ class PurchasingMockDataSeeder extends Seeder
         for ($i = 1; $i <= 120; $i++) {
             $supplierId = $supplierIds[array_rand($supplierIds)];
             $poId = DB::table('purchase_orders')->insertGetId([
-                'po_number' => 'PO-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                'po_number' => 'PO-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                 'purchase_request_id' => $prIds[array_rand($prIds)],
                 'supplier_id' => $supplierId,
                 'order_date' => Carbon::now()->subDays(rand(1, 20))->toDateString(),
@@ -128,7 +128,7 @@ class PurchasingMockDataSeeder extends Seeder
                 'discount_amount' => 0,
                 'tax_amount' => 500000,
                 'total_amount' => 5500000,
-                'remarks' => 'Order notes ' . $i,
+                'remarks' => 'Order notes '.$i,
                 'created_by' => $userId,
                 'approved_by' => $i % 4 > 0 ? $userId : null,
                 'approved_at' => $i % 4 > 0 ? now() : null,
@@ -147,7 +147,7 @@ class PurchasingMockDataSeeder extends Seeder
                     'discount_amount' => 0,
                     'tax_amount' => 5000,
                     'line_total' => 2505000,
-                    'notes' => 'Line note ' . $k,
+                    'notes' => 'Line note '.$k,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -163,12 +163,12 @@ class PurchasingMockDataSeeder extends Seeder
         $grItemsBatch = [];
         for ($i = 1; $i <= 80; $i++) {
             $grId = DB::table('goods_receipts')->insertGetId([
-                'gr_number' => 'GR-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                'gr_number' => 'GR-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                 'purchase_order_id' => $poIds[array_rand($poIds)],
                 'location_id' => $locationId,
                 'receipt_date' => Carbon::now()->subDays(rand(1, 15))->toDateString(),
                 'status' => $i % 2 === 0 ? 'DRAFT' : 'POSTED',
-                'remarks' => 'Penerimaan barang ' . $i,
+                'remarks' => 'Penerimaan barang '.$i,
                 'received_by' => $userId,
                 'posted_by' => $i % 2 !== 0 ? $userId : null,
                 'posted_at' => $i % 2 !== 0 ? now() : null,
@@ -184,7 +184,7 @@ class PurchasingMockDataSeeder extends Seeder
                     'product_variant_id' => $variantIds[array_rand($variantIds)],
                     'received_qty' => 25,
                     'unit_cost' => 50000,
-                    'batch_no' => 'BCH-' . date('Ymd') . '-' . rand(1000, 9999),
+                    'batch_no' => 'BCH-'.date('Ymd').'-'.rand(1000, 9999),
                     'expiry_date' => Carbon::now()->addYear()->toDateString(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -198,10 +198,10 @@ class PurchasingMockDataSeeder extends Seeder
         for ($i = 1; $i <= 60; $i++) {
             $supplierId = $supplierIds[array_rand($supplierIds)];
             $invoiceId = DB::table('supplier_invoices')->insertGetId([
-                'invoice_number' => 'SI-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                'invoice_number' => 'SI-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                 'supplier_id' => $supplierId,
                 'goods_receipt_id' => $grIds[array_rand($grIds)],
-                'supplier_invoice_no' => 'INV-SUP-' . rand(10000, 99999),
+                'supplier_invoice_no' => 'INV-SUP-'.rand(10000, 99999),
                 'invoice_date' => Carbon::now()->subDays(rand(5, 25))->toDateString(),
                 'due_date' => Carbon::now()->addDays(rand(5, 25))->toDateString(),
                 'status' => $i % 2 === 0 ? 'DRAFT' : 'UNPAID',
@@ -227,13 +227,13 @@ class PurchasingMockDataSeeder extends Seeder
                     'line_total' => 2200000,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]
+                ],
             ]);
 
             if ($i % 2 !== 0) {
                 // Also create AP
                 $apId = DB::table('accounts_payables')->insertGetId([
-                    'payable_number' => 'AP-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                    'payable_number' => 'AP-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                     'supplier_id' => $supplierId,
                     'invoice_id' => $invoiceId,
                     'source_type' => 'App\Models\Purchasing\SupplierInvoice',
@@ -255,11 +255,11 @@ class PurchasingMockDataSeeder extends Seeder
         for ($i = 1; $i <= 30; $i++) {
             $supplierId = $supplierIds[array_rand($supplierIds)];
             $payId = DB::table('supplier_payments')->insertGetId([
-                'payment_number' => 'SP-' . date('Ymd') . '-' . str_pad($i, 5, '0', STR_PAD_LEFT),
+                'payment_number' => 'SP-'.date('Ymd').'-'.str_pad($i, 5, '0', STR_PAD_LEFT),
                 'supplier_id' => $supplierId,
                 'payment_date' => Carbon::now()->subDays(rand(1, 5))->toDateString(),
                 'payment_method' => 'TRANSFER',
-                'reference_no' => 'REF-' . rand(100000, 999999),
+                'reference_no' => 'REF-'.rand(100000, 999999),
                 'total_amount' => 1000000,
                 'status' => $i % 2 === 0 ? 'DRAFT' : 'POSTED',
                 'created_by' => $userId,
@@ -291,7 +291,7 @@ class PurchasingMockDataSeeder extends Seeder
                 'quality_score' => rand(75, 100),
                 'service_score' => rand(80, 100),
                 'overall_score' => rand(75, 98),
-                'notes' => 'Evaluasi bulan ke-' . $i,
+                'notes' => 'Evaluasi bulan ke-'.$i,
                 'evaluated_by' => $userId,
                 'created_at' => now(),
                 'updated_at' => now(),

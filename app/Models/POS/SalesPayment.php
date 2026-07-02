@@ -2,15 +2,13 @@
 
 namespace App\Models\POS;
 
+use App\Models\Accounting\PaymentMethod;
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Accounting\PaymentMethod;
-use App\Traits\HasCreatedBy;
 
 class SalesPayment extends Model
 {
-    use HasCreatedBy;
-
     protected $fillable = [
         'payment_no',
         'sales_transaction_id',
@@ -25,7 +23,7 @@ class SalesPayment extends Model
     ];
 
     protected $casts = [
-        'amount'    => 'decimal:2',
+        'amount' => 'decimal:2',
         'posted_at' => 'datetime',
     ];
 
@@ -42,5 +40,10 @@ class SalesPayment extends Model
     public function scopePosted($query)
     {
         return $query->where('status', 'POSTED');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

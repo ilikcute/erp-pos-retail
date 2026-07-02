@@ -2,10 +2,10 @@
 
 namespace App\Services\Auth;
 
+use App\Enums\UserStatus;
 use App\Models\System\User;
 use App\Repositories\Contracts\Auth\UserAuthRepositoryInterface;
 use App\Support\AuditService;
-use App\Enums\UserStatus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -47,7 +47,7 @@ class AuthService
         $this->auditService->activity('LOGIN', 'Auth', "Login dari device: {$deviceName}");
 
         return [
-            'user'  => $user,
+            'user' => $user,
             'token' => $token,
         ];
     }

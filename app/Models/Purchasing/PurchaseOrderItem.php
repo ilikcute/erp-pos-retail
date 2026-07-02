@@ -2,8 +2,8 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Product\ProductVariant;
+use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrderItem extends Model
 {

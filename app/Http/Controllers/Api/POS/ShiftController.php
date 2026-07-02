@@ -26,12 +26,12 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => ShiftResource::collection($shifts),
-            'meta'    => [
+            'data' => ShiftResource::collection($shifts),
+            'meta' => [
                 'current_page' => $shifts->currentPage(),
-                'last_page'    => $shifts->lastPage(),
-                'per_page'     => $shifts->perPage(),
-                'total'        => $shifts->total(),
+                'last_page' => $shifts->lastPage(),
+                'per_page' => $shifts->perPage(),
+                'total' => $shifts->total(),
             ],
         ]);
     }
@@ -43,7 +43,7 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => ShiftResource::collection($shifts),
+            'data' => ShiftResource::collection($shifts),
         ]);
     }
 
@@ -54,7 +54,7 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Shift created successfully',
-            'data'    => new ShiftResource($shift),
+            'data' => new ShiftResource($shift),
         ], 201);
     }
 
@@ -62,7 +62,7 @@ class ShiftController extends Controller
     {
         $shift = $this->shiftService->findById($id);
 
-        if (!$shift) {
+        if (! $shift) {
             return response()->json([
                 'success' => false,
                 'message' => 'Shift not found',
@@ -72,7 +72,7 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data retrieved successfully',
-            'data'    => new ShiftResource($shift),
+            'data' => new ShiftResource($shift),
         ]);
     }
 
@@ -80,7 +80,7 @@ class ShiftController extends Controller
     {
         $shift = $this->shiftService->findById($id);
 
-        if (!$shift) {
+        if (! $shift) {
             return response()->json([
                 'success' => false,
                 'message' => 'Shift not found',
@@ -92,7 +92,7 @@ class ShiftController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Shift updated successfully',
-            'data'    => new ShiftResource($shift),
+            'data' => new ShiftResource($shift),
         ]);
     }
 
@@ -100,7 +100,7 @@ class ShiftController extends Controller
     {
         $shift = $this->shiftService->findById($id);
 
-        if (!$shift) {
+        if (! $shift) {
             return response()->json([
                 'success' => false,
                 'message' => 'Shift not found',

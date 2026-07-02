@@ -72,16 +72,28 @@ const isCheckingSession = ref(true);
 const searchQuery = ref("");
 const selectedCategory = ref(null);
 const selectedCustomer = ref(null);
-const discountInput = ref("");
-const shippingInput = ref("");
+const discountInput = ref("0");
+const shippingInput = ref("0");
 const redeemPointsInput = ref("");
 const selectedVoucherId = ref("");
 const isSubmitting = ref(false);
-const mobileView = ref("products");
+const mobileView = ref("cart");
 const numpadOpen = ref(false);
 const showShortcuts = ref(false);
 const voidTarget = ref(null);
-const productGridRef = ref(null);
+const cartPanelRef = ref(null);
+const showPaymentModal = ref(false);
+
+watch(
+    errors,
+    (newErrors) => {
+        if (newErrors && Object.keys(newErrors).length > 0) {
+            const firstKey = Object.keys(newErrors)[0];
+            toast.error(newErrors[firstKey]);
+        }
+    },
+    { deep: true }
+);
 
 // ═══════════════════════════════════════════════════════════
 // LIFECYCLE
@@ -100,6 +112,13 @@ const checkActiveSession = async () => {
         const { data } = await axios.get(route("pos.sessions.active"));
         if (data?.data) {
             activeSession.value = data.data;
+            if (data.data.shift_id) {
+                localShift.value = {
+                    id: data.data.shift_id,
+                    name: data.data.shift_name,
+                    shift_name: data.data.shift_name,
+                };
+            }
         }
     } catch (error) {
         // Jika route belum ada atau error, anggap tidak ada sesi
@@ -118,6 +137,13 @@ const onShiftOpened = (shift) => {
 
 const handleSessionOpened = (session) => {
     activeSession.value = session;
+    if (session && session.shift_id) {
+        localShift.value = {
+            id: session.shift_id,
+            name: session.shift_name,
+            shift_name: session.shift_name,
+        };
+    }
 };
 
 const formatRupiahInput = (value) => {
@@ -148,6 +174,19 @@ const closeSessionForm = ref({
     notes: "",
 });
 
+const showVarianceModal = ref(false);
+const varianceForm = ref({
+    reimbursement_amount: 0,
+    variance_reason: '',
+});
+const reimbursementAmountDisplay = ref('');
+
+const onReimbursementAmountInput = (e) => {
+    const formatted = formatRupiahInput(e.target.value);
+    reimbursementAmountDisplay.value = formatted;
+    varianceForm.value.reimbursement_amount = parseRupiahInput(formatted);
+};
+
 const handleCloseSession = () => {
     if (!activeSession.value) return;
     
@@ -160,25 +199,46 @@ const handleCloseSession = () => {
     showCloseSessionModal.value = true;
 };
 
-const submitCloseSession = async () => {
+const submitCloseSession = async (bypassVariance = false) => {
     if (closeSessionForm.value.closing_cash < 0) {
         toast.error("Uang tutup tidak boleh negatif");
         return;
     }
 
+    if (!activeSession.value) return;
+
+    const diff = Number(closeSessionForm.value.closing_cash) - Number(activeSession.value.expected_cash);
+    if (diff !== 0 && !bypassVariance) {
+        varianceForm.value = {
+            reimbursement_amount: 0,
+            variance_reason: '',
+        };
+        reimbursementAmountDisplay.value = '';
+        showVarianceModal.value = true;
+        return;
+    }
+
     isClosingSession.value = true;
     try {
+        const payload = {
+            closing_cash: Number(closeSessionForm.value.closing_cash) || 0,
+            notes: closeSessionForm.value.notes,
+        };
+
+        if (diff !== 0) {
+            payload.reimbursement_amount = Number(varianceForm.value.reimbursement_amount) || 0;
+            payload.variance_reason = varianceForm.value.variance_reason;
+        }
+
         const { data } = await axios.post(
             route("pos.sessions.close", activeSession.value.id),
-            {
-                closing_cash: Number(closeSessionForm.value.closing_cash) || 0,
-                notes: closeSessionForm.value.notes,
-            },
+            payload,
         );
 
         if (data?.success !== false) {
             toast.success("Sesi kasir berhasil ditutup");
             showCloseSessionModal.value = false;
+            showVarianceModal.value = false;
             activeSession.value = null;
             router.reload();
         } else {
@@ -191,6 +251,10 @@ const submitCloseSession = async () => {
     } finally {
         isClosingSession.value = false;
     }
+};
+
+const submitCloseSessionWithVariance = () => {
+    submitCloseSession(true);
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -277,6 +341,47 @@ watch(payable, (newVal) => {
     setPayableAmount(newVal);
 }, { immediate: true });
 
+const handleOpenPaymentModal = () => {
+    if (!props.carts.length) return toast.error("Keranjang masih kosong");
+    if (!selectedCustomer.value?.id) return toast.error("Pilih pelanggan terlebih dahulu");
+    showPaymentModal.value = true;
+};
+
+const isCashShort = computed(() => {
+    if (!isCashPayment.value || payLater.value) return false;
+    return (Number(cashInput.value) || 0) < payable.value;
+});
+
+const cashShortage = computed(() => {
+    if (!isCashShort.value) return 0;
+    return payable.value - (Number(cashInput.value) || 0);
+});
+
+const canSubmitCheckout = computed(() => {
+    if (isSubmitting.value || isLoadingPricing.value) return false;
+    if (!props.carts.length) return false;
+    if (!selectedCustomer.value?.id) return false;
+    if (payLater.value) return true;
+    if (paymentMode.value === "split") return isSplitComplete.value;
+    if (isCashPayment.value) {
+        return (Number(cashInput.value) || 0) >= payable.value;
+    }
+    return true;
+});
+
+const checkoutSubmitLabel = computed(() => {
+    if (isSubmitting.value) return "Memproses…";
+    if (isLoadingPricing.value) return "Menghitung…";
+    if (payLater.value) return "Simpan (Bayar Nanti)";
+    if (paymentMode.value === "split" && !isSplitComplete.value) {
+        return `Kurang ${formatPrice(splitRemaining.value || 0)}`;
+    }
+    if (isCashShort.value) {
+        return `Kurang ${formatPrice(cashShortage.value)}`;
+    }
+    return "Konfirmasi Pembayaran (F2)";
+});
+
 const allProducts = computed(() =>
     props.products.filter((p) => {
         const matchCat =
@@ -326,14 +431,21 @@ useBarcodeScanner((barcode) => {
 // KEYBOARD SHORTCUTS
 // ═══════════════════════════════════════════════════════════
 useKeyboardShortcuts({
-    focusSearch: () => productGridRef.value?.focusSearch(),
+    focusSearch: () => cartPanelRef.value?.focusSearch(),
     openNumpad: () => (numpadOpen.value = true),
     submitTransaction: () => {
-        if (props.carts.length && selectedCustomer.value) handleSubmit();
+        if (!props.carts.length) return toast.error("Keranjang masih kosong");
+        if (!selectedCustomer.value?.id) return toast.error("Pilih pelanggan terlebih dahulu");
+        
+        if (!showPaymentModal.value) {
+            showPaymentModal.value = true;
+        } else {
+            handleSubmit();
+        }
     },
     toggleMobileView: () => {
         mobileView.value =
-            mobileView.value === "products" ? "cart" : "products";
+            mobileView.value === "cart" ? "payment" : "cart";
     },
     showShortcuts: () => (showShortcuts.value = !showShortcuts.value),
     closeAll: () => {
@@ -451,13 +563,14 @@ const handleSubmit = () => {
 };
 
 const resetAll = () => {
-    discountInput.value = "";
-    shippingInput.value = "";
+    discountInput.value = "0";
+    shippingInput.value = "0";
     redeemPointsInput.value = "";
     selectedVoucherId.value = "";
     selectedCustomer.value = null;
     resetPayment();
     isSubmitting.value = false;
+    showPaymentModal.value = false;
 };
 
 const handleNumpadConfirm = (value) => {
@@ -513,48 +626,13 @@ const handleClearCart = () => {
         :current-location-id="props.currentLocationId"
     />
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- STATE 4: MAIN POS INTERFACE -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div v-else class="h-[calc(100vh-4rem)] flex flex-col bg-surface-main">
-        <!-- Session Info Bar -->
-        <div
-            v-if="activeSession"
-            class="bg-accent-mint-soft border-b border-accent-mint/30 px-4 py-2 flex items-center justify-between flex-shrink-0"
-        >
-            <div class="flex items-center gap-3 text-xs">
-                <span class="font-bold text-accent-mint">
-                    🟢 {{ activeSession.session_no }}
-                </span>
-                <span class="text-ink-muted">
-                    {{ activeSession.shift_name }} ·
-                    {{ activeSession.total_transactions || 0 }} transaksi ·
-                    {{ formatPrice(activeSession.total_sales || 0) }}
-                </span>
-            </div>
-            <button
-                @click="handleCloseSession"
-                class="px-3 py-1 rounded-lg bg-semantic-danger-soft text-semantic-danger text-xs font-semibold hover:bg-semantic-danger/20 transition"
-            >
-                🔒 Tutup Sesi
-            </button>
-        </div>
-
         <!-- Mobile Tab Switcher -->
         <div
             class="lg:hidden flex border-b border-border-soft bg-surface-card flex-shrink-0"
         >
-            <button
-                @click="mobileView = 'products'"
-                :class="[
-                    'flex-1 py-3 text-sm font-medium transition',
-                    mobileView === 'products'
-                        ? 'text-brand border-b-2 border-brand'
-                        : 'text-ink-muted',
-                ]"
-            >
-                🛒 Produk
-            </button>
             <button
                 @click="mobileView = 'cart'"
                 :class="[
@@ -572,38 +650,98 @@ const handleClearCart = () => {
                     {{ cartCount }}
                 </span>
             </button>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-            <!-- Left Panel: Products -->
-            <div
+            <button
+                @click="mobileView = 'payment'"
                 :class="[
-                    'flex-1 overflow-hidden flex flex-col',
-                    mobileView !== 'products' ? 'hidden lg:flex' : 'flex',
+                    'flex-1 py-3 text-sm font-medium transition',
+                    mobileView === 'payment'
+                        ? 'text-brand border-b-2 border-brand'
+                        : 'text-ink-muted',
                 ]"
             >
-                <PromoBanner />
-                <ProductGrid
-                    ref="productGridRef"
-                    :products="allProducts"
-                    :categories="categories"
-                    :selected-category="selectedCategory"
-                    :search-query="searchQuery"
-                    :adding-product-id="addingProductId"
-                    @update:selected-category="selectedCategory = $event"
-                    @update:search-query="searchQuery = $event"
-                    @add-to-cart="addToCart"
-                />
-            </div>
+                💳 Pembayaran
+            </button>
+        </div>
 
-            <!-- Right Panel: Cart + Payment + Summary -->
+        <!-- Main Content (3 Columns) -->
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            <!-- Col 1: Promosi (20% Lebar Layar) -->
             <div
                 :class="[
-                    'w-full lg:w-[420px] xl:w-[480px] flex flex-col bg-surface-card border-l border-border-soft min-h-0 overflow-hidden',
+                    'w-full lg:w-[20%] xl:w-[20%] min-w-[240px] flex flex-col bg-surface-card border-r border-border-soft p-base overflow-y-auto shrink-0',
+                    mobileView !== 'cart' ? 'hidden lg:flex' : 'hidden lg:flex',
+                ]"
+            >
+                <div class="space-y-sm">
+                    <h3 class="text-[11px] font-extrabold text-ink-muted uppercase tracking-wider flex items-center gap-xs mb-sm">
+                        📢 Promosi & Info
+                    </h3>
+                    <PromoBanner />
+                </div>
+            </div>
+
+            <!-- Col 2: Keranjang Belanjaan (60% Lebar Layar) -->
+            <div
+                :class="[
+                    'w-full lg:w-[60%] xl:w-[60%] flex-1 flex flex-col overflow-hidden bg-surface-main',
                     mobileView !== 'cart' ? 'hidden lg:flex' : 'flex',
                 ]"
             >
+                <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    <CartPanel
+                        ref="cartPanelRef"
+                        :carts="carts"
+                        :pricing-items-by-cart-id="pricingItemsByCartId"
+                        :cart-count="cartCount"
+                        :held-carts="heldCarts"
+                        :has-active-cart="carts.length > 0"
+                        :is-holding="isHolding"
+                        :removing-item-id="removingItemId"
+                        :updating-cart-id="updatingCartId"
+                        :products="products"
+                        :search-query="searchQuery"
+                        @update-qty="updateQty"
+                        @void-item="handleVoidItem"
+                        @hold-cart="holdCart()"
+                        @recall-held="handleRecallHeld"
+                        @clear-cart="handleClearCart"
+                        @update:search-query="searchQuery = $event"
+                        @add-to-cart="addToCart"
+                    />
+                </div>
+            </div>
+
+            <!-- Col 3: Payment & Rangkuman (20% Lebar Layar) -->
+            <div
+                :class="[
+                    'w-full lg:w-[20%] xl:w-[20%] min-w-[320px] flex flex-col bg-surface-card border-l border-border-soft min-h-0 overflow-hidden shrink-0',
+                    mobileView !== 'payment' ? 'hidden lg:flex' : 'flex',
+                ]"
+            >
+                <!-- Active Session (pindahan dari atas banner) -->
+                <div
+                    v-if="activeSession"
+                    class="bg-accent-mint-soft border-b border-accent-mint/30 px-md py-sm flex flex-col gap-xs flex-shrink-0"
+                >
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-[10px] text-accent-mint uppercase tracking-wider">
+                            🟢 Sesi Aktif
+                        </span>
+                        <button
+                            @click="handleCloseSession"
+                            class="px-2 py-0.5 rounded bg-semantic-danger-soft text-semantic-danger text-[9px] font-bold hover:bg-semantic-danger/20 transition"
+                        >
+                            🔒 Tutup Sesi
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-ink-muted leading-tight">
+                        <span class="font-bold text-ink-primary">{{ activeSession.session_no }}</span> · 
+                        {{ activeSession.shift_name }} · 
+                        {{ activeSession.total_transactions || 0 }} trx · 
+                        <span class="font-semibold text-brand font-mono">{{ formatPrice(activeSession.total_sales || 0) }}</span>
+                    </div>
+                </div>
+
                 <!-- Customer Select -->
                 <div class="p-3 border-b border-border-soft flex-shrink-0">
                     <CustomerSelect
@@ -614,72 +752,21 @@ const handleClearCart = () => {
                     />
                 </div>
 
-                <!-- Cart Panel -->
-                <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
-                    <CartPanel
-                        :carts="carts"
-                        :pricing-items-by-cart-id="pricingItemsByCartId"
-                        :cart-count="cartCount"
-                        :held-carts="heldCarts"
-                        :has-active-cart="carts.length > 0"
-                        :is-holding="isHolding"
-                        :removing-item-id="removingItemId"
-                        :updating-cart-id="updatingCartId"
-                        @update-qty="updateQty"
-                        @void-item="handleVoidItem"
-                        @hold-cart="holdCart()"
-                        @recall-held="handleRecallHeld"
-                        @clear-cart="handleClearCart"
-                    />
+                <!-- Rangkuman detail belanjaan -->
+                <div class="flex-1 p-lg overflow-y-auto space-y-lg">
+                    <!-- Loyalty Member Badge -->
+                    <div v-if="selectedCustomer?.is_loyalty_member || selectedCustomer?.loyalty_account"
+                         class="rounded-xl border border-brand-border bg-brand-soft p-md flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-brand uppercase tracking-wider">⭐ Member Loyalty</p>
+                            <p class="text-sm font-semibold text-ink-primary mt-1">{{ selectedCustomer.name }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-ink-muted">Saldo Poin</p>
+                            <p class="text-sm font-bold text-brand">{{ selectedCustomer.loyalty_account?.current_balance || 0 }} pts</p>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Payment Panel -->
-                <PaymentPanel
-                    :payment-mode="paymentMode"
-                    :payment-method="paymentMethod"
-                    :payment-options="paymentOptions"
-                    :pay-later="payLater"
-                    :due-date="dueDate"
-                    :cash-input="cashInput"
-                    :selected-bank-account="selectedBankAccount"
-                    :bank-accounts="bankAccounts"
-                    :payment-splits="paymentSplits"
-                    :split-total="splitTotal"
-                    :split-remaining="splitRemaining"
-                    :is-split-complete="isSplitComplete"
-                    :is-cash-payment="isCashPayment"
-                    :payable="payable"
-                    :promo-discount="promoDiscount"
-                    :voucher-discount="voucherDiscount"
-                    :loyalty-discount="loyaltyDiscount"
-                    :discount-manual="discountInput"
-                    :shipping="shippingInput"
-                    :tax-total="taxTotal"
-                    :base-subtotal="baseSubtotal"
-                    :applied-groups="pricingPreview?.applied_groups || []"
-                    :selected-customer="selectedCustomer"
-                    :redeem-points-input="redeemPointsInput"
-                    :selected-voucher-id="selectedVoucherId"
-                    :eligible-vouchers="pricingPreview?.eligible_vouchers || []"
-                    :available-points="
-                        pricingPreview?.summary?.available_loyalty_points || 0
-                    "
-                    :is-loading-pricing="isLoadingPricing"
-                    @update:payment-mode="paymentMode = $event"
-                    @update:payment-method="paymentMethod = $event"
-                    @update:pay-later="payLater = $event"
-                    @update:due-date="dueDate = $event"
-                    @update:cash-input="cashInput = $event"
-                    @update:selected-bank-account="selectedBankAccount = $event"
-                    @update:redeem-points-input="redeemPointsInput = $event"
-                    @update:selected-voucher-id="selectedVoucherId = $event"
-                    @update:discount-manual="discountInput = $event"
-                    @update:shipping="shippingInput = $event"
-                    @switch-mode="switchMode"
-                    @add-split="addSplit"
-                    @update-split-amount="updateSplitAmount"
-                    @remove-split="removeSplit"
-                />
 
                 <!-- Summary Footer -->
                 <SummaryFooter
@@ -697,11 +784,9 @@ const handleClearCart = () => {
                     :promo-discount="promoDiscount"
                     :voucher-discount="voucherDiscount"
                     :loyalty-discount="loyaltyDiscount"
-                    :discount-manual="Number(discountInput) || 0"
-                    :shipping="Number(shippingInput) || 0"
                     :tax-total="taxTotal"
                     :applied-promotions="appliedPromotions"
-                    @submit="handleSubmit"
+                    @submit="handleOpenPaymentModal"
                 />
             </div>
         </div>
@@ -726,7 +811,7 @@ const handleClearCart = () => {
 
     <!-- Close Cashier Session Modal (Tutup Shift) -->
     <BaseModal :show="showCloseSessionModal" @close="showCloseSessionModal = false" title="🔒 Tutup Sesi Kasir & Shift">
-        <form @submit.prevent="submitCloseSession" class="space-y-md">
+        <form @submit.prevent="submitCloseSession(false)" class="space-y-md">
             <div class="bg-surface-main p-lg rounded-xl border border-border-soft space-y-sm text-sm">
                 <div class="flex justify-between">
                     <span class="text-ink-muted">Kode / No Sesi:</span>
@@ -782,5 +867,120 @@ const handleClearCart = () => {
                 </BaseButton>
             </div>
         </form>
+    </BaseModal>
+
+    <!-- Variance Information Modal -->
+    <BaseModal :show="showVarianceModal" @close="showVarianceModal = false" title="⚠️ Selisih Kas Terdeteksi">
+        <form @submit.prevent="submitCloseSessionWithVariance" class="space-y-md" v-if="activeSession">
+            <div class="bg-semantic-warning-soft/30 p-lg rounded-xl border border-semantic-warning/20 space-y-sm text-sm">
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Uang Estimasi (Expected):</span>
+                    <span class="font-bold text-ink-primary font-mono">{{ formatPrice(activeSession.expected_cash || 0) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ink-muted">Uang Aktual (Aktual):</span>
+                    <span class="font-bold text-ink-primary font-mono">{{ formatPrice(closeSessionForm.closing_cash || 0) }}</span>
+                </div>
+                <div class="border-t border-semantic-warning/20 pt-sm flex justify-between items-center">
+                    <span class="font-bold text-semantic-warning">Selisih Kas:</span>
+                    <span class="font-extrabold text-semantic-warning text-lg font-mono">
+                        {{ formatPrice(closeSessionForm.closing_cash - (activeSession.expected_cash || 0)) }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="text-xs text-ink-muted leading-relaxed">
+                Terdapat perbedaan antara uang fisik di laci dengan estimasi sistem. Harap isi nilai penggantian (reimbursement) atau informasi/penjelasan mengenai selisih tersebut.
+            </div>
+
+            <FormInput
+                :model-value="reimbursementAmountDisplay"
+                @input="onReimbursementAmountInput"
+                type="text"
+                label="Nilai Penggantian (Reimbursement)"
+                placeholder="Masukkan nilai uang penggantian jika ada..."
+            />
+
+            <FormTextarea
+                v-model="varianceForm.variance_reason"
+                label="Informasi / Alasan Variance"
+                placeholder="Jelaskan alasan selisih kas (wajib jika tidak ada nilai penggantian)..."
+                rows="3"
+            />
+
+            <div class="flex justify-end gap-sm pt-md border-t border-border-soft">
+                <BaseButton type="button" variant="secondary" @click="showVarianceModal = false">Batal</BaseButton>
+                <BaseButton type="submit" variant="primary" :disabled="isClosingSession || (!varianceForm.reimbursement_amount && !varianceForm.variance_reason.trim())">
+                    <span v-if="isClosingSession">Memproses...</span>
+                    <span v-else>🔒 Konfirmasi & Tutup Sesi</span>
+                </BaseButton>
+            </div>
+        </form>
+    </BaseModal>
+
+    <!-- Payment Confirmation Modal -->
+    <BaseModal :show="showPaymentModal" @close="showPaymentModal = false" title="💳 Proses Pembayaran">
+        <div class="space-y-md">
+            <!-- Wrap in max-height scrollable container for safe layout -->
+            <div class="max-h-[80vh] overflow-y-auto scroll-soft">
+                <PaymentPanel
+                    :payment-mode="paymentMode"
+                    :payment-method="paymentMethod"
+                    :payment-options="paymentOptions"
+                    :pay-later="payLater"
+                    :due-date="dueDate"
+                    :cash-input="cashInput"
+                    :selected-bank-account="selectedBankAccount"
+                    :bank-accounts="bankAccounts"
+                    :payment-splits="paymentSplits"
+                    :split-total="splitTotal"
+                    :split-remaining="splitRemaining"
+                    :is-split-complete="isSplitComplete"
+                    :is-cash-payment="isCashPayment"
+                    :payable="payable"
+                    :promo-discount="promoDiscount"
+                    :voucher-discount="voucherDiscount"
+                    :loyalty-discount="loyaltyDiscount"
+                    :tax-total="taxTotal"
+                    :base-subtotal="baseSubtotal"
+                    :applied-groups="pricingPreview?.applied_groups || []"
+                    :selected-customer="selectedCustomer"
+                    :redeem-points-input="redeemPointsInput"
+                    :selected-voucher-id="selectedVoucherId"
+                    :eligible-vouchers="pricingPreview?.eligible_vouchers || []"
+                    :available-points="
+                        pricingPreview?.summary?.available_loyalty_points || 0
+                    "
+                    :is-loading-pricing="isLoadingPricing"
+                    @update:payment-mode="paymentMode = $event"
+                    @update:payment-method="paymentMethod = $event"
+                    @update:pay-later="payLater = $event"
+                    @update:due-date="dueDate = $event"
+                    @update:cash-input="cashInput = $event"
+                    @update:selected-bank-account="selectedBankAccount = $event"
+                    @update:redeem-points-input="redeemPointsInput = $event"
+                    @update:selected-voucher-id="selectedVoucherId = $event"
+                    @switch-mode="switchMode"
+                    @add-split="addSplit"
+                    @update-split-amount="updateSplitAmount"
+                    @remove-split="removeSplit"
+                />
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="flex justify-end gap-sm pt-md border-t border-border-soft px-lg pb-base">
+                <BaseButton type="button" variant="secondary" @click="showPaymentModal = false">Batal</BaseButton>
+                <BaseButton 
+                    type="button" 
+                    variant="primary" 
+                    :disabled="!canSubmitCheckout"
+                    @click="handleSubmit"
+                    class="bg-brand-gradient text-white font-bold min-w-[180px]"
+                >
+                    <span v-if="isSubmitting">Memproses...</span>
+                    <span v-else>{{ checkoutSubmitLabel }}</span>
+                </BaseButton>
+            </div>
+        </div>
     </BaseModal>
 </template>

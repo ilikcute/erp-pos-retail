@@ -4,8 +4,8 @@ namespace App\Repositories\Eloquent\POS;
 
 use App\Models\POS\SalesTransaction;
 use App\Repositories\Contracts\POS\SalesTransactionRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 class EloquentSalesTransactionRepository implements SalesTransactionRepositoryInterface
 {
@@ -16,13 +16,13 @@ class EloquentSalesTransactionRepository implements SalesTransactionRepositoryIn
             ->when($filters['search'] ?? null, function ($q, $search) {
                 $q->where('transaction_no', 'like', "%{$search}%");
             })
-            ->when($filters['status'] ?? null, fn($q, $status) => $q->where('status', $status))
-            ->when($filters['cashier_id'] ?? null, fn($q, $cashierId) => $q->where('cashier_id', $cashierId))
-            ->when($filters['customer_id'] ?? null, fn($q, $customerId) => $q->where('customer_id', $customerId))
-            ->when($filters['date_from'] ?? null, fn($q, $date) => $q->where('transaction_date', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn($q, $date) => $q->where('transaction_date', '<=', $date))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['cashier_id'] ?? null, fn ($q, $cashierId) => $q->where('cashier_id', $cashierId))
+            ->when($filters['customer_id'] ?? null, fn ($q, $customerId) => $q->where('customer_id', $customerId))
+            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->where('transaction_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->where('transaction_date', '<=', $date))
             ->when($filters['location_id'] ?? null, function ($q, $locationId) {
-                $q->whereHas('session', fn($q) => $q->where('location_id', $locationId));
+                $q->whereHas('session', fn ($q) => $q->where('location_id', $locationId));
             })
             ->latest()
             ->paginate($perPage);
@@ -59,19 +59,20 @@ class EloquentSalesTransactionRepository implements SalesTransactionRepositoryIn
     public function update(SalesTransaction $transaction, array $data): SalesTransaction
     {
         $transaction->update($data);
+
         return $transaction->fresh();
     }
 
-    public function getDailySummary(\Carbon\Carbon $date): array
+    public function getDailySummary(Carbon $date): array
     {
         $query = SalesTransaction::where('transaction_date', $date->toDateString())
             ->where('status', 'POSTED');
 
         return [
-            'total_sales'        => (clone $query)->sum('grand_total'),
-            'total_discount'     => (clone $query)->sum('discount_amount'),
-            'total_tax'          => (clone $query)->sum('tax_amount'),
-            'transaction_count'  => (clone $query)->count(),
+            'total_sales' => (clone $query)->sum('grand_total'),
+            'total_discount' => (clone $query)->sum('discount_amount'),
+            'total_tax' => (clone $query)->sum('tax_amount'),
+            'transaction_count' => (clone $query)->count(),
         ];
     }
 }

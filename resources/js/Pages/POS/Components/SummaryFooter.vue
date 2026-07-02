@@ -15,8 +15,6 @@ const props = defineProps({
     promoDiscount: { type: Number, default: 0 }, // ✅ FIXED: sekarang di props
     voucherDiscount: { type: Number, default: 0 },
     loyaltyDiscount: { type: Number, default: 0 },
-    discountManual: { type: Number, default: 0 },
-    shipping: { type: Number, default: 0 },
     taxTotal: { type: Number, default: 0 },
     payable: { type: Number, default: 0 },
 
@@ -67,8 +65,6 @@ const hasBreakdown = computed(
         props.promoDiscount > 0 ||
         props.voucherDiscount > 0 ||
         props.loyaltyDiscount > 0 ||
-        props.discountManual > 0 ||
-        props.shipping > 0 ||
         props.taxTotal > 0 ||
         props.appliedPromotions.length > 0,
 );
@@ -77,11 +73,6 @@ const canSubmit = computed(() => {
     if (props.isSubmitting || props.isLoadingPricing) return false;
     if (!props.carts.length) return false;
     if (!props.selectedCustomer?.id) return false;
-    if (props.payLater) return true;
-    if (props.paymentMode === "split") return props.isSplitComplete;
-    if (props.isCashPayment) {
-        return (Number(props.cashInput) || 0) >= props.payable;
-    }
     return true;
 });
 
@@ -90,14 +81,7 @@ const submitLabel = computed(() => {
     if (props.isLoadingPricing) return "Menghitung…";
     if (!props.carts.length) return "Keranjang Kosong";
     if (!props.selectedCustomer?.id) return "Pilih Pelanggan";
-    if (props.payLater) return "Simpan (Bayar Nanti)";
-    if (props.paymentMode === "split" && !props.isSplitComplete) {
-        return `Kurang ${formatPrice(cashShortage.value || 0)}`;
-    }
-    if (isCashShort.value) {
-        return `Kurang ${formatPrice(cashShortage.value)}`;
-    }
-    return "Bayar Sekarang (F2)";
+    return "Proses Pembayaran (F2)";
 });
 
 function onSubmit() {
@@ -125,108 +109,58 @@ function onSubmit() {
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- BREAKDOWN (hanya tampil jika ada diskon/pajak) -->
+            <!-- BREAKDOWN (Selalu Tampil) -->
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <div v-if="hasBreakdown" class="space-y-2 text-sm">
+            <div class="space-y-2 text-sm">
                 <!-- Subtotal Dasar -->
                 <div class="flex justify-between text-ink-secondary">
                     <span>Subtotal</span>
-                    <span class="font-medium tabular-nums">
+                    <span class="font-medium font-mono tabular-nums">
                         {{ formatPrice(baseSubtotal) }}
                     </span>
                 </div>
 
-                <!-- ✅ Applied Promotions (detail per promo) -->
-                <div v-if="appliedPromotions.length > 0" class="space-y-1.5">
-                    <p
-                        class="text-[10px] font-bold uppercase tracking-wider text-accent-mint flex items-center gap-1 pt-1"
-                    >
-                        🎉 Promosi Aktif
-                    </p>
-                    <div
-                        v-for="promo in appliedPromotions"
-                        :key="promo.promotion_id"
-                        class="flex items-center justify-between text-xs bg-accent-mint-soft rounded-lg px-2.5 py-1.5"
-                    >
-                        <div class="flex-1 min-w-0 pr-2">
-                            <p class="font-semibold text-accent-mint truncate">
-                                {{ promo.promotion_name }}
-                            </p>
-                            <p class="text-[10px] text-ink-muted">
-                                {{ promo.promotion_code }}
-                            </p>
-                        </div>
-                        <span
-                            class="font-bold text-accent-mint whitespace-nowrap tabular-nums"
-                        >
-                            -{{ formatPrice(promo.discount_amount) }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Total Diskon Promo (summary) -->
-                <div
-                    v-if="promoDiscount > 0 && appliedPromotions.length === 0"
-                    class="flex justify-between text-accent-mint"
-                >
+                <!-- Diskon Promo -->
+                <div class="flex justify-between text-accent-mint">
                     <span>Diskon Promo</span>
-                    <span class="font-medium tabular-nums">
-                        -{{ formatPrice(promoDiscount) }}
+                    <span class="font-medium font-mono tabular-nums">
+                        -{{ formatPrice(promoDiscount || 0) }}
                     </span>
                 </div>
 
+                <!-- ✅ Applied Promotions (detail per promo jika ada) -->
+                <div v-if="appliedPromotions.length > 0" class="space-y-1 pl-3 border-l-2 border-accent-mint/30 my-xs">
+                    <div
+                        v-for="promo in appliedPromotions"
+                        :key="promo.promotion_id"
+                        class="flex justify-between text-xs text-accent-mint/80"
+                    >
+                        <span>└ {{ promo.promotion_name }}</span>
+                        <span class="font-semibold tabular-nums">-{{ formatPrice(promo.discount_amount) }}</span>
+                    </div>
+                </div>
+
                 <!-- Voucher -->
-                <div
-                    v-if="voucherDiscount > 0"
-                    class="flex justify-between text-brand"
-                >
+                <div class="flex justify-between text-brand">
                     <span>Voucher</span>
-                    <span class="font-medium tabular-nums">
-                        -{{ formatPrice(voucherDiscount) }}
+                    <span class="font-medium font-mono tabular-nums">
+                        -{{ formatPrice(voucherDiscount || 0) }}
                     </span>
                 </div>
 
                 <!-- Loyalty Points -->
-                <div
-                    v-if="loyaltyDiscount > 0"
-                    class="flex justify-between text-brand"
-                >
+                <div class="flex justify-between text-brand">
                     <span>Redeem Poin</span>
-                    <span class="font-medium tabular-nums">
-                        -{{ formatPrice(loyaltyDiscount) }}
-                    </span>
-                </div>
-
-                <!-- Diskon Manual -->
-                <div
-                    v-if="discountManual > 0"
-                    class="flex justify-between text-semantic-danger"
-                >
-                    <span>Diskon Manual</span>
-                    <span class="font-medium tabular-nums">
-                        -{{ formatPrice(discountManual) }}
-                    </span>
-                </div>
-
-                <!-- Ongkir -->
-                <div
-                    v-if="shipping > 0"
-                    class="flex justify-between text-ink-secondary"
-                >
-                    <span>Ongkos Kirim</span>
-                    <span class="font-medium tabular-nums">
-                        +{{ formatPrice(shipping) }}
+                    <span class="font-medium font-mono tabular-nums">
+                        -{{ formatPrice(loyaltyDiscount || 0) }}
                     </span>
                 </div>
 
                 <!-- Pajak -->
-                <div
-                    v-if="taxTotal > 0"
-                    class="flex justify-between text-ink-secondary"
-                >
-                    <span>PPN</span>
-                    <span class="font-medium tabular-nums">
-                        +{{ formatPrice(taxTotal) }}
+                <div class="flex justify-between text-ink-secondary">
+                    <span>PPN (11%)</span>
+                    <span class="font-medium font-mono tabular-nums">
+                        +{{ formatPrice(taxTotal || 0) }}
                     </span>
                 </div>
             </div>

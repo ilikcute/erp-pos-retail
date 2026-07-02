@@ -2,9 +2,9 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\MasterData\Supplier;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Model;
 
 class SupplierPerformance extends Model
 {

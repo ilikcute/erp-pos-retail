@@ -2,12 +2,12 @@
 
 namespace App\Services\Product;
 
+use App\Enums\ProductType;
 use App\Models\Product\Product;
 use App\Models\Product\ProductVariant;
 use App\Repositories\Contracts\Product\ProductRepositoryInterface;
 use App\Repositories\Contracts\Product\ProductVariantRepositoryInterface;
 use App\Support\AuditService;
-use App\Enums\ProductType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -39,7 +39,7 @@ class ProductService
      */
     public function create(array $data): Product
     {
-        $variantData  = $data['default_variant'] ?? [];
+        $variantData = $data['default_variant'] ?? [];
         $attributeData = $data['attributes'] ?? [];
         $variantsInput = $data['variants'] ?? [];
         unset($data['default_variant'], $data['attributes'], $data['variants']);
@@ -50,10 +50,10 @@ class ProductService
             // Buat default variant untuk produk SIMPLE
             if ($product->product_type === ProductType::SIMPLE || ! $product->hasVariants()) {
                 $variant = $product->variants()->create(array_merge([
-                    'sku'        => $variantData['sku'] ?? $product->product_code,
+                    'sku' => $variantData['sku'] ?? $product->product_code,
                     'variant_name' => $product->product_name,
                     'is_default' => true,
-                    'is_active'  => true,
+                    'is_active' => true,
                     'created_by' => $data['created_by'] ?? auth()->id(),
                     'updated_by' => $data['updated_by'] ?? auth()->id(),
                 ], $variantData));
@@ -61,11 +61,11 @@ class ProductService
                 // Buat barcode default jika disertakan
                 if ($variantData['barcode'] ?? null) {
                     $variant->barcodes()->create([
-                        'barcode'      => $variantData['barcode'],
+                        'barcode' => $variantData['barcode'],
                         'barcode_type' => $variantData['barcode_type'] ?? 'EAN13',
-                        'is_primary'   => true,
-                        'created_by'   => $data['created_by'] ?? auth()->id(),
-                        'updated_by'   => $data['updated_by'] ?? auth()->id(),
+                        'is_primary' => true,
+                        'created_by' => $data['created_by'] ?? auth()->id(),
+                        'updated_by' => $data['updated_by'] ?? auth()->id(),
                     ]);
                 }
             } else {
@@ -77,16 +77,16 @@ class ProductService
                 foreach ($attributeData as $index => $attr) {
                     $attribute = $product->attributes()->create([
                         'attribute_name' => $attr['attribute_name'],
-                        'sort_order'     => $index,
-                        'created_by'     => auth()->id(),
-                        'updated_by'     => auth()->id(),
+                        'sort_order' => $index,
+                        'created_by' => auth()->id(),
+                        'updated_by' => auth()->id(),
                     ]);
 
                     $attributeMap[$attr['attribute_name']] = $attribute->id;
 
                     foreach ($attr['values'] as $valIndex => $valString) {
                         $value = $attribute->values()->create([
-                            'value'      => $valString,
+                            'value' => $valString,
                             'sort_order' => $valIndex,
                         ]);
                         $valueMap[$attr['attribute_name']][$valString] = $value->id;
@@ -101,18 +101,18 @@ class ProductService
 
                     $variant = $product->variants()->create(array_merge($vInput, [
                         'is_default' => false,
-                        'is_active'  => $vInput['is_active'] ?? true,
+                        'is_active' => $vInput['is_active'] ?? true,
                         'created_by' => auth()->id(),
                         'updated_by' => auth()->id(),
                     ]));
 
                     if ($barcodeData) {
                         $variant->barcodes()->create([
-                            'barcode'      => $barcodeData,
+                            'barcode' => $barcodeData,
                             'barcode_type' => $vInput['barcode_type'] ?? 'EAN13',
-                            'is_primary'   => true,
-                            'created_by'   => auth()->id(),
-                            'updated_by'   => auth()->id(),
+                            'is_primary' => true,
+                            'created_by' => auth()->id(),
+                            'updated_by' => auth()->id(),
                         ]);
                     }
 
@@ -123,7 +123,7 @@ class ProductService
 
                         if ($attrName && $valString && isset($valueMap[$attrName][$valString])) {
                             $variant->variantAttributes()->create([
-                                'attribute_id'       => $attributeMap[$attrName],
+                                'attribute_id' => $attributeMap[$attrName],
                                 'attribute_value_id' => $valueMap[$attrName][$valString],
                             ]);
                         }
@@ -188,7 +188,7 @@ class ProductService
         abort_if(! $product->hasVariants(), 422, 'Produk ini bukan tipe VARIANT.');
 
         return DB::transaction(function () use ($product, $variantData) {
-            $barcodeData  = $variantData['barcode'] ?? null;
+            $barcodeData = $variantData['barcode'] ?? null;
             $attributeData = $variantData['attributes'] ?? [];
             unset($variantData['barcode'], $variantData['attributes']);
 
@@ -200,11 +200,11 @@ class ProductService
 
             if ($barcodeData) {
                 $variant->barcodes()->create([
-                    'barcode'      => $barcodeData,
+                    'barcode' => $barcodeData,
                     'barcode_type' => $variantData['barcode_type'] ?? 'EAN13',
-                    'is_primary'   => true,
-                    'created_by'   => auth()->id(),
-                    'updated_by'   => auth()->id(),
+                    'is_primary' => true,
+                    'created_by' => auth()->id(),
+                    'updated_by' => auth()->id(),
                 ]);
             }
 

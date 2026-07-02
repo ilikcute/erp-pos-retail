@@ -12,6 +12,7 @@
         "laravel/reverb": "^1.10",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
+        "rap2hpoutre/fast-excel": "^5.11",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

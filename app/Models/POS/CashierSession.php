@@ -3,6 +3,7 @@
 namespace App\Models\POS;
 
 use App\Enums\POS\SessionStatus;
+use App\Models\Inventory\InventoryLocation;
 use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,8 @@ class CashierSession extends Model
         'closing_cash',
         'expected_cash',
         'cash_difference',
+        'reimbursement_amount',
+        'variance_reason',
         'total_sales',
         'total_transactions',
         'status',
@@ -34,6 +37,7 @@ class CashierSession extends Model
         'closing_cash' => 'decimal:2',
         'expected_cash' => 'decimal:2',
         'cash_difference' => 'decimal:2',
+        'reimbursement_amount' => 'decimal:2',
         'total_sales' => 'decimal:2',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
@@ -54,7 +58,7 @@ class CashierSession extends Model
 
     public function location(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Inventory\InventoryLocation::class, 'location_id');
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
 
     public function closedByUser(): BelongsTo
@@ -104,15 +108,15 @@ class CashierSession extends Model
     public function calculateExpectedCash(): float
     {
         $opening = (float) $this->opening_cash;
-        
+
         $transactionIds = $this->transactions()->pluck('id');
-        
-        $cashPayments = \App\Models\POS\SalesPayment::whereIn('sales_transaction_id', $transactionIds)
-            ->whereHas('paymentMethod', function($query) {
+
+        $cashPayments = SalesPayment::whereIn('sales_transaction_id', $transactionIds)
+            ->whereHas('paymentMethod', function ($query) {
                 $query->where('method_type', 'CASH');
             })
             ->sum('amount');
-            
+
         return $opening + (float) $cashPayments;
     }
 

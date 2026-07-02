@@ -2,8 +2,8 @@
 
 namespace App\Actions\Reporting;
 
-use App\Models\POS\SalesTransaction;
 use App\Models\Inventory\InventoryBalance;
+use App\Models\POS\SalesTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -11,14 +11,14 @@ class GenerateDashboardKPIsAction
 {
     public function execute(array $filters = []): array
     {
-        $cacheKey = "dashboard_kpis_" . md5(json_encode($filters));
-        
+        $cacheKey = 'dashboard_kpis_'.md5(json_encode($filters));
+
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-            $dateFrom = isset($filters['date_from']) 
-                ? Carbon::parse($filters['date_from']) 
+            $dateFrom = isset($filters['date_from'])
+                ? Carbon::parse($filters['date_from'])
                 : now()->startOfMonth();
-            $dateTo = isset($filters['date_to']) 
-                ? Carbon::parse($filters['date_to']) 
+            $dateTo = isset($filters['date_to'])
+                ? Carbon::parse($filters['date_to'])
                 : now();
 
             return [
@@ -105,7 +105,7 @@ class GenerateDashboardKPIsAction
             ->where('status', 'POSTED')
             ->with('items.product')
             ->get()
-            ->flatMap(fn($sale) => $sale->items)
+            ->flatMap(fn ($sale) => $sale->items)
             ->groupBy('product_id')
             ->map(function ($items, $productId) {
                 return [
@@ -144,15 +144,16 @@ class GenerateDashboardKPIsAction
     private function getRepeatCustomers($sales): int
     {
         return $sales->groupBy('customer_id')
-            ->filter(fn($items) => $items->count() > 1)
+            ->filter(fn ($items) => $items->count() > 1)
             ->count();
     }
 
     private function getAverageCustomerValue($sales): float
     {
         $customers = $sales->groupBy('customer_id');
-        return $customers->count() > 0 
-            ? $sales->sum('grand_total') / $customers->count() 
+
+        return $customers->count() > 0
+            ? $sales->sum('grand_total') / $customers->count()
             : 0;
     }
 }

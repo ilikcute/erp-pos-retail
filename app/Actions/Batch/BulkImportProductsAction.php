@@ -3,7 +3,6 @@
 namespace App\Actions\Batch;
 
 use App\Models\Product\Product;
-use App\Models\MasterData\Supplier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -24,24 +23,24 @@ class BulkImportProductsAction
                     $this->validateProductData($productData);
 
                     $product = Product::create([
-                        'product_code'      => $productData['product_code'],
-                        'product_name'      => $productData['product_name'],
-                        'product_type'      => $productData['product_type'] ?? 'SIMPLE',
-                        'description'       => $productData['description'] ?? null,
+                        'product_code' => $productData['product_code'],
+                        'product_name' => $productData['product_name'],
+                        'product_type' => $productData['product_type'] ?? 'SIMPLE',
+                        'description' => $productData['description'] ?? null,
                         'product_category_id' => $productData['category_id'],
-                        'product_brand_id'  => $productData['brand_id'] ?? null,
-                        'unit_id'           => $productData['unit_id'],
-                        'is_active'         => $productData['is_active'] ?? true,
-                        'created_by'        => auth()->id(),
+                        'product_brand_id' => $productData['brand_id'] ?? null,
+                        'unit_id' => $productData['unit_id'],
+                        'is_active' => $productData['is_active'] ?? true,
+                        'created_by' => auth()->id(),
                     ]);
 
-                    if (!empty($productData['variants'])) {
+                    if (! empty($productData['variants'])) {
                         foreach ($productData['variants'] as $variant) {
                             $product->variants()->create([
-                                'variant_code'     => $variant['variant_code'],
-                                'variant_name'     => $variant['variant_name'],
-                                'sku'              => $variant['sku'],
-                                'created_by'       => auth()->id(),
+                                'variant_code' => $variant['variant_code'],
+                                'variant_name' => $variant['variant_name'],
+                                'sku' => $variant['sku'],
+                                'created_by' => auth()->id(),
                             ]);
                         }
                     }

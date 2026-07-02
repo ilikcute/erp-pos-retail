@@ -11,25 +11,25 @@ class TaxSeeder extends Seeder
     {
         $taxes = [
             [
-                'tax_code'     => 'PPN11',
-                'tax_name'     => 'PPN 11%',
-                'tax_rate'     => 11.00,
+                'tax_code' => 'PPN11',
+                'tax_name' => 'PPN 11%',
+                'tax_rate' => 11.00,
                 'is_inclusive' => false,
-                'is_active'    => true,
+                'is_active' => true,
             ],
             [
-                'tax_code'     => 'PPN0',
-                'tax_name'     => 'PPN 0% (Ekspor)',
-                'tax_rate'     => 0.00,
+                'tax_code' => 'PPN0',
+                'tax_name' => 'PPN 0% (Ekspor)',
+                'tax_rate' => 0.00,
                 'is_inclusive' => false,
-                'is_active'    => true,
+                'is_active' => true,
             ],
             [
-                'tax_code'     => 'BEBAS',
-                'tax_name'     => 'Bebas Pajak',
-                'tax_rate'     => 0.00,
+                'tax_code' => 'BEBAS',
+                'tax_name' => 'Bebas Pajak',
+                'tax_rate' => 0.00,
                 'is_inclusive' => false,
-                'is_active'    => true,
+                'is_active' => true,
             ],
         ];
 

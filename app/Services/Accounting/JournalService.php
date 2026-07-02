@@ -26,7 +26,7 @@ class JournalService
         array $paymentMethods,
         array $options = []
     ): JournalEntry {
-        return DB::transaction(function () use ($transaction, $paymentMethods, $options) {
+        return DB::transaction(function () use ($transaction, $paymentMethods) {
             $journal = JournalEntry::create([
                 'journal_number' => $this->generateJournalNumber(),
                 'journal_date' => $transaction->created_at ?? now(),
@@ -34,7 +34,7 @@ class JournalService
                 'source_id' => $transaction->id,
                 'description' => "Penjualan POS #{$transaction->id}",
                 'status' => 'POSTED',
-                'created_by' => $transaction->user_id ?? null,
+                'created_by' => $transaction->cashier_id ?? $transaction->created_by ?? null,
                 'posted_at' => now(),
             ]);
 
@@ -73,14 +73,14 @@ class JournalService
             // ═══════════════════════════════════════════════════════════
             // 3. CREDIT: PPN Keluaran (jika ada)
             // ═══════════════════════════════════════════════════════════
-            if (($transaction->tax ?? 0) > 0) {
+            if (($transaction->tax_amount ?? 0) > 0) {
                 $ppnAccount = ChartOfAccount::where('account_code', '2-1002')->first();
                 if ($ppnAccount) {
                     JournalEntryLine::create([
                         'journal_entry_id' => $journal->id,
                         'account_id' => $ppnAccount->id,
                         'debit' => 0,
-                        'credit' => $transaction->tax,
+                        'credit' => $transaction->tax_amount,
                         'description' => 'PPN Keluaran',
                         'line_order' => $lineOrder++,
                     ]);
@@ -90,13 +90,13 @@ class JournalService
             // ═══════════════════════════════════════════════════════════
             // 4. CREDIT: Diskon (contra revenue)
             // ═══════════════════════════════════════════════════════════
-            if (($transaction->discount ?? 0) > 0) {
+            if (($transaction->discount_amount ?? 0) > 0) {
                 $discountAccount = ChartOfAccount::where('account_code', '4-1002')->first();
                 if ($discountAccount) {
                     JournalEntryLine::create([
                         'journal_entry_id' => $journal->id,
                         'account_id' => $discountAccount->id,
-                        'debit' => $transaction->discount,
+                        'debit' => $transaction->discount_amount,
                         'credit' => 0,
                         'description' => 'Diskon Penjualan',
                         'line_order' => $lineOrder++,
@@ -107,7 +107,7 @@ class JournalService
             // ═══════════════════════════════════════════════════════════
             // 5. VALIDASI: Debit harus == Credit
             // ═══════════════════════════════════════════════════════════
-            if (!$journal->isBalanced()) {
+            if (! $journal->isBalanced()) {
                 throw new \DomainException(
                     "Journal tidak balance! Debit: {$journal->lines->sum('debit')}, Credit: {$journal->lines->sum('credit')}"
                 );
@@ -136,7 +136,7 @@ class JournalService
             $hppAccount = ChartOfAccount::where('account_code', '5-1001')->first();
             $inventoryAccount = ChartOfAccount::where('account_code', '1-2000')->first();
 
-            if (!$hppAccount || !$inventoryAccount) {
+            if (! $hppAccount || ! $inventoryAccount) {
                 throw new \DomainException('Akun HPP atau Persediaan tidak ditemukan');
             }
 
@@ -175,6 +175,7 @@ class JournalService
         $last = JournalEntry::whereDate('created_at', today())
             ->where('journal_number', 'like', "JE-{$date}-%")
             ->count();
+
         return sprintf('JE-%s-%04d', $date, $last + 1);
     }
 }

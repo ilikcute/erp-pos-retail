@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Enums\Inventory\TransactionType;
 use App\Http\Controllers\Controller;
+use App\Models\Inventory\InventoryAdjustment;
+use App\Models\Inventory\InventoryAdjustmentItem;
 use App\Models\Inventory\InventoryBalance;
+use App\Models\Inventory\InventoryBatch;
 use App\Models\Inventory\InventoryLedger;
 use App\Models\Inventory\InventoryLocation;
+use App\Models\Inventory\InventoryOpname;
+use App\Models\Inventory\InventoryOpnameItem;
 use App\Models\Inventory\InventoryPlanogram;
 use App\Models\Inventory\InventoryTransfer;
 use App\Models\Inventory\InventoryTransferItem;
-use App\Models\Inventory\InventoryAdjustment;
-use App\Models\Inventory\InventoryAdjustmentItem;
-use App\Models\Inventory\InventoryOpname;
-use App\Models\Inventory\InventoryOpnameItem;
-use App\Models\Inventory\InventoryBatch;
 use App\Models\Product\ProductVariant;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -80,7 +81,7 @@ class InventoryController extends Controller
     {
         $location = InventoryLocation::findOrFail($id);
         $validated = $request->validate([
-            'code' => 'required|string|unique:inventory_locations,code,' . $id,
+            'code' => 'required|string|unique:inventory_locations,code,'.$id,
             'name' => 'required|string',
             'type' => 'required|string',
             'is_stock_bearing' => 'required|boolean',
@@ -111,14 +112,14 @@ class InventoryController extends Controller
 
         $source = InventoryLocation::findOrFail($request->source_location_id);
         $destination = InventoryLocation::findOrFail($request->destination_location_id);
-        if (!$source->isStockBearing() || !$destination->isStockBearing()) {
+        if (! $source->isStockBearing() || ! $destination->isStockBearing()) {
             return back()->with('error', 'Transfer stok hanya dapat dilakukan antara lokasi stock-bearing.');
         }
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = InventoryTransfer::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $number = 'TRF-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $number = 'TRF-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $transfer = InventoryTransfer::create([
                 'transfer_number' => $number,
@@ -151,7 +152,7 @@ class InventoryController extends Controller
             return back()->with('error', 'Hanya transfer DRAFT yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($transfer) {
+        DB::transaction(function () use ($transfer) {
             $transfer->update([
                 'status' => 'POSTED',
                 'posted_by' => auth()->id() ?? 1,
@@ -186,7 +187,7 @@ class InventoryController extends Controller
                 $sourceBatch = $item->batch;
                 if ($sourceBatch) {
                     $sourceBatch->decrement('quantity', $item->transfer_qty);
-                    
+
                     $destBatch = InventoryBatch::firstOrCreate(
                         [
                             'location_id' => $transfer->destination_location_id,
@@ -205,7 +206,7 @@ class InventoryController extends Controller
 
                 InventoryLedger::create([
                     'reference_number' => $transfer->transfer_number,
-                    'transaction_type' => \App\Enums\Inventory\TransactionType::TRANSFER_OUT ?? 'TRANSFER_OUT',
+                    'transaction_type' => TransactionType::TRANSFER_OUT ?? 'TRANSFER_OUT',
                     'product_variant_id' => $item->product_variant_id,
                     'location_id' => $transfer->source_location_id,
                     'inventory_batch_id' => $item->inventory_batch_id,
@@ -221,7 +222,7 @@ class InventoryController extends Controller
 
                 InventoryLedger::create([
                     'reference_number' => $transfer->transfer_number,
-                    'transaction_type' => \App\Enums\Inventory\TransactionType::TRANSFER_IN ?? 'TRANSFER_IN',
+                    'transaction_type' => TransactionType::TRANSFER_IN ?? 'TRANSFER_IN',
                     'product_variant_id' => $item->product_variant_id,
                     'location_id' => $transfer->destination_location_id,
                     'inventory_batch_id' => $item->inventory_batch_id,
@@ -247,6 +248,7 @@ class InventoryController extends Controller
             return back()->with('error', 'Hanya transfer DRAFT yang dapat dibatalkan.');
         }
         $transfer->update(['status' => 'CANCELLED']);
+
         return back()->with('success', 'Transfer stok berhasil dibatalkan.');
     }
 
@@ -263,10 +265,10 @@ class InventoryController extends Controller
             'items.*.notes' => 'nullable|string',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = InventoryAdjustment::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $number = 'ADJ-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $number = 'ADJ-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $adj = InventoryAdjustment::create([
                 'adjustment_number' => $number,
@@ -299,7 +301,7 @@ class InventoryController extends Controller
             return back()->with('error', 'Hanya adjustment PENDING yang dapat disetujui.');
         }
 
-        DB::transaction(function() use ($adj) {
+        DB::transaction(function () use ($adj) {
             $adj->update([
                 'status' => 'APPROVED',
                 'approved_by' => auth()->id() ?? 1,
@@ -337,7 +339,7 @@ class InventoryController extends Controller
 
                 InventoryLedger::create([
                     'reference_number' => $adj->adjustment_number,
-                    'transaction_type' => $adj->adjustment_type === 'PLUS' ? \App\Enums\Inventory\TransactionType::ADJUSTMENT_IN ?? 'ADJUSTMENT_IN' : \App\Enums\Inventory\TransactionType::ADJUSTMENT_OUT ?? 'ADJUSTMENT_OUT',
+                    'transaction_type' => $adj->adjustment_type === 'PLUS' ? TransactionType::ADJUSTMENT_IN ?? 'ADJUSTMENT_IN' : TransactionType::ADJUSTMENT_OUT ?? 'ADJUSTMENT_OUT',
                     'product_variant_id' => $item->product_variant_id,
                     'location_id' => $locationId,
                     'inventory_batch_id' => $item->inventory_batch_id,
@@ -367,6 +369,7 @@ class InventoryController extends Controller
             'status' => 'REJECTED',
             'rejection_notes' => $request->rejection_notes,
         ]);
+
         return back()->with('success', 'Adjustment stok berhasil ditolak.');
     }
 
@@ -378,10 +381,10 @@ class InventoryController extends Controller
             'opname_date' => 'required|date',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             $latest = InventoryOpname::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $number = 'OPN-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $number = 'OPN-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $opname = InventoryOpname::create([
                 'opname_number' => $number,
@@ -415,7 +418,7 @@ class InventoryController extends Controller
             'items.*.physical_qty' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function() use ($request) {
+        DB::transaction(function () use ($request) {
             foreach ($request->items as $item) {
                 $opnameItem = InventoryOpnameItem::findOrFail($item['id']);
                 $diff = $item['physical_qty'] - $opnameItem->system_qty;
@@ -440,6 +443,7 @@ class InventoryController extends Controller
             'approved_by' => auth()->id() ?? 1,
             'approved_at' => now(),
         ]);
+
         return back()->with('success', 'Stock Opname berhasil disetujui.');
     }
 
@@ -450,7 +454,7 @@ class InventoryController extends Controller
             return back()->with('error', 'Hanya opname APPROVED yang dapat diposting.');
         }
 
-        DB::transaction(function() use ($opname) {
+        DB::transaction(function () use ($opname) {
             $opname->update([
                 'status' => 'POSTED',
                 'posted_by' => auth()->id() ?? 1,
@@ -458,12 +462,16 @@ class InventoryController extends Controller
             ]);
 
             foreach ($opname->items as $item) {
-                if ($item->physical_qty === null) continue;
+                if ($item->physical_qty === null) {
+                    continue;
+                }
 
                 $batch = $item->batch;
                 $diff = $item->difference;
 
-                if ($diff == 0) continue;
+                if ($diff == 0) {
+                    continue;
+                }
 
                 if ($batch) {
                     $batch->update(['quantity' => $item->physical_qty]);
@@ -493,7 +501,7 @@ class InventoryController extends Controller
 
                 InventoryLedger::create([
                     'reference_number' => $opname->opname_number,
-                    'transaction_type' => \App\Enums\Inventory\TransactionType::OPNAME ?? 'OPNAME',
+                    'transaction_type' => TransactionType::OPNAME ?? 'OPNAME',
                     'product_variant_id' => $item->product_variant_id,
                     'location_id' => $opname->inventory_location_id,
                     'inventory_batch_id' => $item->inventory_batch_id,
@@ -548,6 +556,7 @@ class InventoryController extends Controller
     {
         $plan = InventoryPlanogram::findOrFail($id);
         $plan->delete();
+
         return back()->with('success', 'Planogram berhasil dihapus.');
     }
 }

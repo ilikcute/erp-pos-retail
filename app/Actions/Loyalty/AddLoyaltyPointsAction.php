@@ -18,13 +18,13 @@ class AddLoyaltyPointsAction
         return DB::transaction(function () use ($account, $points, $reason, $transactionId) {
             $transaction = LoyaltyTransaction::create([
                 'loyalty_account_id' => $account->id,
-                'transaction_date'   => now(),
-                'transaction_type'   => $points > 0 ? 'EARN' : 'REDEEM',
-                'points'             => abs($points),
-                'reference_type'     => $transactionId ? 'SALES_TRANSACTION' : null,
-                'reference_id'       => $transactionId,
-                'reason'             => $reason,
-                'created_by'         => auth()->id(),
+                'transaction_date' => now(),
+                'transaction_type' => $points > 0 ? 'EARN' : 'REDEEM',
+                'points' => abs($points),
+                'reference_type' => $transactionId ? 'SALES_TRANSACTION' : null,
+                'reference_id' => $transactionId,
+                'reason' => $reason,
+                'created_by' => auth()->id(),
             ]);
 
             $newBalance = $account->current_points + $points;
@@ -37,7 +37,7 @@ class AddLoyaltyPointsAction
                 recordId: $transaction->id,
                 documentNo: "LTX-{$transaction->id}",
                 newValues: [
-                    'points'          => $points,
+                    'points' => $points,
                     'current_balance' => $account->current_points,
                 ],
             );

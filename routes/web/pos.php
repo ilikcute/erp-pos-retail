@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\POS\PosTransactionController;
-use App\Http\Controllers\POS\SalesTransactionController;
 use App\Http\Controllers\POS\CashierSessionController;
 use App\Http\Controllers\POS\DayClosingController;
 use App\Http\Controllers\POS\MonthClosingController;
+use App\Http\Controllers\POS\PosTransactionController;
+use App\Http\Controllers\POS\SalesTransactionController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('pos')->name('pos.')->group(function () {
     // Halaman utama POS

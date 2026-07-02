@@ -3,11 +3,12 @@
 namespace App\Repositories\Contracts\POS;
 
 use App\Models\POS\Shift;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 interface ShiftRepositoryInterface
 {
-    public function paginate(array $filters = [], int $perPage = 15): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+    public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     public function findById(int $id): ?Shift;
 

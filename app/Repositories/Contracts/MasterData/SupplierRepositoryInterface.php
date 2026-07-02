@@ -4,6 +4,7 @@ namespace App\Repositories\Contracts\MasterData;
 
 use App\Models\MasterData\Supplier;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface SupplierRepositoryInterface
 {
@@ -19,5 +20,5 @@ interface SupplierRepositoryInterface
 
     public function delete(Supplier $supplier): void;
 
-    public function listActive(): \Illuminate\Database\Eloquent\Collection;
+    public function listActive(): Collection;
 }

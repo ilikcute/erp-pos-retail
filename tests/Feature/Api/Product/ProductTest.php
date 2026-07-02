@@ -4,8 +4,8 @@ namespace Tests\Feature\Api\Product;
 
 use App\Models\MasterData\Unit;
 use App\Models\Product\Product;
-use App\Models\Product\ProductVariant;
 use App\Models\Product\ProductBarcode;
+use App\Models\Product\ProductVariant;
 use Tests\ApiTestCase;
 
 class ProductTest extends ApiTestCase
@@ -107,7 +107,7 @@ class ProductTest extends ApiTestCase
                 [
                     'attribute_name' => 'Warna',
                     'values' => ['Merah', 'Biru'],
-                ]
+                ],
             ],
             'variants' => [
                 [
@@ -120,9 +120,9 @@ class ProductTest extends ApiTestCase
                     'attribute_values' => [
                         [
                             'attribute_name' => 'Warna',
-                            'value' => 'Merah'
-                        ]
-                    ]
+                            'value' => 'Merah',
+                        ],
+                    ],
                 ],
                 [
                     'sku' => 'SKU-PROD-V-BIRU',
@@ -134,36 +134,36 @@ class ProductTest extends ApiTestCase
                     'attribute_values' => [
                         [
                             'attribute_name' => 'Warna',
-                            'value' => 'Biru'
-                        ]
-                    ]
-                ]
-            ]
+                            'value' => 'Biru',
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         $response->assertStatus(201);
-        
+
         $this->assertDatabaseHas('products', [
             'product_code' => 'PROD-V',
-            'product_type' => 'VARIANT'
+            'product_type' => 'VARIANT',
         ]);
 
         $this->assertDatabaseHas('product_attributes', [
-            'attribute_name' => 'Warna'
+            'attribute_name' => 'Warna',
         ]);
 
         $this->assertDatabaseHas('product_attribute_values', [
-            'value' => 'Merah'
+            'value' => 'Merah',
         ]);
 
         $this->assertDatabaseHas('product_variants', [
             'sku' => 'SKU-PROD-V-MERAH',
-            'variant_name' => 'Product Variant Test - Merah'
+            'variant_name' => 'Product Variant Test - Merah',
         ]);
 
         $this->assertDatabaseHas('product_variants', [
             'sku' => 'SKU-PROD-V-BIRU',
-            'variant_name' => 'Product Variant Test - Biru'
+            'variant_name' => 'Product Variant Test - Biru',
         ]);
     }
 

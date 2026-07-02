@@ -9,9 +9,11 @@ use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\StoreProductBrandRequest;
 use App\Http\Requests\Product\UpdateProductBrandRequest;
+use App\Models\System\User;
 use App\Repositories\Contracts\Product\ProductBrandRepositoryInterface;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -62,19 +64,19 @@ class ProductBrandController extends Controller
         }
 
         // Jika bukan level tinggi atau tidak memiliki permission manage, wajib memvalidasi kredensial supervisor
-        if (!$user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$user->hasPermission('product.brand.manage')) {
+        if (! $user->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && ! $user->hasPermission('product.brand.manage')) {
             $request->validate([
                 'supervisor_email' => 'required|email|exists:users,email',
                 'supervisor_password' => 'required|string',
             ]);
 
-            $supervisor = \App\Models\System\User::where('email', $request->supervisor_email)->first();
+            $supervisor = User::where('email', $request->supervisor_email)->first();
 
-            if (!$supervisor || !\Illuminate\Support\Facades\Hash::check($request->supervisor_password, $supervisor->password)) {
+            if (! $supervisor || ! Hash::check($request->supervisor_password, $supervisor->password)) {
                 return redirect()->back()->withErrors(['delete' => 'Kredensial supervisor salah atau tidak ditemukan.']);
             }
 
-            if (!$supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && !$supervisor->hasPermission('product.brand.manage')) {
+            if (! $supervisor->hasAnyRole(['admin', 'supervisor', 'manager', 'owner']) && ! $supervisor->hasPermission('product.brand.manage')) {
                 return redirect()->back()->withErrors(['delete' => 'User supervisor yang dimasukkan tidak memiliki wewenang menghapus brand.']);
             }
         }

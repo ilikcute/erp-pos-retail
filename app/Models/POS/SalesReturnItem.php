@@ -2,12 +2,12 @@
 
 namespace App\Models\POS;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\MasterData\Unit;
 use App\Models\Product\Product;
 use App\Models\Product\ProductVariant;
-use App\Models\MasterData\Unit;
 use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesReturnItem extends Model
 {
@@ -29,7 +29,7 @@ class SalesReturnItem extends Model
     ];
 
     protected $casts = [
-        'quantity'   => 'decimal:4',
+        'quantity' => 'decimal:4',
         'unit_price' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'line_total' => 'decimal:2',

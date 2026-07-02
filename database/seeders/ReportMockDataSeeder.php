@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ReportMockDataSeeder extends Seeder
 {
@@ -31,14 +31,14 @@ class ReportMockDataSeeder extends Seeder
         $variantId1 = DB::table('product_variants')->value('id') ?? 1;
         $variantId2 = DB::table('product_variants')->orderBy('id', 'desc')->value('id') ?? 2;
         $locationId = DB::table('inventory_locations')->value('id');
-        if (!$locationId) {
+        if (! $locationId) {
             $locationId = DB::table('inventory_locations')->insertGetId([
                 'name' => 'Main Warehouse',
                 'code' => 'WH-01',
                 'type' => 'WAREHOUSE',
                 'is_active' => true,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
         }
 
@@ -53,7 +53,7 @@ class ReportMockDataSeeder extends Seeder
                 $inv
             );
         }
-        
+
         // Ledger summary data so the movement shows up
         DB::table('inventory_ledgers')->updateOrInsert(
             ['reference_number' => 'MOCK-IN-1'],
@@ -79,7 +79,7 @@ class ReportMockDataSeeder extends Seeder
             DB::table('chart_of_accounts')->updateOrInsert(['account_code' => $c['account_code']], $c);
         }
 
-        // To make GenerateFinancialReportAction work, we actually just need balances. 
+        // To make GenerateFinancialReportAction work, we actually just need balances.
         // Delete existing mock entries to ensure idempotency
         DB::table('journal_entries')->where('journal_number', 'JE-MOCK-001')->delete();
         DB::table('fiscal_periods')->where('period_name', 'Agustus 2024')->delete();
@@ -95,7 +95,7 @@ class ReportMockDataSeeder extends Seeder
             'status' => 'POSTED',
             'created_by' => $adminId,
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
 
         $items = [
@@ -117,7 +117,7 @@ class ReportMockDataSeeder extends Seeder
                     'debit' => $item['debit'],
                     'credit' => $item['credit'],
                     'created_at' => now(),
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
             }
         }
@@ -166,7 +166,7 @@ class ReportMockDataSeeder extends Seeder
                 'sort_order' => 2,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
 
         // 6. Data Dummy untuk Accounting Rules

@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum ApprovalStatus: string
 {
-    case PENDING  = 'PENDING';
+    case PENDING = 'PENDING';
     case APPROVED = 'APPROVED';
     case REJECTED = 'REJECTED';
     case CANCELLED = 'CANCELLED';
@@ -12,9 +12,9 @@ enum ApprovalStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::PENDING   => 'Menunggu Persetujuan',
-            self::APPROVED  => 'Disetujui',
-            self::REJECTED  => 'Ditolak',
+            self::PENDING => 'Menunggu Persetujuan',
+            self::APPROVED => 'Disetujui',
+            self::REJECTED => 'Ditolak',
             self::CANCELLED => 'Dibatalkan',
         };
     }

@@ -2,11 +2,14 @@
 
 namespace App\Services\POS;
 
+use App\Models\Accounting\PaymentMethod;
 use App\Models\POS\Cart;
 use App\Models\POS\HeldCart;
-use App\Models\Transaction;
-use App\Models\TransactionItem;
-use App\Models\TransactionPayment;
+use App\Models\POS\SalesPayment;
+use App\Models\POS\SalesSession;
+use App\Models\POS\SalesTransaction;
+use App\Models\POS\SalesTransactionItem;
+use App\Support\DocumentNumberService;
 use Illuminate\Support\Facades\DB;
 
 class CartService
@@ -57,7 +60,7 @@ class CartService
 
             $heldCart = HeldCart::create([
                 'user_id' => $userId,
-                'label' => $label ?? 'Transaksi ' . now()->format('H:i'),
+                'label' => $label ?? 'Transaksi '.now()->format('H:i'),
             ]);
 
             foreach ($carts as $cart) {
@@ -91,51 +94,127 @@ class CartService
         });
     }
 
-    public function checkout(int $userId, array $data): Transaction
+    public function checkout(int $userId, array $data): SalesTransaction
     {
         return DB::transaction(function () use ($userId, $data) {
-            $carts = Cart::where('user_id', $userId)->with('product')->get();
+            $carts = Cart::where('user_id', $userId)->with('product.variants')->get();
 
-            $transaction = Transaction::create([
-                'user_id' => $userId,
+            // Find active SalesSession for the cashier
+            $salesSession = SalesSession::where('cashier_id', $userId)
+                ->where('status', 'OPEN')
+                ->first();
+
+            if (! $salesSession) {
+                $salesSession = SalesSession::where('status', 'OPEN')->first();
+            }
+
+            if (! $salesSession) {
+                throw new \RuntimeException('Sesi penjualan (Sales Session) aktif tidak ditemukan.');
+            }
+
+            // Generate transaction number
+            $documentNumberService = app(DocumentNumberService::class);
+            $transactionNo = $documentNumberService->generate('SALES_TRANSACTION');
+
+            $transaction = SalesTransaction::create([
+                'transaction_no' => $transactionNo,
+                'sales_session_id' => $salesSession->id,
+                'cashier_session_id' => $data['cashier_session_id'] ?? null,
+                'cashier_id' => $userId,
                 'customer_id' => $data['customer_id'],
-                'subtotal' => $data['grand_total'],
-                'discount' => $data['discount'] ?? 0,
-                'tax' => $data['tax_total'] ?? 0,
-                'shipping_cost' => $data['shipping_cost'] ?? 0,
+                'transaction_date' => now()->toDateString(),
+                'status' => 'POSTED',
+                'subtotal' => $data['subtotal'] ?? $data['grand_total'],
+                'discount_amount' => $data['discount'] ?? 0,
+                'tax_amount' => $data['tax_total'] ?? 0,
                 'grand_total' => $data['grand_total'],
-                'cash' => $data['cash'] ?? 0,
-                'change' => $data['change'] ?? 0,
-                'payment_gateway' => $data['payment_gateway'] ?? null,
-                'pay_later' => $data['pay_later'] ?? false,
-                'due_date' => $data['due_date'] ?? null,
-                'status' => $data['pay_later'] ? 'unpaid' : 'paid',
+                'paid_amount' => $data['cash'] ?? 0,
+                'change_amount' => $data['change'] ?? 0,
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $userId,
             ]);
 
             // Create transaction items
             foreach ($carts as $cart) {
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $cart->product_id,
-                    'qty' => $cart->qty,
-                    'price' => $cart->sell_price,
-                    'subtotal' => $cart->sell_price * $cart->qty,
-                ]);
+                $variant = $cart->product->variants->first();
 
-                // Reduce stock
-                $cart->product->decrement('stock', $cart->qty);
+                // Find pricing info from payload
+                $itemPricing = collect($data['items_pricing'] ?? [])->firstWhere('cart_id', $cart->id);
+                $discountAmount = $itemPricing['discount_amount'] ?? 0;
+                $taxAmount = $itemPricing['tax_amount'] ?? 0;
+                $lineTotal = $itemPricing['line_total'] ?? ($cart->sell_price * $cart->qty);
+
+                SalesTransactionItem::create([
+                    'sales_transaction_id' => $transaction->id,
+                    'product_id' => $cart->product_id,
+                    'product_variant_id' => $variant?->id,
+                    'item_name' => $cart->product->product_name,
+                    'sku' => $variant?->sku ?? $cart->product->product_code,
+                    'barcode' => $variant?->barcodes()->first()?->barcode ?? $cart->product->barcode,
+                    'unit_id' => $cart->product->base_unit_id,
+                    'quantity' => $cart->qty,
+                    'unit_price' => $cart->sell_price,
+                    'discount_amount' => $discountAmount,
+                    'tax_amount' => $taxAmount,
+                    'line_total' => $lineTotal,
+                    'cost_price' => $variant?->purchase_price ?? 0,
+                    'created_by' => $userId,
+                ]);
             }
 
             // Handle payment splits
-            if (!empty($data['payment_splits'])) {
+            if (! empty($data['payment_splits'])) {
                 foreach ($data['payment_splits'] as $split) {
-                    TransactionPayment::create([
-                        'transaction_id' => $transaction->id,
-                        'method' => $split['method'],
+                    $paymentNo = $documentNumberService->generate('SALES_PAYMENT');
+
+                    // Resolve payment method id
+                    $pmId = $split['payment_method_id'] ?? null;
+                    if (! $pmId && ! empty($split['method'])) {
+                        $pmId = PaymentMethod::where('method_type', strtoupper($split['method']))
+                            ->where('is_active', true)
+                            ->value('id');
+                    }
+                    if (! $pmId) {
+                        $pmId = PaymentMethod::where('method_type', 'CASH')
+                            ->where('is_active', true)
+                            ->value('id');
+                    }
+
+                    SalesPayment::create([
+                        'payment_no' => $paymentNo,
+                        'sales_transaction_id' => $transaction->id,
+                        'payment_method_id' => $pmId,
                         'amount' => $split['amount'],
-                        'reference' => $split['reference'] ?? null,
+                        'reference_no' => $split['reference'] ?? null,
+                        'status' => 'POSTED',
+                        'created_by' => $userId,
                     ]);
                 }
+            } else {
+                $paymentNo = $documentNumberService->generate('SALES_PAYMENT');
+
+                // Resolve payment method id
+                $pmId = $data['payment_method_id'] ?? null;
+                if (! $pmId && ! empty($data['payment_gateway'])) {
+                    $pmId = PaymentMethod::where('method_type', strtoupper($data['payment_gateway']))
+                        ->where('is_active', true)
+                        ->value('id');
+                }
+                if (! $pmId) {
+                    $pmId = PaymentMethod::where('method_type', 'CASH')
+                        ->where('is_active', true)
+                        ->value('id');
+                }
+
+                SalesPayment::create([
+                    'payment_no' => $paymentNo,
+                    'sales_transaction_id' => $transaction->id,
+                    'payment_method_id' => $pmId,
+                    'amount' => $data['grand_total'],
+                    'reference_no' => $data['payment_gateway'] ?? null,
+                    'status' => 'POSTED',
+                    'created_by' => $userId,
+                ]);
             }
 
             // Clear cart

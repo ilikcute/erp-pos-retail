@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +18,7 @@ return new class extends Migration
                 ->references('id')->on('price_lists')->onDelete('cascade');
             $table->foreign('customer_category_id', 'ccpl_category_fk')
                 ->references('id')->on('customer_categories')->onDelete('cascade');
-            
+
             $table->unique(['price_list_id', 'customer_category_id'], 'uk_ccpl');
         });
     }

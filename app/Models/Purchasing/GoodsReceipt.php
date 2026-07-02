@@ -2,9 +2,9 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventory\InventoryLocation;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Model;
 
 class GoodsReceipt extends Model
 {

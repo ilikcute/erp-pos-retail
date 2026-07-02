@@ -16,6 +16,7 @@ class RefreshDashboardCacheJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $timeout = 300;
+
     public $tries = 3;
 
     public function handle(GenerateDashboardKPIsAction $action): void
@@ -25,7 +26,7 @@ class RefreshDashboardCacheJob implements ShouldQueue
             Cache::put('dashboard_kpis_latest', $kpis, now()->addHours(1));
             Log::info('Dashboard cache refreshed successfully');
         } catch (\Exception $e) {
-            Log::error('Failed to refresh dashboard cache: ' . $e->getMessage());
+            Log::error('Failed to refresh dashboard cache: '.$e->getMessage());
             throw $e;
         }
     }

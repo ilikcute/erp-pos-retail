@@ -2,9 +2,9 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
-use App\Models\Product\ProductVariant;
 use App\Models\Inventory\InventoryBatch;
+use App\Models\Product\ProductVariant;
+use Illuminate\Database\Eloquent\Model;
 
 class GoodsReceiptItem extends Model
 {

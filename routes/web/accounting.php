@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Accounting\AccountingController;
+use Illuminate\Support\Facades\Route;
 
 // Web interface
 Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');

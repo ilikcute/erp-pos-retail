@@ -18,7 +18,7 @@ class EloquentShiftRepository implements ShiftRepositoryInterface
                         ->orWhere('shift_name', 'like', "%{$search}%");
                 });
             })
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -41,6 +41,7 @@ class EloquentShiftRepository implements ShiftRepositoryInterface
     public function update(Shift $shift, array $data): Shift
     {
         $shift->update($data);
+
         return $shift->fresh();
     }
 

@@ -47,6 +47,7 @@ class LoyaltyRewardCatalog extends Model
     public function isAvailable(): bool
     {
         $now = now();
+
         return $this->is_active
             && $this->stock_qty > $this->redeemed_qty
             && ($this->valid_from === null || $this->valid_from <= $now)

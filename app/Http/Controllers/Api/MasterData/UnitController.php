@@ -29,9 +29,9 @@ class UnitController extends Controller
             'data' => UnitResource::collection($units->items()),
             'meta' => [
                 'current_page' => $units->currentPage(),
-                'last_page'    => $units->lastPage(),
-                'per_page'     => $units->perPage(),
-                'total'        => $units->total(),
+                'last_page' => $units->lastPage(),
+                'per_page' => $units->perPage(),
+                'total' => $units->total(),
             ],
         ]);
     }
@@ -51,7 +51,7 @@ class UnitController extends Controller
         $unit = $this->unitService->create($request->validated());
 
         return response()->json([
-            'data'    => new UnitResource($unit),
+            'data' => new UnitResource($unit),
             'message' => 'Unit berhasil ditambahkan.',
         ], 201);
     }
@@ -64,7 +64,7 @@ class UnitController extends Controller
         $unit = $this->unitService->update($unit, $request->validated());
 
         return response()->json([
-            'data'    => new UnitResource($unit),
+            'data' => new UnitResource($unit),
             'message' => 'Unit berhasil diperbarui.',
         ]);
     }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\System;
 
+use App\Events\ApprovalApproved;
+use App\Events\ApprovalRejected;
 use App\Http\Controllers\Controller;
 use App\Models\System\Approval;
 use Illuminate\Http\Request;
@@ -14,7 +16,7 @@ class ApprovalController extends Controller
     {
         $approvals = Approval::with(['requestor', 'approvable'])
             ->where('status', 'PENDING')
-            ->when($request->module, fn($q) => $q->where('module', $request->module))
+            ->when($request->module, fn ($q) => $q->where('module', $request->module))
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -33,7 +35,7 @@ class ApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
 
-        if (!$approval->isPending()) {
+        if (! $approval->isPending()) {
             return back()->with('error', 'Approval sudah diproses sebelumnya.');
         }
 
@@ -45,7 +47,7 @@ class ApprovalController extends Controller
         ]);
 
         // Trigger approval callback
-        event(new \App\Events\ApprovalApproved($approval));
+        event(new ApprovalApproved($approval));
 
         return back()->with('success', 'Approval berhasil disetujui.');
     }
@@ -58,7 +60,7 @@ class ApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
 
-        if (!$approval->isPending()) {
+        if (! $approval->isPending()) {
             return back()->with('error', 'Approval sudah diproses sebelumnya.');
         }
 
@@ -69,7 +71,7 @@ class ApprovalController extends Controller
             'rejection_notes' => $validated['notes'],
         ]);
 
-        event(new \App\Events\ApprovalRejected($approval));
+        event(new ApprovalRejected($approval));
 
         return back()->with('success', 'Approval berhasil ditolak.');
     }

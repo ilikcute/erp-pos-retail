@@ -2,8 +2,8 @@
 
 namespace App\Actions\Reporting;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class GenerateFinancialReportAction
 {
@@ -17,35 +17,51 @@ class GenerateFinancialReportAction
 
         $totalAssets = $assets->sum('balance');
         $totalLiabilities = $liabilities->sum('balance');
-        $totalEquity = $equity->sum('balance');
+        $totalEquityWithoutIncome = $equity->sum('balance');
         $totalRevenue = $revenue->sum('balance');
         $totalExpenses = $expenses->sum('balance');
 
         $netIncome = $totalRevenue - $totalExpenses;
+        $totalEquity = $totalEquityWithoutIncome + $netIncome;
+
+        // Add net income as a virtual item to Equity list so it shows in the Balance Sheet list
+        $equityWithIncome = $equity->collect();
+        $equityWithIncome->push((object) [
+            'id' => 9999,
+            'account_code' => '-',
+            'account_name' => 'Laba Periode Berjalan',
+            'balance' => number_format($netIncome, 2, '.', ''),
+        ]);
+
+        // Get PPN Keluaran (2-1002) balance as tax collected
+        $ppnKeluaran = $liabilities->firstWhere('account_code', '2-1002');
+        $taxCollected = $ppnKeluaran ? (float) $ppnKeluaran->balance : 0.0;
 
         return [
             'balance_sheet' => [
-                'assets'      => $assets,
+                'assets' => $assets,
                 'total_assets' => $totalAssets,
                 'liabilities' => $liabilities,
                 'total_liabilities' => $totalLiabilities,
-                'equity'      => $equity,
+                'equity' => $equityWithIncome,
                 'total_equity' => $totalEquity,
             ],
             'income_statement' => [
-                'revenue'     => $revenue,
+                'revenue' => $revenue,
                 'total_revenue' => $totalRevenue,
-                'expenses'    => $expenses,
+                'expenses' => $expenses,
                 'total_expenses' => $totalExpenses,
-                'net_income'  => $netIncome,
+                'net_income' => $netIncome,
+                'tax_collected' => $taxCollected, // PPN Keluaran
             ],
             'summary' => [
-                'total_assets'       => $totalAssets,
-                'total_liabilities'  => $totalLiabilities,
-                'total_equity'       => $totalEquity,
-                'total_revenue'      => $totalRevenue,
-                'total_expenses'     => $totalExpenses,
-                'net_income'         => $netIncome,
+                'total_assets' => $totalAssets,
+                'total_liabilities' => $totalLiabilities,
+                'total_equity' => $totalEquity,
+                'total_revenue' => $totalRevenue,
+                'total_expenses' => $totalExpenses,
+                'net_income' => $netIncome,
+                'tax_collected' => $taxCollected,
             ],
         ];
     }

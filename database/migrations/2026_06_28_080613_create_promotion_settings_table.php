@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,7 +20,7 @@ return new class extends Migration
         });
 
         // Insert default settings
-        \Illuminate\Support\Facades\DB::table('promotion_settings')->insert([
+        DB::table('promotion_settings')->insert([
             'margin_protection_mode' => 'WARNING',
             'allow_negative_margin' => false,
             'allow_stacking' => false,

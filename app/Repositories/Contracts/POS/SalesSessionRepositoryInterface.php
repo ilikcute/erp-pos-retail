@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts\POS;
 
 use App\Models\POS\SalesSession;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -14,7 +15,7 @@ interface SalesSessionRepositoryInterface
 
     public function findOpenByCashier(int $cashierId): ?SalesSession;
 
-    public function findOpenByDate(\Carbon\Carbon $date): Collection;
+    public function findOpenByDate(Carbon $date): Collection;
 
     public function create(array $data): SalesSession;
 

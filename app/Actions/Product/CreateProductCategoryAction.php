@@ -30,9 +30,9 @@ class CreateProductCategoryAction
         $mappedData = [
             'category_code' => $categoryCode,
             'category_name' => $data['name'],
-            'description'   => $data['description'] ?? null,
-            'parent_id'     => $data['parent_id'] ?? null,
-            'is_active'     => $data['is_active'] ?? true,
+            'description' => $data['description'] ?? null,
+            'parent_id' => $data['parent_id'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
         ];
 
         return $this->categoryRepository->create($mappedData);

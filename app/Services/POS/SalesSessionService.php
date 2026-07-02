@@ -7,7 +7,6 @@ use App\Repositories\Contracts\POS\SalesSessionRepositoryInterface;
 use App\Support\AuditService;
 use App\Support\DocumentNumberService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 class SalesSessionService
 {
@@ -42,15 +41,15 @@ class SalesSessionService
         $sessionNo = $this->documentNumberService->generate('SALES_SESSION');
 
         $session = $this->sessionRepository->create([
-            'session_no'      => $sessionNo,
-            'shift_id'        => $shiftId,
-            'cashier_id'      => $cashierId,
-            'session_date'    => now()->toDateString(),
-            'status'          => 'OPEN',
-            'opening_cash'    => $openingCash,
-            'notes'           => $notes,
-            'created_by'      => auth()->id(),
-            'updated_by'      => auth()->id(),
+            'session_no' => $sessionNo,
+            'shift_id' => $shiftId,
+            'cashier_id' => $cashierId,
+            'session_date' => now()->toDateString(),
+            'status' => 'OPEN',
+            'opening_cash' => $openingCash,
+            'notes' => $notes,
+            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
         ]);
 
         $this->auditService->log(
@@ -67,7 +66,7 @@ class SalesSessionService
 
     public function closeSession(SalesSession $session, float $closingCash, ?string $notes = null): SalesSession
     {
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             throw new \RuntimeException('Session is not open.');
         }
 
@@ -76,14 +75,14 @@ class SalesSessionService
         $cashDifference = $closingCash - $expectedCash;
 
         $session = $this->sessionRepository->closeSession($session, [
-            'closing_cash'      => $closingCash,
-            'expected_cash'     => $expectedCash,
-            'cash_difference'   => $cashDifference,
-            'total_sales'       => $totalTransactions,
+            'closing_cash' => $closingCash,
+            'expected_cash' => $expectedCash,
+            'cash_difference' => $cashDifference,
+            'total_sales' => $totalTransactions,
             'total_transactions' => $totalTransactions,
             'transaction_count' => $session->transactions()->where('status', 'POSTED')->count(),
-            'notes'             => $notes,
-            'updated_by'        => auth()->id(),
+            'notes' => $notes,
+            'updated_by' => auth()->id(),
         ]);
 
         $this->auditService->log(
@@ -93,10 +92,10 @@ class SalesSessionService
             recordId: $session->id,
             documentNo: $session->session_no,
             newValues: [
-                'closing_cash'    => $closingCash,
-                'expected_cash'   => $expectedCash,
+                'closing_cash' => $closingCash,
+                'expected_cash' => $expectedCash,
                 'cash_difference' => $cashDifference,
-                'total_sales'     => $totalTransactions,
+                'total_sales' => $totalTransactions,
             ],
         );
 

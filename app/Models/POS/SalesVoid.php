@@ -2,9 +2,9 @@
 
 namespace App\Models\POS;
 
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\System\User;
 
 class SalesVoid extends Model
 {
@@ -22,7 +22,7 @@ class SalesVoid extends Model
 
     protected $casts = [
         'requested_at' => 'datetime',
-        'approved_at'  => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function salesTransaction(): BelongsTo

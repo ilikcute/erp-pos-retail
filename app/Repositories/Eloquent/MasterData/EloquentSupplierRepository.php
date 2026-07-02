@@ -19,8 +19,8 @@ class EloquentSupplierRepository implements SupplierRepositoryInterface
                         ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
-            ->when($filters['city'] ?? null, fn($q, $city) => $q->where('city', $city))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
+            ->when($filters['city'] ?? null, fn ($q, $city) => $q->where('city', $city))
             ->latest()
             ->paginate($perPage);
     }
@@ -43,6 +43,7 @@ class EloquentSupplierRepository implements SupplierRepositoryInterface
     public function update(Supplier $supplier, array $data): Supplier
     {
         $supplier->update($data);
+
         return $supplier->fresh();
     }
 

@@ -2,7 +2,6 @@
 
 use App\Models\System\User;
 use Laravel\Dusk\Browser;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 test('user can login via browser', function () {
     $user = User::factory()->create([
@@ -10,7 +9,7 @@ test('user can login via browser', function () {
         'password' => bcrypt('password123'),
     ]);
 
-    $this->browse(function (Browser $browser) use ($user) {
+    $this->browse(function (Browser $browser) {
         $browser->visit('/login')
             ->assertSee('Login')
             ->type('email', 'admin@test.com')

@@ -2,9 +2,9 @@
 
 namespace App\Models\Purchasing;
 
+use App\Models\System\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\System\User;
 
 class PurchaseRequest extends Model
 {

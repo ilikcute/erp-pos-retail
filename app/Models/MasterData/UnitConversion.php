@@ -2,9 +2,9 @@
 
 namespace App\Models\MasterData;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasCreatedBy;
 
 class UnitConversion extends Model
 {
@@ -21,7 +21,7 @@ class UnitConversion extends Model
 
     protected $casts = [
         'conversion_factor' => 'decimal:6',
-        'is_active'         => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function fromUnit(): BelongsTo

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ImportProductCsvRequest;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
+use App\Models\MasterData\Tax;
 use App\Models\Product\ProductVariant;
 use App\Repositories\Contracts\MasterData\UnitRepositoryInterface;
 use App\Repositories\Contracts\Product\ProductBrandRepositoryInterface;
@@ -59,11 +60,13 @@ class ProductController extends Controller
         $brands = $this->brandRepository->listActive();
         $categories = $this->categoryRepository->getFlatList();
         $units = $this->unitRepository->listActive();
+        $taxes = Tax::where('is_active', true)->get(['id', 'tax_name', 'tax_rate']);
 
         return Inertia::render('Product/Products/Create', [
             'brands' => $brands,
             'categories' => $categories,
             'units' => $units,
+            'taxes' => $taxes,
         ]);
     }
 
@@ -124,12 +127,14 @@ class ProductController extends Controller
         $brands = $this->brandRepository->listActive();
         $categories = $this->categoryRepository->getFlatList();
         $units = $this->unitRepository->listActive();
+        $taxes = Tax::where('is_active', true)->get(['id', 'tax_name', 'tax_rate']);
 
         return Inertia::render('Product/Products/Edit', [
             'product' => $product,
             'brands' => $brands,
             'categories' => $categories,
             'units' => $units,
+            'taxes' => $taxes,
         ]);
     }
 

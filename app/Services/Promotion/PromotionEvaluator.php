@@ -4,8 +4,8 @@ namespace App\Services\Promotion;
 
 use App\Enums\Promotion\ConditionType;
 use App\Enums\Promotion\TargetType;
+use App\Models\MasterData\Customer;
 use App\Models\Promotion\Promotion;
-use Illuminate\Support\Collection;
 
 class PromotionEvaluator
 {
@@ -21,7 +21,7 @@ class PromotionEvaluator
         ];
 
         // 1. Cek status & waktu
-        if (!$promotion->isCurrentlyActive()) {
+        if (! $promotion->isCurrentlyActive()) {
             return [
                 'eligible' => false,
                 'reason' => 'Promosi tidak aktif atau sudah kadaluarsa',
@@ -47,7 +47,7 @@ class PromotionEvaluator
         // 4. Evaluasi conditions
         foreach ($promotion->conditions as $condition) {
             $conditionResult = $this->evaluateCondition($condition, $cartItems, $customerId);
-            if (!$conditionResult['pass']) {
+            if (! $conditionResult['pass']) {
                 return [
                     'eligible' => false,
                     'reason' => $conditionResult['reason'],
@@ -81,13 +81,13 @@ class PromotionEvaluator
 
     private function evaluateMinAmount($condition, array $cartItems): array
     {
-        $total = collect($cartItems)->sum(fn($item) => ($item['unit_price'] ?? 0) * ($item['qty'] ?? 0));
+        $total = collect($cartItems)->sum(fn ($item) => ($item['unit_price'] ?? 0) * ($item['qty'] ?? 0));
         $minAmount = (float) $condition->condition_value;
 
         if ($total < $minAmount) {
             return [
                 'pass' => false,
-                'reason' => "Minimum belanja Rp " . number_format($minAmount, 0, ',', '.') . " belum terpenuhi",
+                'reason' => 'Minimum belanja Rp '.number_format($minAmount, 0, ',', '.').' belum terpenuhi',
             ];
         }
 
@@ -112,13 +112,13 @@ class PromotionEvaluator
     private function evaluateDayOfWeek($condition): array
     {
         $allowedDays = $condition->getDecodedValue();
-        if (!is_array($allowedDays)) {
+        if (! is_array($allowedDays)) {
             $allowedDays = [$allowedDays];
         }
 
         $currentDay = now()->dayOfWeek; // 0 = Sunday, 6 = Saturday
 
-        if (!in_array($currentDay, $allowedDays)) {
+        if (! in_array($currentDay, $allowedDays)) {
             return [
                 'pass' => false,
                 'reason' => 'Promosi hanya berlaku pada hari tertentu',
@@ -130,7 +130,7 @@ class PromotionEvaluator
 
     private function evaluateCustomerCategory($condition, ?int $customerId): array
     {
-        if (!$customerId) {
+        if (! $customerId) {
             return [
                 'pass' => false,
                 'reason' => 'Promosi hanya untuk kategori customer tertentu',
@@ -138,12 +138,12 @@ class PromotionEvaluator
         }
 
         $allowedCategories = $condition->getDecodedValue();
-        if (!is_array($allowedCategories)) {
+        if (! is_array($allowedCategories)) {
             $allowedCategories = [$allowedCategories];
         }
 
-        $customer = \App\Models\MasterData\Customer::find($customerId);
-        if (!$customer || !in_array($customer->customer_category_id, $allowedCategories)) {
+        $customer = Customer::find($customerId);
+        if (! $customer || ! in_array($customer->customer_category_id, $allowedCategories)) {
             return [
                 'pass' => false,
                 'reason' => 'Promosi tidak berlaku untuk kategori customer Anda',
@@ -172,6 +172,7 @@ class PromotionEvaluator
                     return true;
                 }
             }
+
             return false;
         })->toArray();
     }

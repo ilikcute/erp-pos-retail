@@ -18,7 +18,7 @@ class InventoryReportService
         // Get opening balance
         $openingBalance = DB::table('inventory_ledgers')
             ->where('product_variant_id', $productVariantId)
-            ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+            ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
             ->where('transaction_date', '<', $dateFrom)
             ->selectRaw('SUM(qty_change) as opening_qty')
             ->value('opening_qty') ?? 0;
@@ -39,7 +39,7 @@ class InventoryReportService
             )
             ->leftJoin('users as u', 'il.user_id', '=', 'u.id')
             ->where('il.product_variant_id', $productVariantId)
-            ->when($locationId, fn($q) => $q->where('il.location_id', $locationId))
+            ->when($locationId, fn ($q) => $q->where('il.location_id', $locationId))
             ->whereBetween('il.transaction_date', [$dateFrom, $dateTo])
             ->orderBy('il.transaction_date')
             ->orderBy('il.id')
@@ -53,15 +53,15 @@ class InventoryReportService
             ->first();
 
         // Calculate summary
-        $totalIn = $movements->filter(fn($m) => $m->qty_change > 0)->sum('qty_change');
-        $totalOut = abs($movements->filter(fn($m) => $m->qty_change < 0)->sum('qty_change'));
+        $totalIn = $movements->filter(fn ($m) => $m->qty_change > 0)->sum('qty_change');
+        $totalOut = abs($movements->filter(fn ($m) => $m->qty_change < 0)->sum('qty_change'));
         $closingBalance = $openingBalance + $totalIn - $totalOut;
 
         return [
             'product' => $variant,
             'period' => ['from' => $dateFrom, 'to' => $dateTo],
             'opening_balance' => (float) $openingBalance,
-            'movements' => $movements->map(fn($m) => [
+            'movements' => $movements->map(fn ($m) => [
                 'id' => $m->id,
                 'date' => $m->transaction_date,
                 'type' => $m->transaction_type,
@@ -101,13 +101,13 @@ class InventoryReportService
                 DB::raw('SUM(il.qty_change * il.unit_cost) as total_value')
             )
             ->whereBetween('il.transaction_date', [$dateFrom, $dateTo])
-            ->when($locationId, fn($q) => $q->where('il.location_id', $locationId))
+            ->when($locationId, fn ($q) => $q->where('il.location_id', $locationId))
             ->groupBy('il.transaction_type')
             ->get();
 
         return [
             'period' => ['from' => $dateFrom, 'to' => $dateTo],
-            'data' => $data->map(fn($row) => [
+            'data' => $data->map(fn ($row) => [
                 'transaction_type' => $row->transaction_type,
                 'type_label' => $this->getTransactionTypeLabel($row->transaction_type),
                 'movement_count' => (int) $row->movement_count,
@@ -136,7 +136,7 @@ class InventoryReportService
             ->join('product_variants as pv', 'ib.product_variant_id', '=', 'pv.id')
             ->join('products as p', 'pv.product_id', '=', 'p.id')
             ->leftJoin('product_categories as c', 'p.category_id', '=', 'c.id')
-            ->when($locationId, fn($q) => $q->where('ib.location_id', $locationId))
+            ->when($locationId, fn ($q) => $q->where('ib.location_id', $locationId))
             ->where('ib.qty_on_hand', '>', 0)
             ->get();
 
@@ -159,7 +159,7 @@ class InventoryReportService
         });
 
         // Summary by category
-        $byCategory = $valuations->groupBy('category_name')->map(fn($items) => [
+        $byCategory = $valuations->groupBy('category_name')->map(fn ($items) => [
             'category_name' => $items->first()->category_name ?? 'Uncategorized',
             'total_items' => $items->count(),
             'total_qty' => (float) $items->sum('qty_on_hand'),
@@ -199,14 +199,14 @@ class InventoryReportService
             ->join('product_variants as pv', 'ib.product_variant_id', '=', 'pv.id')
             ->join('products as p', 'pv.product_id', '=', 'p.id')
             ->leftJoin('inventory_locations as l', 'ib.location_id', '=', 'l.id')
-            ->when($locationId, fn($q) => $q->where('ib.location_id', $locationId))
+            ->when($locationId, fn ($q) => $q->where('ib.location_id', $locationId))
             ->whereColumn('ib.qty_available', '<=', 'pv.reorder_point')
             ->where('pv.reorder_point', '>', 0)
             ->orderByDesc('shortage')
             ->get();
 
         return [
-            'data' => $data->map(fn($row) => [
+            'data' => $data->map(fn ($row) => [
                 'product_variant_id' => $row->product_variant_id,
                 'sku' => $row->sku,
                 'product_name' => $row->product_name,
@@ -220,8 +220,8 @@ class InventoryReportService
             ])->toArray(),
             'summary' => [
                 'total_items' => $data->count(),
-                'critical' => $data->filter(fn($r) => $r->qty_available <= $r->reorder_point * 0.5)->count(),
-                'warning' => $data->filter(fn($r) => $r->qty_available > $r->reorder_point * 0.5)->count(),
+                'critical' => $data->filter(fn ($r) => $r->qty_available <= $r->reorder_point * 0.5)->count(),
+                'warning' => $data->filter(fn ($r) => $r->qty_available > $r->reorder_point * 0.5)->count(),
             ],
         ];
     }
@@ -257,7 +257,7 @@ class InventoryReportService
             ')
             ->first();
 
-        if (!$result || $result->total_qty_in == 0) {
+        if (! $result || $result->total_qty_in == 0) {
             return 0;
         }
 
@@ -283,6 +283,7 @@ class InventoryReportService
     private function calculateUrgency(float $available, float $reorderPoint): string
     {
         $ratio = $available / max($reorderPoint, 1);
+
         return match (true) {
             $ratio <= 0.25 => 'critical',
             $ratio <= 0.5 => 'high',

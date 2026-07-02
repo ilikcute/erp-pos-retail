@@ -27,7 +27,7 @@ class ManageIPWhitelistAction
 
     public function isIPWhitelisted(User $user, string $ipAddress): bool
     {
-        if (!$user->ip_whitelist_enabled) {
+        if (! $user->ip_whitelist_enabled) {
             return true;
         }
 

@@ -2,7 +2,6 @@
 
 namespace App\Repositories\Eloquent\POS;
 
-use App\Enums\POS\ClosingStatus;
 use App\Models\POS\DayClosing;
 use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
 use Illuminate\Support\Collection;
@@ -32,16 +31,16 @@ class DayClosingRepository implements DayClosingRepositoryInterface
     {
         $query = DayClosing::with(['location', 'closedByUser']);
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('closing_date', '>=', $filters['date_from']);
         }
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('closing_date', '<=', $filters['date_to']);
         }
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['location_id'])) {
+        if (! empty($filters['location_id'])) {
             $query->where('location_id', $filters['location_id']);
         }
 
@@ -60,6 +59,7 @@ class DayClosingRepository implements DayClosingRepositoryInterface
         return DB::transaction(function () use ($id, $data) {
             $closing = DayClosing::findOrFail($id);
             $closing->update($data);
+
             return $closing->fresh();
         });
     }

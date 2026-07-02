@@ -18,20 +18,20 @@ class GeneratePurchaseReportAction
 
         $mappedOrders = $orders->map(function ($order, $index) {
             return [
-                'no'           => $index + 1,
-                'po_number'    => $order->po_number,
-                'supplier'     => $order->supplier ? $order->supplier->name : 'Unknown',
-                'status'       => $order->status,
+                'no' => $index + 1,
+                'po_number' => $order->po_number,
+                'supplier' => $order->supplier ? $order->supplier->name : 'Unknown',
+                'status' => $order->status,
                 'total_amount' => $order->total_amount,
-                'date'         => $order->order_date,
+                'date' => $order->order_date,
             ];
         });
 
         return [
-            'total_purchases'  => $orders->sum('total_amount'),
-            'total_orders'     => $orders->count(),
+            'total_purchases' => $orders->sum('total_amount'),
+            'total_orders' => $orders->count(),
             'pending_payables' => $orders->whereIn('status', ['DRAFT', 'PENDING'])->sum('total_amount'), // simplistic mock logic
-            'orders'           => $mappedOrders,
+            'orders' => $mappedOrders,
         ];
     }
 }

@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\MasterData\SupplierController;
-use App\Http\Controllers\Api\MasterData\CustomerController;
 use App\Http\Controllers\Api\MasterData\CustomerCategoryController;
-use App\Http\Controllers\Api\MasterData\UnitController;
+use App\Http\Controllers\Api\MasterData\CustomerController;
+use App\Http\Controllers\Api\MasterData\SupplierController;
 use App\Http\Controllers\Api\MasterData\TaxController;
+use App\Http\Controllers\Api\MasterData\UnitController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('master-data')->group(function () {
     // Supplier

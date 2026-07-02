@@ -21,9 +21,14 @@ class OpenSalesSessionAction
     public function execute(int $userId, int $shiftId, array $data): CashierSession
     {
         return DB::transaction(function () use ($userId, $shiftId, $data) {
+            // Validasi: tidak boleh ada sesi aktif untuk user ini
+            if ($this->sessionRepository->hasOpenSession($userId)) {
+                throw new \DomainException('Anda sudah memiliki sesi aktif. Tutup sesi sebelumnya terlebih dahulu.');
+            }
+
             $shift = Shift::findOrFail($shiftId);
 
-            if (!$shift->is_active) {
+            if (! $shift->is_active) {
                 throw new \DomainException('Shift tidak aktif.');
             }
 
@@ -31,17 +36,17 @@ class OpenSalesSessionAction
 
             /** @var CashierSession $session */
             $session = $this->sessionRepository->create([
-                'session_no'         => $sessionNo,
-                'shift_id'           => $shiftId,
-                'user_id'            => $userId,
-                'location_id'        => $data['location_id'] ?? null,
-                'opening_cash'       => $data['opening_cash'] ?? 0,
-                'expected_cash'      => 0,
-                'total_sales'        => 0,
+                'session_no' => $sessionNo,
+                'shift_id' => $shiftId,
+                'user_id' => $userId,
+                'location_id' => $data['location_id'] ?? null,
+                'opening_cash' => $data['opening_cash'] ?? 0,
+                'expected_cash' => 0,
+                'total_sales' => 0,
                 'total_transactions' => 0,
-                'status'             => SessionStatus::OPEN,
-                'notes'              => $data['notes'] ?? null,
-                'opened_at'          => now(),
+                'status' => SessionStatus::OPEN,
+                'notes' => $data['notes'] ?? null,
+                'opened_at' => now(),
             ]);
 
             $this->auditService->log(
@@ -52,19 +57,19 @@ class OpenSalesSessionAction
                 documentNo: $sessionNo,
                 statusAfter: SessionStatus::OPEN->value,
                 newValues: [
-                    'session_no'   => $sessionNo,
-                    'user_id'      => $userId,
-                    'shift_id'     => $shiftId,
-                    'location_id'  => $data['location_id'] ?? null,
+                    'session_no' => $sessionNo,
+                    'user_id' => $userId,
+                    'shift_id' => $shiftId,
+                    'location_id' => $data['location_id'] ?? null,
                     'opening_cash' => $data['opening_cash'] ?? 0,
-                    'status'       => SessionStatus::OPEN->value,
+                    'status' => SessionStatus::OPEN->value,
                 ],
             );
 
             $this->auditService->activity(
                 activity: 'OPEN_SESSION',
                 module: 'POS',
-                description: "Membuka sesi kasir {$sessionNo} dengan modal awal Rp " . number_format($data['opening_cash'] ?? 0, 0, ',', '.'),
+                description: "Membuka sesi kasir {$sessionNo} dengan modal awal Rp ".number_format($data['opening_cash'] ?? 0, 0, ',', '.'),
             );
 
             // ─── Notifikasi ke User ───────────────────────────────────

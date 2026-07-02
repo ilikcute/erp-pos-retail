@@ -19,7 +19,7 @@ class DayClosingService
 
     /**
      * Eksekusi tutup harian
-     * 
+     *
      * Validasi:
      * 1. Tanggal tidak boleh di masa depan
      * 2. Semua sesi kasir di tanggal tersebut harus sudah CLOSED
@@ -47,14 +47,14 @@ class DayClosingService
 
             // Validasi 3: Semua sesi kasir di tanggal tersebut harus CLOSED
             $openSessions = CashierSession::whereDate('opened_at', $closingDate)
-                ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+                ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
                 ->where('status', SessionStatus::OPEN)
                 ->count();
 
             if ($openSessions > 0) {
                 throw new \DomainException(
-                    "Masih ada {$openSessions} sesi kasir yang belum ditutup. " .
-                        "Tutup semua sesi terlebih dahulu."
+                    "Masih ada {$openSessions} sesi kasir yang belum ditutup. ".
+                        'Tutup semua sesi terlebih dahulu.'
                 );
             }
 
@@ -62,10 +62,9 @@ class DayClosingService
             // HITUNG RINGKASAN TRANSAKSI
             // ═══════════════════════════════════════════════════════════
             $transactionsQuery = Transaction::whereDate('created_at', $closingDate)
-                ->when($locationId, fn($q) => $q->whereHas(
+                ->when($locationId, fn ($q) => $q->whereHas(
                     'session',
-                    fn($sq) =>
-                    $sq->where('location_id', $locationId)
+                    fn ($sq) => $sq->where('location_id', $locationId)
                 ));
 
             $totalTransactions = (clone $transactionsQuery)->count();
@@ -82,7 +81,7 @@ class DayClosingService
             // HITUNG CASH RECONCILIATION
             // ═══════════════════════════════════════════════════════════
             $sessions = CashierSession::whereDate('opened_at', $closingDate)
-                ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+                ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
                 ->where('status', SessionStatus::CLOSED)
                 ->get();
 
@@ -161,10 +160,9 @@ class DayClosingService
         $today = now()->toDateString();
 
         $transactionsQuery = Transaction::whereDate('created_at', $today)
-            ->when($locationId, fn($q) => $q->whereHas(
+            ->when($locationId, fn ($q) => $q->whereHas(
                 'session',
-                fn($sq) =>
-                $sq->where('location_id', $locationId)
+                fn ($sq) => $sq->where('location_id', $locationId)
             ));
 
         return [
@@ -178,7 +176,7 @@ class DayClosingService
             'total_non_cash' => (float) (clone $transactionsQuery)->sum('grand_total')
                 - (clone $transactionsQuery)->where('payment_method', 'cash')->where('pay_later', false)->sum('cash'),
             'open_sessions' => CashierSession::whereDate('opened_at', $today)
-                ->when($locationId, fn($q) => $q->where('location_id', $locationId))
+                ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
                 ->where('status', SessionStatus::OPEN)
                 ->count(),
         ];

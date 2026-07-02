@@ -4,7 +4,6 @@ namespace App\Notifications\POS;
 
 use App\Models\POS\CashierSession;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Notification;
 
 class SessionOpenedNotification extends Notification
@@ -32,14 +31,14 @@ class SessionOpenedNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'title'        => '✅ Sesi Kasir Dibuka',
-            'message'      => "Sesi {$this->session->session_no} berhasil dibuka dengan modal Rp " . number_format((float) $this->session->opening_cash, 0, ',', '.'),
-            'session_id'   => $this->session->id,
-            'session_no'   => $this->session->session_no,
+            'title' => '✅ Sesi Kasir Dibuka',
+            'message' => "Sesi {$this->session->session_no} berhasil dibuka dengan modal Rp ".number_format((float) $this->session->opening_cash, 0, ',', '.'),
+            'session_id' => $this->session->id,
+            'session_no' => $this->session->session_no,
             'opening_cash' => $this->session->opening_cash,
-            'shift_id'     => $this->session->shift_id,
-            'location_id'  => $this->session->location_id,
-            'opened_at'    => $this->session->opened_at?->toDateTimeString(),
+            'shift_id' => $this->session->shift_id,
+            'location_id' => $this->session->location_id,
+            'opened_at' => $this->session->opened_at?->toDateTimeString(),
         ];
     }
 

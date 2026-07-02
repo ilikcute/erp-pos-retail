@@ -4,7 +4,6 @@ namespace App\Actions\Pricing;
 
 use App\Enums\DocumentStatus;
 use App\Models\Pricing\PriceChangeRequest;
-use App\Models\Pricing\PriceHistory;
 use App\Repositories\Contracts\Pricing\PriceChangeRequestRepositoryInterface;
 use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 use App\Support\AuditService;
@@ -28,9 +27,9 @@ class ApprovePriceChangeRequestAction
             }
 
             $request->update([
-                'status'         => DocumentStatus::APPROVED->value,
-                'approved_by'    => $approvedBy,
-                'approved_at'    => now(),
+                'status' => DocumentStatus::APPROVED->value,
+                'approved_by' => $approvedBy,
+                'approved_at' => now(),
                 'approved_notes' => auth()->id(),
             ]);
 

@@ -3,27 +3,27 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Models\Accounting\AccountingRule;
 use App\Models\Accounting\ChartOfAccount;
+use App\Models\Accounting\FiscalPeriod;
 use App\Models\Accounting\JournalEntry;
 use App\Models\Accounting\JournalEntryLine;
-use App\Models\Accounting\PaymentMethod;
-use App\Models\Accounting\FiscalPeriod;
-use App\Models\Accounting\TrialBalance;
 use App\Models\Accounting\JournalTemplate;
 use App\Models\Accounting\JournalTemplateLine;
-use App\Models\Accounting\AccountingRule;
+use App\Models\Accounting\PaymentMethod;
+use App\Models\Accounting\TrialBalance;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class AccountingController extends Controller
 {
     public function index(Request $request): Response
     {
         $chartOfAccounts = ChartOfAccount::orderBy('account_code')->get();
-        
+
         // 1. Journal entries with filters
         $journalQuery = JournalEntry::with('lines.account')
             ->orderBy('journal_date', 'desc');
@@ -45,7 +45,7 @@ class AccountingController extends Controller
             ->map(function ($entry) {
                 $totalDebit = $entry->lines->sum('debit');
                 $totalCredit = $entry->lines->sum('credit');
-                
+
                 return array_merge($entry->toArray(), [
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
@@ -64,12 +64,13 @@ class AccountingController extends Controller
         if ($trialPeriodId) {
             $period = FiscalPeriod::find($trialPeriodId);
             if ($period) {
-                $trialBalances = ChartOfAccount::orderBy('account_code')->get()->map(function($acc) use ($period) {
+                $trialBalances = ChartOfAccount::orderBy('account_code')->get()->map(function ($acc) use ($period) {
                     $lines = JournalEntryLine::where('account_id', $acc->id)
-                        ->whereHas('journal', function($q) use ($period) {
+                        ->whereHas('journal', function ($q) use ($period) {
                             $q->whereBetween('journal_date', [$period->start_date, $period->end_date])
-                              ->where('status', 'POSTED');
+                                ->where('status', 'POSTED');
                         })->get();
+
                     return [
                         'account_code' => $acc->account_code,
                         'account_name' => $acc->account_name,
@@ -77,7 +78,7 @@ class AccountingController extends Controller
                         'debit_balance' => $lines->sum('debit'),
                         'credit_balance' => $lines->sum('credit'),
                     ];
-                })->filter(fn($tb) => $tb['debit_balance'] > 0 || $tb['credit_balance'] > 0)->values()->all();
+                })->filter(fn ($tb) => $tb['debit_balance'] > 0 || $tb['credit_balance'] > 0)->values()->all();
             }
         }
 
@@ -86,14 +87,18 @@ class AccountingController extends Controller
         $ledgerLines = [];
         if ($ledgerAccountId) {
             $ledgerLines = JournalEntryLine::where('account_id', $ledgerAccountId)
-                ->whereHas('journal', function($q) use ($request) {
-                    if ($request->filled('date_from')) $q->where('journal_date', '>=', $request->date_from);
-                    if ($request->filled('date_to')) $q->where('journal_date', '<=', $request->date_to);
+                ->whereHas('journal', function ($q) use ($request) {
+                    if ($request->filled('date_from')) {
+                        $q->where('journal_date', '>=', $request->date_from);
+                    }
+                    if ($request->filled('date_to')) {
+                        $q->where('journal_date', '<=', $request->date_to);
+                    }
                     $q->where('status', 'POSTED');
                 })
                 ->with('journal')
                 ->get()
-                ->map(function($line) {
+                ->map(function ($line) {
                     return [
                         'date' => $line->journal->journal_date,
                         'journal_number' => $line->journal->journal_number,
@@ -110,7 +115,7 @@ class AccountingController extends Controller
 
         $routeName = $request->route() ? $request->route()->getName() : null;
         $activeTab = $request->query('activeTab');
-        if (!$activeTab) {
+        if (! $activeTab) {
             if ($routeName === 'accounting.journals') {
                 $activeTab = 'journals';
             } else {
@@ -157,7 +162,7 @@ class AccountingController extends Controller
 
         $validated = $request->validate([
             'parent_id' => 'nullable|integer|exists:chart_of_accounts,id',
-            'account_code' => 'string|unique:chart_of_accounts,account_code,' . $id,
+            'account_code' => 'string|unique:chart_of_accounts,account_code,'.$id,
             'account_name' => 'string|max:255',
             'account_type' => 'in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
             'normal_balance' => 'in:DEBIT,CREDIT',
@@ -211,7 +216,7 @@ class AccountingController extends Controller
         DB::transaction(function () use ($request) {
             $latest = JournalEntry::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $journalNo = 'JV-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $journalNo = 'JV-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
             $entry = JournalEntry::create([
                 'journal_number' => $journalNo,
@@ -320,9 +325,9 @@ class AccountingController extends Controller
         $accounts = ChartOfAccount::all();
         foreach ($accounts as $acc) {
             $lines = JournalEntryLine::where('account_id', $acc->id)
-                ->whereHas('journal', function($q) use ($period) {
+                ->whereHas('journal', function ($q) use ($period) {
                     $q->whereBetween('journal_date', [$period->start_date, $period->end_date])
-                      ->where('status', 'POSTED');
+                        ->where('status', 'POSTED');
                 })->get();
             $debit = $lines->sum('debit');
             $credit = $lines->sum('credit');
@@ -355,7 +360,7 @@ class AccountingController extends Controller
             'lines.*.description' => 'nullable|string',
         ]);
 
-        DB::transaction(function() use ($validated) {
+        DB::transaction(function () use ($validated) {
             $tmpl = JournalTemplate::create([
                 'template_code' => $validated['template_code'],
                 'template_name' => $validated['template_name'],

@@ -28,19 +28,19 @@ class SessionRepository implements SessionRepositoryInterface
     {
         $query = CashierSession::with(['shift', 'location', 'user']);
 
-        if (!empty($filters['shift_id'])) {
+        if (! empty($filters['shift_id'])) {
             $query->where('shift_id', $filters['shift_id']);
         }
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('opened_at', '>=', $filters['date_from']);
         }
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('opened_at', '<=', $filters['date_to']);
         }
 
@@ -59,6 +59,7 @@ class SessionRepository implements SessionRepositoryInterface
         return DB::transaction(function () use ($id, $data) {
             $session = CashierSession::findOrFail($id);
             $session->update($data);
+
             return $session->fresh();
         });
     }

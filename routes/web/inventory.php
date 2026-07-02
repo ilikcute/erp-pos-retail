@@ -1,13 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Inventory\InventoryController;
-use App\Http\Controllers\Api\Inventory\BalanceController;
-use App\Http\Controllers\Api\Inventory\LedgerController;
-use App\Http\Controllers\Api\Inventory\TransferController;
-use App\Http\Controllers\Api\Inventory\AdjustmentController;
-use App\Http\Controllers\Api\Inventory\OpnameController;
-use App\Http\Controllers\Api\Inventory\PlanogramController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 Route::get('/inventory/transfer', [InventoryController::class, 'index'])->name('inventory.transfer');

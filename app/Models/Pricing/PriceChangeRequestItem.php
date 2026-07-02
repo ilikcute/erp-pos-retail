@@ -2,6 +2,7 @@
 
 namespace App\Models\Pricing;
 
+use App\Models\Product\ProductVariant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -28,12 +29,15 @@ class PriceChangeRequestItem extends Model
 
     public function variant(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Product\ProductVariant::class, 'product_variant_id');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function getChangePctAttribute(): float
     {
-        if (! $this->old_price || $this->old_price == 0) return 0;
+        if (! $this->old_price || $this->old_price == 0) {
+            return 0;
+        }
+
         return round((($this->new_price - $this->old_price) / $this->old_price) * 100, 2);
     }
 }

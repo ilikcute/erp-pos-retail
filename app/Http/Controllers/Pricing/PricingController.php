@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Pricing;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 use App\Repositories\Contracts\Pricing\PriceChangeRequestRepositoryInterface;
+use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

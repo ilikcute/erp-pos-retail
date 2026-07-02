@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait HasApprovedBy
 {
@@ -20,7 +20,7 @@ trait HasApprovedBy
     public function markAsApproved(int $userId): void
     {
         $this->forceFill([
-            'status'      => 'APPROVED',
+            'status' => 'APPROVED',
             'approved_by' => $userId,
             'approved_at' => now(),
         ])->save();
@@ -29,9 +29,9 @@ trait HasApprovedBy
     public function markAsRejected(int $userId, string $reason): void
     {
         $this->forceFill([
-            'status'          => 'DRAFT',
-            'rejected_by'     => $userId,
-            'rejected_at'     => now(),
+            'status' => 'DRAFT',
+            'rejected_by' => $userId,
+            'rejected_at' => now(),
             'rejection_reason' => $reason,
         ])->save();
     }

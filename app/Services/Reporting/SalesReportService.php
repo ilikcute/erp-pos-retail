@@ -25,10 +25,10 @@ class SalesReportService
             ->join('transaction_items as ti', 't.id', '=', 'ti.transaction_id')
             ->whereBetween('t.transaction_date', [$dateFrom, $dateTo])
             ->where('t.status', 'COMPLETED')
-            ->when($customerId, fn($q) => $q->where('t.customer_id', $customerId))
-            ->when($cashierId, fn($q) => $q->where('t.cashier_id', $cashierId))
-            ->when($locationId, fn($q) => $q->where('t.location_id', $locationId))
-            ->when($paymentMethod, fn($q) => $q->where('t.payment_method', $paymentMethod))
+            ->when($customerId, fn ($q) => $q->where('t.customer_id', $customerId))
+            ->when($cashierId, fn ($q) => $q->where('t.cashier_id', $cashierId))
+            ->when($locationId, fn ($q) => $q->where('t.location_id', $locationId))
+            ->when($paymentMethod, fn ($q) => $q->where('t.payment_method', $paymentMethod))
             ->groupByRaw($this->getGroupByColumns($groupBy))
             ->orderByRaw($this->getOrderByColumns($groupBy));
 
@@ -53,7 +53,7 @@ class SalesReportService
                 'to' => $dateTo,
             ],
             'group_by' => $groupBy->value,
-            'data' => $data->map(fn($row) => $this->formatRow($row, $groupBy))->toArray(),
+            'data' => $data->map(fn ($row) => $this->formatRow($row, $groupBy))->toArray(),
             'summary' => $summary,
         ];
     }
@@ -82,7 +82,7 @@ class SalesReportService
             ->leftJoin('product_categories as c', 'p.category_id', '=', 'c.id')
             ->whereBetween('t.transaction_date', [$dateFrom, $dateTo])
             ->where('t.status', 'COMPLETED')
-            ->when($categoryId, fn($q) => $q->where('p.category_id', $categoryId))
+            ->when($categoryId, fn ($q) => $q->where('p.category_id', $categoryId))
             ->groupBy('ti.product_id', 'p.product_name', 'p.product_code', 'c.name')
             ->orderByDesc('total_revenue')
             ->limit($limit)
@@ -121,7 +121,7 @@ class SalesReportService
             $row = $data->firstWhere('hour', $hour);
             $result[] = [
                 'hour' => $hour,
-                'hour_label' => str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00',
+                'hour_label' => str_pad($hour, 2, '0', STR_PAD_LEFT).':00',
                 'transaction_count' => $row->transaction_count ?? 0,
                 'total_revenue' => (float) ($row->total_revenue ?? 0),
                 'average_transaction' => (float) ($row->average_transaction ?? 0),
@@ -213,8 +213,8 @@ class SalesReportService
         if (isset($data['period'])) {
             $data['period_label'] = match ($groupBy) {
                 ReportGroupBy::DAY => Carbon::parse($data['period'])->format('d M Y'),
-                ReportGroupBy::WEEK => 'Week ' . substr($data['period'], -2) . ', ' . substr($data['period'], 0, 4),
-                ReportGroupBy::MONTH => Carbon::parse($data['period'] . '-01')->format('M Y'),
+                ReportGroupBy::WEEK => 'Week '.substr($data['period'], -2).', '.substr($data['period'], 0, 4),
+                ReportGroupBy::MONTH => Carbon::parse($data['period'].'-01')->format('M Y'),
                 ReportGroupBy::YEAR => $data['period'],
                 default => $data['period'],
             };

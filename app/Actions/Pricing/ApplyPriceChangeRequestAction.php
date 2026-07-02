@@ -26,7 +26,7 @@ class ApplyPriceChangeRequestAction
             }
 
             $priceList = $this->priceListRepository->findById($request->price_list_id);
-            if (!$priceList) {
+            if (! $priceList) {
                 throw new \RuntimeException('Price list not found.');
             }
 
@@ -42,23 +42,23 @@ class ApplyPriceChangeRequestAction
                     $priceListItem->update(['price' => $item->new_price]);
 
                     PriceHistory::create([
-                        'product_variant_id'  => $item->product_variant_id,
-                        'price_list_id'       => $priceList->id,
-                        'unit_id'             => $item->unit_id,
-                        'old_price'           => $oldPrice,
-                        'new_price'           => $item->new_price,
-                        'change_reason'       => $request->change_reason,
-                        'effective_date'      => $request->effective_date,
+                        'product_variant_id' => $item->product_variant_id,
+                        'price_list_id' => $priceList->id,
+                        'unit_id' => $item->unit_id,
+                        'old_price' => $oldPrice,
+                        'new_price' => $item->new_price,
+                        'change_reason' => $request->change_reason,
+                        'effective_date' => $request->effective_date,
                         'price_change_request_id' => $request->id,
-                        'created_by'          => auth()->id(),
+                        'created_by' => auth()->id(),
                     ]);
                 }
             }
 
             $request->update([
-                'status'      => DocumentStatus::POSTED->value,
-                'applied_by'  => auth()->id(),
-                'applied_at'  => now(),
+                'status' => DocumentStatus::POSTED->value,
+                'applied_by' => auth()->id(),
+                'applied_at' => now(),
             ]);
 
             $this->auditService->log(

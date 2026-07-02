@@ -2,8 +2,8 @@
 
 namespace App\Models\Purchasing;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\MasterData\Supplier;
+use Illuminate\Database\Eloquent\Model;
 
 class AccountsPayable extends Model
 {

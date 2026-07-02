@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Api\MasterData;
 
-use App\Models\MasterData\Unit;
 use App\Models\MasterData\Tax;
+use App\Models\MasterData\Unit;
 use Tests\ApiTestCase;
 
 class UnitAndTaxTest extends ApiTestCase

@@ -44,7 +44,7 @@ class TierController extends Controller
         $tier = LoyaltyTier::findOrFail($id);
 
         $validated = $request->validate([
-            'tier_code' => 'string|unique:loyalty_tiers,tier_code,' . $id,
+            'tier_code' => 'string|unique:loyalty_tiers,tier_code,'.$id,
             'tier_name' => 'string',
             'minimum_spending' => 'numeric|min:0',
             'minimum_points' => 'integer|min:0',

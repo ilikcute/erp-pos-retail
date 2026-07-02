@@ -3,7 +3,10 @@ import { onMounted, onUnmounted } from "vue";
 export function useKeyboardShortcuts(handlers) {
     const handleKeyDown = (e) => {
         const tag = e.target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable)
+        const isInput = tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable;
+        const isSpecialKey = e.key.startsWith("F") || e.key === "Escape";
+
+        if (isInput && !isSpecialKey)
             return;
 
         const map = {

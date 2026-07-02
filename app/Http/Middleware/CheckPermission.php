@@ -11,7 +11,7 @@ class CheckPermission
     public function handle(Request $request, Closure $next, string $permission): Response
     {
         // Cek apakah user login dan punya permission
-        if (!$request->user() || !$request->user()->hasPermission($permission)) {
+        if (! $request->user() || ! $request->user()->hasPermission($permission)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to perform this action',

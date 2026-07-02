@@ -28,6 +28,7 @@ class PromotionCondition extends Model
     public function getDecodedValue(): mixed
     {
         $decoded = json_decode($this->condition_value, true);
+
         return json_last_error() === JSON_ERROR_NONE ? $decoded : $this->condition_value;
     }
 }

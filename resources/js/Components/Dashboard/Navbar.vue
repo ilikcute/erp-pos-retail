@@ -22,11 +22,6 @@ const user = page.props.auth.user;
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            <!-- Search -->
-            <div class="hidden sm:flex items-center gap-sm rounded-pill bg-surface-muted px-md py-xs w-64 max-w-full">
-                <Icon name="search" size="4" class="text-ink-muted shrink-0" />
-                <input type="text" placeholder="Cari produk, transaksi..." class="bg-transparent outline-none text-sm text-ink-primary placeholder:text-ink-muted w-full" />
-            </div>
         </div>
 
         <div class="flex items-center gap-sm">

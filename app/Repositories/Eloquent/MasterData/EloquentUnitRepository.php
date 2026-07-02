@@ -5,6 +5,7 @@ namespace App\Repositories\Eloquent\MasterData;
 use App\Models\MasterData\Unit;
 use App\Repositories\Contracts\MasterData\UnitRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class EloquentUnitRepository implements UnitRepositoryInterface
 {
@@ -13,14 +14,13 @@ class EloquentUnitRepository implements UnitRepositoryInterface
         return Unit::query()
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where(
-                    fn($q) => $q
+                fn ($q, $s) => $q->where(
+                    fn ($q) => $q
                         ->where('unit_name', 'like', "%{$s}%")
                         ->orWhere('unit_code', 'like', "%{$s}%")
                 )
             )
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -38,6 +38,7 @@ class EloquentUnitRepository implements UnitRepositoryInterface
     public function update(Unit $unit, array $data): Unit
     {
         $unit->update($data);
+
         return $unit->fresh();
     }
 
@@ -46,12 +47,12 @@ class EloquentUnitRepository implements UnitRepositoryInterface
         $unit->delete();
     }
 
-    public function listAll(): \Illuminate\Database\Eloquent\Collection
+    public function listAll(): Collection
     {
         return Unit::query()->orderBy('unit_name')->get();
     }
 
-    public function listActive(): \Illuminate\Database\Eloquent\Collection
+    public function listActive(): Collection
     {
         return Unit::query()->where('is_active', true)->orderBy('unit_name')->get();
     }

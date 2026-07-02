@@ -5,7 +5,6 @@ namespace App\Events;
 use App\Models\Inventory\InventoryLedger;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -14,17 +13,21 @@ class StockLevelChanged implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public bool $isLow;
+
     public function __construct(
         public InventoryLedger $ledger,
         public float $previousBalance,
         public float $currentBalance,
-    ) {}
+    ) {
+        $this->isLow = $this->currentBalance <= 10;
+    }
 
     public function broadcastOn(): array
     {
         return [
             new Channel('inventory'),
-            new Channel('location.' . $this->ledger->location_id),
+            new Channel('location.'.$this->ledger->location_id),
         ];
     }
 

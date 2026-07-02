@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\Pricing;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pricing\StorePriceListRequest;
 use App\Http\Requests\Pricing\UpdatePriceListRequest;
-use App\Http\Resources\Pricing\PriceListResource;
 use App\Http\Resources\Pricing\PriceListItemResource;
-use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
-use App\Repositories\Contracts\Pricing\PriceListItemRepositoryInterface;
+use App\Http\Resources\Pricing\PriceListResource;
 use App\Repositories\Contracts\Pricing\PriceHistoryRepositoryInterface;
+use App\Repositories\Contracts\Pricing\PriceListItemRepositoryInterface;
+use App\Repositories\Contracts\Pricing\PriceListRepositoryInterface;
 use App\Services\Pricing\PriceResolverService;
 use App\Support\AuditService;
 use Illuminate\Http\JsonResponse;
@@ -38,9 +38,9 @@ class PriceListController extends Controller
             'data' => PriceListResource::collection($priceLists->items()),
             'meta' => [
                 'current_page' => $priceLists->currentPage(),
-                'last_page'    => $priceLists->lastPage(),
-                'per_page'     => $priceLists->perPage(),
-                'total'        => $priceLists->total(),
+                'last_page' => $priceLists->lastPage(),
+                'per_page' => $priceLists->perPage(),
+                'total' => $priceLists->total(),
             ],
         ]);
     }
@@ -60,7 +60,7 @@ class PriceListController extends Controller
         $validated = $request->validated();
         $categoryIds = $validated['customer_category_ids'] ?? [];
         unset($validated['customer_category_ids']);
-        
+
         $validated['created_by'] = auth()->id();
         $validated['updated_by'] = auth()->id();
 
@@ -73,7 +73,7 @@ class PriceListController extends Controller
         $this->auditService->log('Pricing', 'CREATE_PRICE_LIST', 'price_lists', $priceList->id);
 
         return response()->json([
-            'data'    => new PriceListResource($priceList->load('customerCategories')),
+            'data' => new PriceListResource($priceList->load('customerCategories')),
             'message' => 'Price list berhasil dibuat.',
         ], 201);
     }
@@ -86,7 +86,7 @@ class PriceListController extends Controller
         $validated = $request->validated();
         $categoryIds = $validated['customer_category_ids'] ?? null;
         unset($validated['customer_category_ids']);
-        
+
         $validated['updated_by'] = auth()->id();
 
         $priceList = $this->priceListRepository->update($priceList, $validated);
@@ -96,7 +96,7 @@ class PriceListController extends Controller
         }
 
         return response()->json([
-            'data'    => new PriceListResource($priceList->fresh('customerCategories')),
+            'data' => new PriceListResource($priceList->fresh('customerCategories')),
             'message' => 'Price list berhasil diperbarui.',
         ]);
     }
@@ -120,7 +120,7 @@ class PriceListController extends Controller
             'data' => PriceListItemResource::collection($items->items()),
             'meta' => [
                 'current_page' => $items->currentPage(),
-                'total'        => $items->total(),
+                'total' => $items->total(),
             ],
         ]);
     }
@@ -134,27 +134,27 @@ class PriceListController extends Controller
 
         $validated = $request->validate([
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
-            'unit_id'            => ['required', 'integer', 'exists:units,id'],
-            'price'              => ['required', 'numeric', 'min:0'],
-            'min_qty'            => ['nullable', 'numeric', 'min:0'],
+            'unit_id' => ['required', 'integer', 'exists:units,id'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'min_qty' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $validated['price_list_id'] = $id;
-        $validated['created_by']    = auth()->id();
-        $validated['updated_by']    = auth()->id();
+        $validated['created_by'] = auth()->id();
+        $validated['updated_by'] = auth()->id();
 
         $item = $this->priceListItemRepository->createOrUpdate(
             [
-                'price_list_id'      => $id,
+                'price_list_id' => $id,
                 'product_variant_id' => $validated['product_variant_id'],
-                'unit_id'            => $validated['unit_id'],
-                'min_qty'            => $validated['min_qty'] ?? 1.0,
+                'unit_id' => $validated['unit_id'],
+                'min_qty' => $validated['min_qty'] ?? 1.0,
             ],
             $validated
         );
 
         return response()->json([
-            'data'    => new PriceListItemResource($item->load('variant.product')),
+            'data' => new PriceListItemResource($item->load('variant.product')),
             'message' => 'Item harga berhasil disimpan.',
         ], 201);
     }
@@ -165,9 +165,9 @@ class PriceListController extends Controller
     {
         $validated = $request->validate([
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
-            'customer_id'        => ['nullable', 'integer', 'exists:customers,id'],
-            'unit_id'            => ['nullable', 'integer', 'exists:units,id'],
-            'qty'                => ['nullable', 'numeric', 'min:0.001'],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'unit_id' => ['nullable', 'integer', 'exists:units,id'],
+            'qty' => ['nullable', 'numeric', 'min:0.001'],
         ]);
 
         $price = $this->priceResolver->resolve(
@@ -195,7 +195,7 @@ class PriceListController extends Controller
             'data' => $histories->items(),
             'meta' => [
                 'current_page' => $histories->currentPage(),
-                'total'        => $histories->total(),
+                'total' => $histories->total(),
             ],
         ]);
     }

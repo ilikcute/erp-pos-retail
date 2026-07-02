@@ -2,17 +2,19 @@
 
 namespace App\Models\Product;
 
+use App\Enums\ProductType;
+use App\Models\MasterData\Tax;
+use App\Models\Pricing\PriceListItem;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Traits\HasCreatedBy;
-use App\Enums\ProductType;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use SoftDeletes, HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'product_code',
@@ -33,16 +35,17 @@ class Product extends Model
         'notes',
         'created_by',
         'updated_by',
+        'tax_id',
     ];
 
     protected $casts = [
-        'product_type'  => ProductType::class,
-        'is_active'     => 'boolean',
-        'is_sellable'   => 'boolean',
+        'product_type' => ProductType::class,
+        'is_active' => 'boolean',
+        'is_sellable' => 'boolean',
         'is_purchasable' => 'boolean',
-        'track_stock'   => 'boolean',
-        'min_stock'     => 'decimal:4',
-        'max_stock'     => 'decimal:4',
+        'track_stock' => 'boolean',
+        'min_stock' => 'decimal:4',
+        'max_stock' => 'decimal:4',
         'reorder_point' => 'decimal:4',
     ];
 
@@ -58,6 +61,11 @@ class Product extends Model
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
+    public function tax(): BelongsTo
+    {
+        return $this->belongsTo(Tax::class, 'tax_id');
+    }
+
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
@@ -66,7 +74,7 @@ class Product extends Model
     public function priceListItems()
     {
         return $this->hasManyThrough(
-            \App\Models\Product\PriceListItem::class,
+            PriceListItem::class,
             ProductVariant::class,
             'product_id',
             'product_variant_id',
@@ -78,7 +86,7 @@ class Product extends Model
     public function barcodes()
     {
         return $this->hasManyThrough(
-            \App\Models\Product\ProductBarcode::class,
+            ProductBarcode::class,
             ProductVariant::class,
             'product_id',            // FK di product_variants → products
             'product_variant_id',    // FK di product_barcodes → product_variants
@@ -140,6 +148,7 @@ class Product extends Model
     {
         return $query->where('is_active', true)->where('is_purchasable', true);
     }
+
     /**
      * Accessor for title to maintain compatibility with UI expecting `title`.
      */

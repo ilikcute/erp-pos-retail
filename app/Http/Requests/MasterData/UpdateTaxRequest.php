@@ -17,11 +17,11 @@ class UpdateTaxRequest extends FormRequest
         $taxId = $this->route('tax');
 
         return [
-            'tax_code'     => ['sometimes', 'required', 'string', 'max:20', Rule::unique('taxes', 'tax_code')->ignore($taxId)],
-            'tax_name'     => ['sometimes', 'required', 'string', 'max:100'],
-            'tax_rate'     => ['sometimes', 'required', 'numeric', 'min:0', 'max:100'],
+            'tax_code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('taxes', 'tax_code')->ignore($taxId)],
+            'tax_name' => ['sometimes', 'required', 'string', 'max:100'],
+            'tax_rate' => ['sometimes', 'required', 'numeric', 'min:0', 'max:100'],
             'is_inclusive' => ['sometimes', 'required', 'boolean'],
-            'is_active'    => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

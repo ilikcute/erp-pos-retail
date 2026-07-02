@@ -5,6 +5,7 @@ namespace App\Repositories\Eloquent\Product;
 use App\Models\Product\Product;
 use App\Repositories\Contracts\Product\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class EloquentProductRepository implements ProductRepositoryInterface
 {
@@ -14,22 +15,20 @@ class EloquentProductRepository implements ProductRepositoryInterface
             ->with(['brand', 'category', 'defaultVariant.primaryBarcode'])
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where(
-                    fn($q) => $q
+                fn ($q, $s) => $q->where(
+                    fn ($q) => $q
                         ->where('product_name', 'like', "%{$s}%")
                         ->orWhere('product_code', 'like', "%{$s}%")
                         ->orWhereHas(
                             'variants',
-                            fn($q) =>
-                            $q->where('sku', 'like', "%{$s}%")
+                            fn ($q) => $q->where('sku', 'like', "%{$s}%")
                         )
                 )
             )
-            ->when($filters['category_id'] ?? null, fn($q, $v) => $q->where('category_id', $v))
-            ->when($filters['brand_id']    ?? null, fn($q, $v) => $q->where('brand_id', $v))
-            ->when(isset($filters['is_active']),    fn($q) => $q->where('is_active', $filters['is_active']))
-            ->when(isset($filters['is_sellable']),  fn($q) => $q->where('is_sellable', $filters['is_sellable']))
+            ->when($filters['category_id'] ?? null, fn ($q, $v) => $q->where('category_id', $v))
+            ->when($filters['brand_id'] ?? null, fn ($q, $v) => $q->where('brand_id', $v))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['is_sellable']), fn ($q) => $q->where('is_sellable', $filters['is_sellable']))
             ->latest()
             ->paginate($perPage);
     }
@@ -56,6 +55,7 @@ class EloquentProductRepository implements ProductRepositoryInterface
     public function update(Product $product, array $data): Product
     {
         $product->update($data);
+
         return $product->fresh();
     }
 
@@ -64,7 +64,7 @@ class EloquentProductRepository implements ProductRepositoryInterface
         $product->delete();
     }
 
-    public function getAll(): \Illuminate\Database\Eloquent\Collection
+    public function getAll(): Collection
     {
         return Product::all();
     }

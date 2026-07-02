@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\System;
 
-use App\Http\Controllers\Controller;
 use App\Actions\Reporting\GenerateDashboardKPIsAction;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $action->execute($request->all())
+            'data' => $action->execute($request->all()),
         ]);
     }
 }

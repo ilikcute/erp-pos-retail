@@ -2,9 +2,10 @@
 
 namespace Tests;
 
-use App\Models\System\User;
-use App\Models\System\Role;
+use App\Enums\UserStatus;
 use App\Models\System\Permission;
+use App\Models\System\Role;
+use App\Models\System\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Laravel\Sanctum\Sanctum;
 
@@ -18,7 +19,7 @@ abstract class ApiTestCase extends TestCase
     protected function actingAsUser(string $roleName = 'superadmin', array $permissions = []): User
     {
         $user = User::factory()->create([
-            'status' => \App\Enums\UserStatus::ACTIVE,
+            'status' => UserStatus::ACTIVE,
         ]);
 
         // Find or create role
@@ -26,7 +27,7 @@ abstract class ApiTestCase extends TestCase
             ['name' => $roleName],
             [
                 'display_name' => ucfirst($roleName),
-                'is_active' => true
+                'is_active' => true,
             ]
         );
 
@@ -46,7 +47,7 @@ abstract class ApiTestCase extends TestCase
                     'module' => $module,
                     'resource' => $resource,
                     'action' => $action,
-                    'display_name' => ucfirst($action) . ' ' . ucfirst($resource)
+                    'display_name' => ucfirst($action).' '.ucfirst($resource),
                 ]
             );
 

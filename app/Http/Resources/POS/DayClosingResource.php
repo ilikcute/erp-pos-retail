@@ -39,7 +39,7 @@ class DayClosingResource extends JsonResource
 
             // Sessions detail
             'sessions' => $this->whenLoaded('sessions', function () {
-                return $this->sessions->map(fn($s) => [
+                return $this->sessions->map(fn ($s) => [
                     'id' => $s->id,
                     'session_no' => $s->session_no,
                     'user_name' => $s->user?->name,

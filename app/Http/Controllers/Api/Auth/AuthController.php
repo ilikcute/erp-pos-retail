@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\Auth\UserProfileResource;
 use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user'  => new UserProfileResource($result['user']),
+                'user' => new UserProfileResource($result['user']),
                 'token' => $result['token'],
             ],
             'message' => 'Login berhasil.',

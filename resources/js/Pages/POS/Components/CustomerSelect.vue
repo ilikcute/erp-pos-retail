@@ -33,6 +33,12 @@ const clear = () => {
     emit("select", null);
     query.value = "";
 };
+
+const handleBlur = () => {
+    setTimeout(() => {
+        isOpen.value = false;
+    }, 150);
+};
 </script>
 
 <template>
@@ -44,7 +50,7 @@ const clear = () => {
             <input
                 v-model="query"
                 @focus="isOpen = true"
-                @blur="setTimeout(() => (isOpen = false), 150)"
+                @blur="handleBlur"
                 type="text"
                 :placeholder="placeholder"
                 class="w-full h-10 pl-10 pr-10 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"

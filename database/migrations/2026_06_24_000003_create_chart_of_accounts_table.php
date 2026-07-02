@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\Accounting\AccountType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -71,12 +73,12 @@ return new class extends Migration
         $ids = [];
         foreach ($accounts as $acc) {
             $parentId = $acc['parent'] ? $ids[$acc['parent']] : null;
-            $id = \Illuminate\Support\Facades\DB::table('chart_of_accounts')->insertGetId([
+            $id = DB::table('chart_of_accounts')->insertGetId([
                 'parent_id' => $parentId,
                 'account_code' => $acc['code'],
                 'account_name' => $acc['name'],
                 'account_type' => $acc['type'],
-                'normal_balance' => \App\Enums\Accounting\AccountType::from($acc['type'])->defaultNormalBalance()->value,
+                'normal_balance' => AccountType::from($acc['type'])->defaultNormalBalance()->value,
                 'is_postable' => $acc['postable'],
                 'is_active' => true,
                 'sort_order' => 0,

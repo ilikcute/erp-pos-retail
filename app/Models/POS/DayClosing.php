@@ -3,6 +3,8 @@
 namespace App\Models\POS;
 
 use App\Enums\POS\ClosingStatus;
+use App\Models\Inventory\InventoryLocation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -51,12 +53,12 @@ class DayClosing extends Model
     // ═══════════════════════════════════════════════════════════
     public function location(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Inventory\InventoryLocation::class, 'location_id');
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
 
     public function closedByUser(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'closed_by');
+        return $this->belongsTo(User::class, 'closed_by');
     }
 
     public function sessions(): BelongsToMany

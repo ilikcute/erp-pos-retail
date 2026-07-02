@@ -2,12 +2,12 @@
 
 namespace App\Models\POS;
 
+use App\Models\MasterData\Customer;
+use App\Models\System\User;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\System\User;
-use App\Models\MasterData\Customer;
-use App\Traits\HasCreatedBy;
 
 class SalesReturn extends Model
 {
@@ -30,11 +30,11 @@ class SalesReturn extends Model
     ];
 
     protected $casts = [
-        'subtotal'     => 'decimal:2',
-        'tax_amount'   => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'return_date'  => 'date',
-        'posted_at'    => 'datetime',
+        'return_date' => 'date',
+        'posted_at' => 'datetime',
     ];
 
     public function salesTransaction(): BelongsTo

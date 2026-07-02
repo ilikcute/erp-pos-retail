@@ -10,26 +10,25 @@ class RoleResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'           => $this->id,
-            'name'         => $this->name,
+            'id' => $this->id,
+            'name' => $this->name,
             'display_name' => $this->display_name,
-            'description'  => $this->description,
-            'is_active'    => $this->is_active,
-            'permissions'  => $this->whenLoaded(
+            'description' => $this->description,
+            'is_active' => $this->is_active,
+            'permissions' => $this->whenLoaded(
                 'permissions',
-                fn() =>
-                $this->permissions->map(fn($p) => [
-                    'id'           => $p->id,
-                    'name'         => $p->name,
-                    'module'       => $p->module,
-                    'resource'     => $p->resource,
-                    'action'       => $p->action,
+                fn () => $this->permissions->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'module' => $p->module,
+                    'resource' => $p->resource,
+                    'action' => $p->action,
                     'display_name' => $p->display_name,
                 ])
             ),
-            'users_count'  => $this->whenCounted('users'),
-            'created_at'   => $this->created_at?->toISOString(),
-            'updated_at'   => $this->updated_at?->toISOString(),
+            'users_count' => $this->whenCounted('users'),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

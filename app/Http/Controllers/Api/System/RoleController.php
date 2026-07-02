@@ -30,9 +30,9 @@ class RoleController extends Controller
             'data' => RoleResource::collection($roles->items()),
             'meta' => [
                 'current_page' => $roles->currentPage(),
-                'last_page'    => $roles->lastPage(),
-                'per_page'     => $roles->perPage(),
-                'total'        => $roles->total(),
+                'last_page' => $roles->lastPage(),
+                'per_page' => $roles->perPage(),
+                'total' => $roles->total(),
             ],
         ]);
     }
@@ -52,10 +52,10 @@ class RoleController extends Controller
         $this->authorize('system.role.manage');
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:100', 'unique:roles,name', 'regex:/^[a-z0-9_-]+$/'],
+            'name' => ['required', 'string', 'max:100', 'unique:roles,name', 'regex:/^[a-z0-9_-]+$/'],
             'display_name' => ['required', 'string', 'max:150'],
-            'description'  => ['nullable', 'string', 'max:255'],
-            'is_active'    => ['nullable', 'boolean'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
             'permission_ids' => ['nullable', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
@@ -72,7 +72,7 @@ class RoleController extends Controller
         $this->auditService->log('System', 'CREATE_ROLE', 'roles', $role->id, [], ['name' => $role->name]);
 
         return response()->json([
-            'data'    => new RoleResource($role->load('permissions')),
+            'data' => new RoleResource($role->load('permissions')),
             'message' => 'Role berhasil dibuat.',
         ], 201);
     }
@@ -86,10 +86,10 @@ class RoleController extends Controller
         abort_if($role->name === 'superadmin', 422, 'Role superadmin tidak dapat diubah.');
 
         $validated = $request->validate([
-            'name'         => ['sometimes', 'string', 'max:100', Rule::unique('roles', 'name')->ignore($id), 'regex:/^[a-z0-9_-]+$/'],
+            'name' => ['sometimes', 'string', 'max:100', Rule::unique('roles', 'name')->ignore($id), 'regex:/^[a-z0-9_-]+$/'],
             'display_name' => ['sometimes', 'string', 'max:150'],
-            'description'  => ['nullable', 'string', 'max:255'],
-            'is_active'    => ['nullable', 'boolean'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
             'permission_ids' => ['nullable', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
@@ -107,7 +107,7 @@ class RoleController extends Controller
         $this->auditService->log('System', 'UPDATE_ROLE', 'roles', $role->id, $original, $role->only(['name', 'display_name', 'is_active']));
 
         return response()->json([
-            'data'    => new RoleResource($role->load('permissions')),
+            'data' => new RoleResource($role->load('permissions')),
             'message' => 'Role berhasil diperbarui.',
         ]);
     }
@@ -135,7 +135,7 @@ class RoleController extends Controller
         abort_if(! $role, 404, 'Role tidak ditemukan.');
 
         $validated = $request->validate([
-            'permission_ids'   => ['required', 'array'],
+            'permission_ids' => ['required', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
 

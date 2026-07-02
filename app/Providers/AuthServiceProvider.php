@@ -2,15 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\POS\CashierSession;
+use App\Models\POS\SalesTransaction;
+use App\Models\System\User;
+use App\Policies\CashierSessionPolicy;
+use App\Policies\SalesTransactionPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use App\Models\System\User;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        \App\Models\POS\CashierSession::class => \App\Policies\CashierSessionPolicy::class,
-        \App\Models\POS\SalesTransaction::class => \App\Policies\SalesTransactionPolicy::class,
+        CashierSession::class => CashierSessionPolicy::class,
+        SalesTransaction::class => SalesTransactionPolicy::class,
     ];
 
     public function boot(): void

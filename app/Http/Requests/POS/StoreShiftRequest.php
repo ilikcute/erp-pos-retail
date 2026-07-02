@@ -14,12 +14,12 @@ class StoreShiftRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shift_code'  => 'required|string|max:50|unique:shifts,shift_code',
-            'shift_name'  => 'required|string|max:100',
-            'start_time'  => 'required|date_format:H:i',
-            'end_time'    => 'required|date_format:H:i|after:start_time',
+            'shift_code' => 'required|string|max:50|unique:shifts,shift_code',
+            'shift_name' => 'required|string|max:100',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
             'description' => 'nullable|string|max:500',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 }

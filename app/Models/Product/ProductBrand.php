@@ -2,9 +2,9 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\HasCreatedBy;
 
 class ProductBrand extends Model
 {

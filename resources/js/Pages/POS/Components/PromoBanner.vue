@@ -1,10 +1,11 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import { formatPrice } from "@/Utils/formatPrice";
 import axios from "axios";
 
 const activePromos = ref([]);
 const currentIndex = ref(0);
+let slideInterval = null;
 
 onMounted(async () => {
     try {
@@ -13,7 +14,7 @@ onMounted(async () => {
             activePromos.value = data.data;
             // Auto slide setiap 5 detik
             if (activePromos.value.length > 1) {
-                setInterval(() => {
+                slideInterval = setInterval(() => {
                     currentIndex.value =
                         (currentIndex.value + 1) % activePromos.value.length;
                 }, 5000);
@@ -26,7 +27,6 @@ onMounted(async () => {
 
 const currentPromo = computed(() => activePromos.value[currentIndex.value]);
 
-import { onUnmounted } from "vue";
 onUnmounted(() => {
     if (slideInterval) clearInterval(slideInterval);
 });

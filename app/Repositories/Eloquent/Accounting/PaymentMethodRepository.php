@@ -11,8 +11,8 @@ class PaymentMethodRepository implements PaymentMethodRepositoryInterface
     public function getAll(array $filters = []): Collection
     {
         return PaymentMethod::with('account')
-            ->when(isset($filters['method_type']), fn($q) => $q->where('method_type', $filters['method_type']))
-            ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when(isset($filters['method_type']), fn ($q) => $q->where('method_type', $filters['method_type']))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->orderBy('sort_order')
             ->get();
     }

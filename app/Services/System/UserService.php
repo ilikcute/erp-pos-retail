@@ -2,12 +2,12 @@
 
 namespace App\Services\System;
 
+use App\Enums\UserStatus;
 use App\Models\System\User;
 use App\Repositories\Contracts\System\UserRepositoryInterface;
 use App\Support\AuditService;
-use App\Enums\UserStatus;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
@@ -29,7 +29,7 @@ class UserService
     public function create(array $data): User
     {
         $data['password'] = Hash::make($data['password']);
-        $data['status']   = $data['status'] ?? UserStatus::ACTIVE->value;
+        $data['status'] = $data['status'] ?? UserStatus::ACTIVE->value;
         $data['force_password_change'] = $data['force_password_change'] ?? true;
 
         $roleIds = $data['role_ids'] ?? [];

@@ -23,8 +23,6 @@ const props = defineProps({
     promoDiscount: Number,
     voucherDiscount: Number,
     loyaltyDiscount: Number,
-    discountManual: Number,
-    shipping: Number,
     taxTotal: Number,
     baseSubtotal: Number,
     appliedGroups: Array,
@@ -47,8 +45,6 @@ const emit = defineEmits([
     "update:selectedBankAccount",
     "update:redeemPointsInput",
     "update:selectedVoucherId",
-    "update:discountManual",
-    "update:shipping",
     "add-split",
     "update-split-amount",
     "remove-split",
@@ -465,73 +461,6 @@ const redeemRupiahValue = computed(() => {
                 </div>
             </div>
         </template>
-
-        <!-- Manual Discount -->
-        <div>
-            <label class="block text-xs font-medium text-ink-secondary mb-2">
-                Diskon Manual
-            </label>
-            <div class="relative">
-                <span
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm"
-                >
-                    Rp
-                </span>
-                <input
-                    type="text"
-                    inputmode="numeric"
-                    :value="discountManual"
-                    @input="
-                        emit(
-                            'update:discountManual',
-                            $event.target.value.replace(/[^\d]/g, ''),
-                        )
-                    "
-                    class="w-full h-10 pl-10 pr-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
-                />
-            </div>
-        </div>
-
-        <!-- Shipping -->
-        <div>
-            <label class="block text-xs font-medium text-ink-secondary mb-2">
-                Ongkos Kirim
-            </label>
-            <div class="relative">
-                <span
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm"
-                >
-                    Rp
-                </span>
-                <input
-                    type="text"
-                    inputmode="numeric"
-                    :value="shipping"
-                    @input="
-                        emit(
-                            'update:shipping',
-                            $event.target.value.replace(/[^\d]/g, ''),
-                        )
-                    "
-                    class="w-full h-10 pl-10 pr-4 rounded-xl border border-border-soft bg-surface-card text-sm focus:ring-2 focus:ring-brand"
-                />
-            </div>
-            <div class="grid grid-cols-4 gap-2 mt-2">
-                <button
-                    v-for="amt in [10000, 15000, 20000, 25000]"
-                    :key="amt"
-                    @click="emit('update:shipping', String(amt))"
-                    :class="[
-                        'py-1.5 px-1 rounded-lg text-xs font-medium transition',
-                        Number(shipping) === amt
-                            ? 'bg-brand text-white'
-                            : 'bg-surface-muted text-ink-secondary',
-                    ]"
-                >
-                    {{ formatPrice(amt) }}
-                </button>
-            </div>
-        </div>
 
         <!-- Change Display -->
         <div

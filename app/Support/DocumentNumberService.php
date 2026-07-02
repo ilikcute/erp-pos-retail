@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\System\DocumentType;
 use App\Models\System\DocumentSequence;
+use App\Models\System\DocumentType;
 use Illuminate\Support\Facades\DB;
 
 class DocumentNumberService
@@ -38,13 +38,13 @@ class DocumentNumberService
             } else {
                 $sequence = DocumentSequence::create([
                     'document_type_id' => $type->id,
-                    'period'           => $period,
-                    'last_sequence'    => 1,
+                    'period' => $period,
+                    'last_sequence' => 1,
                 ]);
             }
 
-            $sep      = $type->separator ?? '-';
-            $padded   = str_pad($sequence->last_sequence, $type->padding ?? 4, '0', STR_PAD_LEFT);
+            $sep = $type->separator ?? '-';
+            $padded = str_pad($sequence->last_sequence, $type->padding ?? 4, '0', STR_PAD_LEFT);
 
             $parts = array_filter([$type->prefix, $period, $padded]);
 

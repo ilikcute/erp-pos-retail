@@ -25,7 +25,7 @@ class UnitSeeder extends Seeder
         ];
 
         foreach ($units as &$unit) {
-            $unit['is_active']  = true;
+            $unit['is_active'] = true;
             $unit['created_at'] = now();
             $unit['updated_at'] = now();
         }
@@ -33,13 +33,13 @@ class UnitSeeder extends Seeder
         DB::table('units')->insertOrIgnore($units);
 
         // Default conversions
-        $pcsId  = DB::table('units')->where('unit_code', 'PCS')->value('id');
+        $pcsId = DB::table('units')->where('unit_code', 'PCS')->value('id');
         $lusinId = DB::table('units')->where('unit_code', 'LUSIN')->value('id');
-        $kodiId  = DB::table('units')->where('unit_code', 'KODI')->value('id');
-        $kgId   = DB::table('units')->where('unit_code', 'KG')->value('id');
-        $grId   = DB::table('units')->where('unit_code', 'GR')->value('id');
-        $ltrId  = DB::table('units')->where('unit_code', 'LTR')->value('id');
-        $mlId   = DB::table('units')->where('unit_code', 'ML')->value('id');
+        $kodiId = DB::table('units')->where('unit_code', 'KODI')->value('id');
+        $kgId = DB::table('units')->where('unit_code', 'KG')->value('id');
+        $grId = DB::table('units')->where('unit_code', 'GR')->value('id');
+        $ltrId = DB::table('units')->where('unit_code', 'LTR')->value('id');
+        $mlId = DB::table('units')->where('unit_code', 'ML')->value('id');
 
         $conversions = [
             ['from_unit_id' => $lusinId, 'to_unit_id' => $pcsId,  'conversion_factor' => 12.000000],
@@ -49,7 +49,7 @@ class UnitSeeder extends Seeder
         ];
 
         foreach ($conversions as &$c) {
-            $c['is_active']  = true;
+            $c['is_active'] = true;
             $c['created_at'] = now();
             $c['updated_at'] = now();
         }

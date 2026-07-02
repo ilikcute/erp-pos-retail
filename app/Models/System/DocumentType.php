@@ -19,7 +19,7 @@ class DocumentType extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'padding'   => 'integer',
+        'padding' => 'integer',
     ];
 
     public function sequences()

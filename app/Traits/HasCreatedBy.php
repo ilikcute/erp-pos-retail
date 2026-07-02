@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\System\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait HasCreatedBy
 {

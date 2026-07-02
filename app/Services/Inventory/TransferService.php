@@ -4,6 +4,8 @@ namespace App\Services\Inventory;
 
 use App\Enums\Inventory\TransactionType;
 use App\Enums\Inventory\TransferStatus;
+use App\Models\Inventory\InventoryBatch;
+use App\Models\Inventory\InventoryLocation;
 use App\Models\Inventory\InventoryTransfer;
 use App\Repositories\Inventory\Contracts\BalanceRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -19,16 +21,16 @@ class TransferService
     public function create(array $data, int $userId): InventoryTransfer
     {
         // Validasi lokasi harus stock-bearing
-        $source = \App\Models\Inventory\InventoryLocation::findOrFail($data['source_location_id']);
-        $dest = \App\Models\Inventory\InventoryLocation::findOrFail($data['destination_location_id']);
+        $source = InventoryLocation::findOrFail($data['source_location_id']);
+        $dest = InventoryLocation::findOrFail($data['destination_location_id']);
 
-        if (!$source->isStockBearing() || !$dest->isStockBearing()) {
+        if (! $source->isStockBearing() || ! $dest->isStockBearing()) {
             throw new \DomainException('Transfer hanya bisa antara lokasi stock-bearing');
         }
 
         return DB::transaction(function () use ($data, $userId) {
             $transfer = InventoryTransfer::create([
-                'transfer_number' => 'TRF-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4)),
+                'transfer_number' => 'TRF-'.now()->format('Ymd').'-'.strtoupper(Str::random(4)),
                 'source_location_id' => $data['source_location_id'],
                 'destination_location_id' => $data['destination_location_id'],
                 'transfer_date' => $data['transfer_date'],
@@ -38,7 +40,7 @@ class TransferService
             ]);
 
             foreach ($data['items'] as $item) {
-                $batch = \App\Models\Inventory\InventoryBatch::findOrFail($item['inventory_batch_id']);
+                $batch = InventoryBatch::findOrFail($item['inventory_batch_id']);
                 $transfer->items()->create([
                     'inventory_batch_id' => $item['inventory_batch_id'],
                     'product_variant_id' => $batch->product_variant_id,

@@ -38,6 +38,7 @@ class JournalEntry extends Model
     {
         $totalDebit = $this->lines->sum('debit');
         $totalCredit = $this->lines->sum('credit');
+
         return abs($totalDebit - $totalCredit) < 0.01;
     }
 }

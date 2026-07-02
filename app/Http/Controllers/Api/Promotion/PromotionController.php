@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Promotion;
 
 use App\Http\Controllers\Controller;
-use App\Services\Promotion\PromotionService;
 use App\Repositories\Contracts\Promotion\PromotionRepositoryInterface;
+use App\Services\Promotion\PromotionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -61,7 +61,7 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $promotion,
+            'data' => $promotion,
             'message' => 'Promosi berhasil dibuat',
         ], 201);
     }
@@ -71,28 +71,28 @@ class PromotionController extends Controller
         $this->authorizePromotionManage();
 
         $validated = $request->validate([
-            'promotion_code'           => "required|string|unique:promotions,promotion_code,{$id}",
-            'promotion_name'           => 'required|string|max:255',
-            'description'              => 'nullable|string',
-            'priority'                 => 'integer|min:0',
-            'stackable'                => 'boolean',
-            'valid_from'               => 'required|date',
-            'valid_until'              => 'required|date|after:valid_from',
-            'earn_point_allowed'       => 'boolean',
-            'redeem_point_allowed'     => 'boolean',
-            'conditions'               => 'array',
-            'conditions.*.condition_type'  => 'required|in:MIN_AMOUNT,MIN_QTY,DAY_OF_WEEK,CUSTOMER_CATEGORY,PRODUCT,CATEGORY',
-            'conditions.*.operator'        => 'string',
+            'promotion_code' => "required|string|unique:promotions,promotion_code,{$id}",
+            'promotion_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'integer|min:0',
+            'stackable' => 'boolean',
+            'valid_from' => 'required|date',
+            'valid_until' => 'required|date|after:valid_from',
+            'earn_point_allowed' => 'boolean',
+            'redeem_point_allowed' => 'boolean',
+            'conditions' => 'array',
+            'conditions.*.condition_type' => 'required|in:MIN_AMOUNT,MIN_QTY,DAY_OF_WEEK,CUSTOMER_CATEGORY,PRODUCT,CATEGORY',
+            'conditions.*.operator' => 'string',
             'conditions.*.condition_value' => 'required',
-            'rewards'                  => 'required|array|min:1',
-            'rewards.*.reward_type'    => 'required|in:PERCENTAGE,FIXED_AMOUNT,FREE_PRODUCT,SPECIAL_PRICE',
-            'rewards.*.reward_value'   => 'required|numeric|min:0',
-            'rewards.*.max_discount'   => 'nullable|numeric|min:0',
-            'targets'                  => 'required|array|min:1',
-            'targets.*.target_type'    => 'required|in:ALL_PRODUCT,PRODUCT,CATEGORY',
-            'targets.*.target_id'      => 'nullable|integer',
-            'limits'                   => 'nullable|array',
-            'limits.max_usage'             => 'integer|min:0',
+            'rewards' => 'required|array|min:1',
+            'rewards.*.reward_type' => 'required|in:PERCENTAGE,FIXED_AMOUNT,FREE_PRODUCT,SPECIAL_PRICE',
+            'rewards.*.reward_value' => 'required|numeric|min:0',
+            'rewards.*.max_discount' => 'nullable|numeric|min:0',
+            'targets' => 'required|array|min:1',
+            'targets.*.target_type' => 'required|in:ALL_PRODUCT,PRODUCT,CATEGORY',
+            'targets.*.target_id' => 'nullable|integer',
+            'limits' => 'nullable|array',
+            'limits.max_usage' => 'integer|min:0',
             'limits.max_usage_per_customer' => 'integer|min:0',
         ]);
 
@@ -100,7 +100,7 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $promotion,
+            'data' => $promotion,
             'message' => 'Promosi berhasil diperbarui',
         ]);
     }
@@ -111,7 +111,7 @@ class PromotionController extends Controller
 
         $promotion = $this->promoRepo->findById($id);
 
-        if (!$promotion) {
+        if (! $promotion) {
             return response()->json([
                 'success' => false,
                 'message' => 'Promosi tidak ditemukan',
@@ -175,7 +175,7 @@ class PromotionController extends Controller
     private function authorizePromotionView(): void
     {
         $user = Auth::user();
-        if (!$user || !$user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor', 'kasir'])) {
+        if (! $user || ! $user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor', 'kasir'])) {
             abort(403, 'Unauthorized');
         }
     }
@@ -183,7 +183,7 @@ class PromotionController extends Controller
     private function authorizePromotionManage(): void
     {
         $user = Auth::user();
-        if (!$user || !$user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor'])) {
+        if (! $user || ! $user->hasAnyRole(['superadmin', 'admin', 'manager', 'supervisor'])) {
             abort(403, 'Unauthorized');
         }
     }

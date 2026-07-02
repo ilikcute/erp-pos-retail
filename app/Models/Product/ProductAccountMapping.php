@@ -2,9 +2,9 @@
 
 namespace App\Models\Product;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasCreatedBy;
 
 /**
  * Mapping akun Accounting per produk.

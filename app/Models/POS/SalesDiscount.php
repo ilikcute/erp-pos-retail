@@ -2,9 +2,9 @@
 
 namespace App\Models\POS;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasCreatedBy;
 
 class SalesDiscount extends Model
 {

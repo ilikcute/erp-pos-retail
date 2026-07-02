@@ -2,21 +2,22 @@
 
 namespace Tests\Feature\Api\Pricing;
 
+use App\Enums\PriceChangeRequestStatus;
 use App\Models\MasterData\Unit;
-use App\Models\Product\Product;
-use App\Models\Product\ProductVariant;
 use App\Models\Pricing\PriceList;
 use App\Models\Pricing\PriceListItem;
-use App\Models\Pricing\PriceChangeRequest;
+use App\Models\Product\Product;
+use App\Models\Product\ProductVariant;
 use App\Models\System\DocumentType;
-use App\Enums\PriceChangeRequestStatus;
 use App\Services\Pricing\PriceChangeRequestService;
 use Tests\ApiTestCase;
 
 class PriceChangeRequestTest extends ApiTestCase
 {
     private Unit $unit;
+
     private ProductVariant $variant;
+
     private PriceList $priceList;
 
     protected function setUp(): void
@@ -95,8 +96,8 @@ class PriceChangeRequestTest extends ApiTestCase
                     'old_price' => 3000,
                     'new_price' => 3500,
                     'change_reason' => 'Penyesuaian supplier',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertStatus(201)
@@ -124,8 +125,8 @@ class PriceChangeRequestTest extends ApiTestCase
                     'unit_id' => $this->unit->id,
                     'old_price' => 3000,
                     'new_price' => 3500,
-                ]
-            ]
+                ],
+            ],
         ]);
         $pcr = $service->submit($pcr);
 
@@ -157,8 +158,8 @@ class PriceChangeRequestTest extends ApiTestCase
                     'unit_id' => $this->unit->id,
                     'old_price' => 3000,
                     'new_price' => 3500,
-                ]
-            ]
+                ],
+            ],
         ]);
         $pcr = $service->submit($pcr);
 
@@ -175,7 +176,7 @@ class PriceChangeRequestTest extends ApiTestCase
     {
         $user = $this->actingAsUser('manager', [
             'pricing.price-change-request.approve',
-            'pricing.price-change-request.apply'
+            'pricing.price-change-request.apply',
         ]);
 
         $service = app(PriceChangeRequestService::class);
@@ -189,8 +190,8 @@ class PriceChangeRequestTest extends ApiTestCase
                     'unit_id' => $this->unit->id,
                     'old_price' => 3000,
                     'new_price' => 3500,
-                ]
-            ]
+                ],
+            ],
         ]);
         $pcr = $service->submit($pcr);
         $pcr = $service->approve($pcr, $user->id);

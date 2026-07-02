@@ -3,6 +3,7 @@
 namespace App\Services\Inventory;
 
 use App\Enums\Inventory\TransactionType;
+use App\Events\StockLevelChanged;
 use App\Models\Inventory\InventoryBalance;
 use App\Repositories\Contracts\Inventory\BalanceRepositoryInterface;
 use App\Repositories\Contracts\Inventory\LedgerRepositoryInterface;
@@ -52,7 +53,7 @@ class StockMovementService
             $qtyAfter = $qtyBefore + $qtyChange;
 
             // 3. Catat ke ledger
-            return $this->ledgerRepo->create([
+            $ledger = $this->ledgerRepo->create([
                 'reference_number' => $this->ledgerRepo->generateReferenceNumber($type->value),
                 'transaction_type' => $type,
                 'product_variant_id' => $variantId,
@@ -68,6 +69,11 @@ class StockMovementService
                 'notes' => $notes,
                 'transaction_date' => now(),
             ]);
+
+            // Dispatch StockLevelChanged to trigger low-stock checks and realtime updates
+            event(new StockLevelChanged($ledger, (float) $qtyBefore, (float) $qtyAfter));
+
+            return $ledger;
         });
     }
 }

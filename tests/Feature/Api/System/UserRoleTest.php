@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Api\System;
 
-use App\Models\System\User;
-use App\Models\System\Role;
-use App\Models\System\Permission;
 use App\Enums\UserStatus;
-use Illuminate\Support\Facades\Hash;
+use App\Models\System\Permission;
+use App\Models\System\User;
 use Tests\ApiTestCase;
 
 class UserRoleTest extends ApiTestCase
@@ -118,7 +116,7 @@ class UserRoleTest extends ApiTestCase
                 'module' => 'system',
                 'resource' => 'user',
                 'action' => 'view',
-                'display_name' => 'View User'
+                'display_name' => 'View User',
             ]
         );
 

@@ -2,11 +2,11 @@
 
 namespace App\Services\Pricing;
 
+use App\Enums\PriceChangeRequestStatus;
 use App\Models\Pricing\PriceChangeRequest;
 use App\Repositories\Contracts\Pricing\PriceChangeRequestRepositoryInterface;
-use App\Repositories\Contracts\Pricing\PriceListItemRepositoryInterface;
 use App\Repositories\Contracts\Pricing\PriceHistoryRepositoryInterface;
-use App\Enums\PriceChangeRequestStatus;
+use App\Repositories\Contracts\Pricing\PriceListItemRepositoryInterface;
 use App\Support\AuditService;
 use App\Support\DocumentNumberService;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +24,7 @@ class PriceChangeRequestService
     public function create(array $data): PriceChangeRequest
     {
         $data['request_no'] = $this->docNumberService->generate('PRICE_CHANGE_REQUEST');
-        $data['status']     = PriceChangeRequestStatus::DRAFT->value;
+        $data['status'] = PriceChangeRequestStatus::DRAFT->value;
 
         $items = $data['items'] ?? [];
         unset($data['items']);
@@ -140,33 +140,33 @@ class PriceChangeRequestService
                 // Update atau buat item
                 $this->priceListItemRepository->createOrUpdate(
                     [
-                        'price_list_id'      => $request->price_list_id,
+                        'price_list_id' => $request->price_list_id,
                         'product_variant_id' => $item->product_variant_id,
-                        'unit_id'            => $item->unit_id,
-                        'min_qty'            => 1.0, // default min_qty
+                        'unit_id' => $item->unit_id,
+                        'min_qty' => 1.0, // default min_qty
                     ],
                     [
-                        'price'      => $item->new_price,
+                        'price' => $item->new_price,
                         'updated_by' => $appliedBy,
                     ]
                 );
 
                 // Catat ke history — immutable
                 $this->priceHistoryRepository->create([
-                    'price_list_id'           => $request->price_list_id,
-                    'product_variant_id'       => $item->product_variant_id,
-                    'unit_id'                  => $item->unit_id,
-                    'old_price'                => $oldPrice,
-                    'new_price'                => $item->new_price,
-                    'changed_by'               => $appliedBy,
-                    'change_source'            => 'PRICE_CHANGE_REQUEST',
-                    'price_change_request_id'  => $request->id,
-                    'changed_at'               => now(),
+                    'price_list_id' => $request->price_list_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'unit_id' => $item->unit_id,
+                    'old_price' => $oldPrice,
+                    'new_price' => $item->new_price,
+                    'changed_by' => $appliedBy,
+                    'change_source' => 'PRICE_CHANGE_REQUEST',
+                    'price_change_request_id' => $request->id,
+                    'changed_at' => now(),
                 ]);
             }
 
             $this->priceChangeRequestRepository->update($request, [
-                'status'     => PriceChangeRequestStatus::APPLIED->value,
+                'status' => PriceChangeRequestStatus::APPLIED->value,
                 'applied_at' => now(),
             ]);
         });

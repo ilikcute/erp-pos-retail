@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,7 +23,7 @@ return new class extends Migration
         });
 
         // Insert default configuration
-        \Illuminate\Support\Facades\DB::table('loyalty_configurations')->insert([
+        DB::table('loyalty_configurations')->insert([
             'point_expiry_months' => 12,
             'minimum_redeem_points' => 100,
             'point_value' => 100,

@@ -2,13 +2,13 @@
 
 namespace App\Models\MasterData;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasCreatedBy;
 
 class Supplier extends Model
 {
-    use SoftDeletes, HasCreatedBy;
+    use HasCreatedBy, SoftDeletes;
 
     protected $fillable = [
         'supplier_code',
@@ -30,8 +30,8 @@ class Supplier extends Model
     ];
 
     protected $casts = [
-        'is_active'         => 'boolean',
-        'credit_limit'      => 'decimal:2',
+        'is_active' => 'boolean',
+        'credit_limit' => 'decimal:2',
         'payment_term_days' => 'integer',
     ];
 

@@ -14,17 +14,16 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
             ->with('category')
             ->when(
                 $filters['search'] ?? null,
-                fn($q, $s) =>
-                $q->where(
-                    fn($q) => $q
+                fn ($q, $s) => $q->where(
+                    fn ($q) => $q
                         ->where('customer_name', 'like', "%{$s}%")
                         ->orWhere('customer_code', 'like', "%{$s}%")
                         ->orWhere('phone', 'like', "%{$s}%")
                 )
             )
-            ->when($filters['customer_category_id'] ?? null, fn($q, $v) => $q->where('customer_category_id', $v))
-            ->when($filters['city']                 ?? null, fn($q, $v) => $q->where('city', $v))
-            ->when(isset($filters['is_active']),             fn($q) => $q->where('is_active', $filters['is_active']))
+            ->when($filters['customer_category_id'] ?? null, fn ($q, $v) => $q->where('customer_category_id', $v))
+            ->when($filters['city'] ?? null, fn ($q, $v) => $q->where('city', $v))
+            ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->latest()
             ->paginate($perPage);
     }
@@ -42,6 +41,7 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
     public function update(Customer $customer, array $data): Customer
     {
         $customer->update($data);
+
         return $customer->fresh();
     }
 

@@ -2,9 +2,10 @@
 
 namespace App\Models\Pricing;
 
+use App\Models\Product\ProductVariant;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasCreatedBy;
 
 class PriceListItem extends Model
 {
@@ -21,7 +22,7 @@ class PriceListItem extends Model
     ];
 
     protected $casts = [
-        'price'   => 'decimal:2',
+        'price' => 'decimal:2',
         'min_qty' => 'decimal:4',
     ];
 
@@ -32,6 +33,6 @@ class PriceListItem extends Model
 
     public function variant(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Product\ProductVariant::class, 'product_variant_id');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

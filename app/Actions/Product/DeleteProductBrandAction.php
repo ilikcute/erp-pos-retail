@@ -2,9 +2,9 @@
 
 namespace App\Actions\Product;
 
+use App\Exceptions\BusinessException;
 use App\Models\Product\ProductBrand;
 use App\Repositories\Contracts\Product\ProductBrandRepositoryInterface;
-use App\Exceptions\BusinessException;
 
 class DeleteProductBrandAction
 {

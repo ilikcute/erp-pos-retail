@@ -2,21 +2,35 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-
+use App\Repositories\Contracts\Accounting\CoaRepositoryInterface;
 // Contracts
+use App\Repositories\Contracts\Accounting\PaymentMethodRepositoryInterface;
 use App\Repositories\Contracts\Auth\UserAuthRepositoryInterface;
-use App\Repositories\Contracts\System\UserRepositoryInterface;
-use App\Repositories\Contracts\MasterData\SupplierRepositoryInterface;
-
+use App\Repositories\Contracts\Inventory\BalanceRepositoryInterface;
 // Implementations
-use App\Repositories\Eloquent\Auth\EloquentUserAuthRepository;
-use App\Repositories\Eloquent\System\EloquentUserRepository;
-use App\Repositories\Eloquent\MasterData\EloquentSupplierRepository;
-
+use App\Repositories\Contracts\Inventory\LedgerRepositoryInterface;
+use App\Repositories\Contracts\MasterData\SupplierRepositoryInterface;
+use App\Repositories\Contracts\POS\DayClosingRepositoryInterface;
 // Support services
+use App\Repositories\Contracts\POS\MonthClosingRepositoryInterface;
+use App\Repositories\Contracts\POS\SessionRepositoryInterface;
+use App\Repositories\Contracts\Promotion\PromotionRepositoryInterface;
+use App\Repositories\Contracts\System\UserRepositoryInterface;
+use App\Repositories\Eloquent\Accounting\CoaRepository;
+use App\Repositories\Eloquent\Accounting\PaymentMethodRepository;
+use App\Repositories\Eloquent\Auth\EloquentUserAuthRepository;
+use App\Repositories\Eloquent\Inventory\BalanceRepository;
+use App\Repositories\Eloquent\Inventory\LedgerRepository;
+use App\Repositories\Eloquent\MasterData\EloquentSupplierRepository;
+use App\Repositories\Eloquent\POS\DayClosingRepository;
+use App\Repositories\Eloquent\POS\MonthClosingRepository;
+use App\Repositories\Eloquent\POS\SessionRepository;
+use App\Repositories\Eloquent\Promotion\PromotionRepository;
+use App\Repositories\Eloquent\System\EloquentUserRepository;
+use App\Services\Pricing\PriceResolverService;
 use App\Support\AuditService;
 use App\Support\DocumentNumberService;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,51 +54,51 @@ class AppServiceProvider extends ServiceProvider
 
         // ── Pricing (Singletons) ──────────────────────────────────────
         // PriceResolverService dipakai di POS setiap transaksi — singleton agar tidak re-instantiate
-        $this->app->singleton(\App\Services\Pricing\PriceResolverService::class);
+        $this->app->singleton(PriceResolverService::class);
 
         // Inventory
 
         $this->app->bind(
-            \App\Repositories\Contracts\Inventory\BalanceRepositoryInterface::class,
-            \App\Repositories\Eloquent\Inventory\BalanceRepository::class
+            BalanceRepositoryInterface::class,
+            BalanceRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\Inventory\LedgerRepositoryInterface::class,
-            \App\Repositories\Eloquent\Inventory\LedgerRepository::class
+            LedgerRepositoryInterface::class,
+            LedgerRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\Accounting\CoaRepositoryInterface::class,
-            \App\Repositories\Eloquent\Accounting\CoaRepository::class
+            CoaRepositoryInterface::class,
+            CoaRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\Accounting\PaymentMethodRepositoryInterface::class,
-            \App\Repositories\Eloquent\Accounting\PaymentMethodRepository::class
+            PaymentMethodRepositoryInterface::class,
+            PaymentMethodRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\Promotion\PromotionRepositoryInterface::class,
-            \App\Repositories\Eloquent\Promotion\PromotionRepository::class
+            PromotionRepositoryInterface::class,
+            PromotionRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\POS\SessionRepositoryInterface::class,
-            \App\Repositories\Eloquent\POS\SessionRepository::class
+            SessionRepositoryInterface::class,
+            SessionRepository::class
         );
 
         $this->app->bind(
-            \App\Repositories\Contracts\POS\DayClosingRepositoryInterface::class,
-            \App\Repositories\Eloquent\POS\DayClosingRepository::class
+            DayClosingRepositoryInterface::class,
+            DayClosingRepository::class
         );
 
         // ═══════════════════════════════════════════════════════════
         // MONTH CLOSING
         // ═══════════════════════════════════════════════════════════
         $this->app->bind(
-            \App\Repositories\Contracts\POS\MonthClosingRepositoryInterface::class,
-            \App\Repositories\Eloquent\POS\MonthClosingRepository::class
+            MonthClosingRepositoryInterface::class,
+            MonthClosingRepository::class
         );
     }
 

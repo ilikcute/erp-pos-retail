@@ -22,15 +22,41 @@ const formatDate = (date) =>
     });
 
 let timeInterval = null;
-onMounted(() => {
-    timeInterval = setInterval(() => (currentTime.value = new Date()), 60000);
-});
-onUnmounted(() => clearInterval(timeInterval));
 
 const storeInitial = computed(() =>
     (storeProfile?.name || "K").charAt(0).toUpperCase(),
 );
 const formatCash = (n) => new Intl.NumberFormat("id-ID").format(Number(n || 0));
+
+// Fullscreen State & Logic
+const isFullscreen = ref(false);
+
+const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            isFullscreen.value = true;
+        }).catch((err) => {
+            console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+        isFullscreen.value = false;
+    }
+};
+
+const handleFullscreenChange = () => {
+    isFullscreen.value = !!document.fullscreenElement;
+};
+
+onMounted(() => {
+    timeInterval = setInterval(() => (currentTime.value = new Date()), 60000);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+});
+
+onUnmounted(() => {
+    clearInterval(timeInterval);
+    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+});
 </script>
 
 <template>
@@ -71,6 +97,19 @@ const formatCash = (n) => new Intl.NumberFormat("id-ID").format(Number(n || 0));
 
             <!-- Right -->
             <div class="flex items-center gap-3">
+                <button
+                    @click="toggleFullscreen"
+                    class="p-2 rounded-lg hover:bg-surface-muted transition"
+                    :title="isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh'"
+                >
+                    <svg v-if="!isFullscreen" class="w-5 h-5 text-ink-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <svg v-else class="w-5 h-5 text-ink-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6m0 0v6m0-6L4 20m16-6h-6m0 0v6m0-6l6 6M4 10h6m0 0V4m0 6L4 4m16 6h-6m0 0V4m0 6l6-6" />
+                    </svg>
+                </button>
+
                 <button
                     @click="themeSwitcher"
                     class="p-2 rounded-lg hover:bg-surface-muted transition"

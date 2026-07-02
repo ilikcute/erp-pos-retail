@@ -4,24 +4,24 @@ namespace App\Enums;
 
 enum DocumentStatus: string
 {
-    case DRAFT     = 'DRAFT';
-    case PENDING   = 'PENDING';
-    case APPROVED  = 'APPROVED';
-    case POSTED    = 'POSTED';
+    case DRAFT = 'DRAFT';
+    case PENDING = 'PENDING';
+    case APPROVED = 'APPROVED';
+    case POSTED = 'POSTED';
     case CANCELLED = 'CANCELLED';
-    case VOID      = 'VOID';
-    case CLOSED    = 'CLOSED';
+    case VOID = 'VOID';
+    case CLOSED = 'CLOSED';
 
     public function label(): string
     {
         return match ($this) {
-            self::DRAFT     => 'Draft',
-            self::PENDING   => 'Pending Approval',
-            self::APPROVED  => 'Approved',
-            self::POSTED    => 'Posted',
+            self::DRAFT => 'Draft',
+            self::PENDING => 'Pending Approval',
+            self::APPROVED => 'Approved',
+            self::POSTED => 'Posted',
             self::CANCELLED => 'Cancelled',
-            self::VOID      => 'Void',
-            self::CLOSED    => 'Closed',
+            self::VOID => 'Void',
+            self::CLOSED => 'Closed',
         };
     }
 
